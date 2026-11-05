@@ -9,7 +9,8 @@
 - 런타임: .NET 10 / WPF
 
 > **현재 상태: v0.1 개발판.** ZIP 읽기/쓰기와 한글 파일명 복원, CLI, WPF UI가 동작합니다.
-> 암호·분할 압축·셸 확장(우클릭 메뉴)·설치 프로그램은 아직 없습니다. 아래 [제한 사항](#제한-사항)을 참고하세요.
+> 설치형·포터블 배포본은 [Releases](https://github.com/karanglass24-lang/WangZip/releases)에 있습니다.
+> 암호·분할 압축·셸 확장(우클릭 메뉴)은 아직 없습니다. 아래 [제한 사항](#제한-사항)을 참고하세요.
 
 ---
 
@@ -22,7 +23,7 @@ WangZip은 다음 원칙으로 그 문제를 없앱니다.
 |---|---|
 | 광고 없음 | UI에 광고·프로모션 영역이 없음 |
 | 기능 잠금 없음 | 모든 구현 기능을 처음부터 사용 |
-| 번들 설치 없음 | 별도 설치 프로그램 자체가 아직 없음 (포터블 실행) |
+| 번들 설치 없음 | 설치 프로그램·포터블 모두 광고/추가 프로그램 끼워넣기 없음 |
 | 추적 없음 | 네트워크 통신 코드 없음 |
 | 오픈소스 | GPL-3.0, 의존성은 MIT/BSD/zlib 계열만 사용 |
 
@@ -30,7 +31,17 @@ WangZip은 다음 원칙으로 그 문제를 없앱니다.
 
 ## 빠른 시작
 
-### 1. .NET 10 SDK 준비
+### 0. 일반 사용자 — 설치형 또는 포터블
+
+소스 빌드 없이 쓰려면 [Releases](https://github.com/karanglass24-lang/WangZip/releases)에서 받습니다.
+둘 다 자체 포함 빌드라 별도 .NET 설치가 필요 없습니다.
+
+- **설치형(권장)**: `WangZip-0.1.0-setup.exe` 실행. 폴더 선택, 시작 메뉴 바로 가기,
+  바탕 화면 바로 가기(선택 사항), 프로그램 제거 등록까지 해 줍니다.
+  관리자 권한 없이 사용자 단위(`LocalAppData\Programs\WangZip`)에 설치됩니다.
+- **포터블**: `WangZip-0.1.0-win-x64.zip`을 풀고 `WangZip.exe`를 실행.
+
+### 1. .NET 10 SDK 준비 (소스 빌드할 때만)
 
 이미 설치되어 있다면 건너뜁니다.
 
@@ -77,6 +88,22 @@ powershell -ExecutionPolicy Bypass -File .\dotnet-install.ps1 -Channel 10.0 -Ins
 - `cli/wangzip.exe` — CLI (Windows는 대소문자를 구분하지 않아 `WangZip.exe`와 같은 폴더에 둘 수 없습니다)
 
 .NET 10 데스크톱 런타임이 이미 설치된 PC용으로 작게 만들려면 `-FrameworkDependent`를 붙입니다.
+
+### 5. 설치 프로그램 빌드 (Inno Setup)
+
+```powershell
+.\installer\build-installer.ps1
+```
+
+`artifacts/WangZip-0.1.0-setup.exe`가 만들어집니다 (약 70MB, 한국어 설치 마법사).
+배포본 폴더가 있으면 그대로 쓰고(`-SkipPublish`로 재사용), 없으면 자동으로 `publish.ps1`을 먼저 실행합니다.
+
+사전 준비 — Inno Setup 7을 `.tools\inno`에 사용자 단위로 설치:
+
+```powershell
+curl.exe -sSL -o innosetup.exe "https://github.com/jrsoftware/issrc/releases/download/is-7_1_1/innosetup-7.1.1-x64.exe"
+powershell -c "& .\innosetup.exe /VERYSILENT /CURRENTUSER /DIR=\"$PWD\.tools\inno\""
+```
 
 ---
 
@@ -181,7 +208,7 @@ ZIP은 파일명 인코딩이 통일되어 있지 않아 한국에서 특히 문
 - 암호가 걸린 ZIP/7z/RAR 열기 (v0.2 예정)
 - 분할 ZIP(`.z01`, `.001`), 분할 7z, 분할 RAR 읽기 (v0.2 예정)
 - 7z/TAR 쓰기 (v0.2 예정)
-- 탐색기 우클릭 메뉴 / 파일 연결 / 설치 프로그램 (v0.3 예정)
+- 탐색기 우클릭 메뉴 / 파일 연결 (v0.3 예정)
 - 압축 파일에서 파일을 직접 드래그해 꺼내기 (셸 네임스페이스 확장, v0.3 예정)
 - 자동 업데이트 (v0.3 예정 — 보안 패치를 위해 필요)
 - ALZ/EGG 등 알집 고유 포맷 (연구 과제)
@@ -200,6 +227,8 @@ src/
   WangZip.Core/          압축 엔진 (ZIP 직접 파서, 인코딩 판별, 경로 안전, 7z/TAR/RAR 읽기)
   WangZip.Cli/           CLI (wangzip)
   WangZip.App/           WPF UI
+installer/
+  wangzip.iss            Inno Setup 설치 프로그램 정의
 tests/
   WangZip.Core.Tests/    xUnit 테스트 35개
 docs/
@@ -237,9 +266,9 @@ docs/
 
 | 버전 | 내용 |
 |---|---|
-| v0.1 (현재) | ZIP 읽기/쓰기, 한글 파일명, CLI, WPF UI, 안전 계층 |
+| v0.1 (현재) | ZIP 읽기/쓰기, 한글 파일명, CLI, WPF UI, 안전 계층, 설치형 설치 프로그램 |
 | v0.2 | 암호(ZIP AES/ZipCrypto, 7z AES), 분할 ZIP, 7z/TAR 쓰기, 대용량 실측 |
-| v0.3 | 탐색기 우클릭 메뉴(Win11 sparse package), 파일 연결, 설치 프로그램, 자동 업데이트, 드래그 아웃 |
+| v0.3 | 탐색기 우클릭 메뉴(Win11 sparse package), 파일 연결, 자동 업데이트, 드래그 아웃 |
 | v0.4 | ALZ/EGG 조사 결과 반영, 셸 네임스페이스 확장, 미리보기 강화 |
 
 자세한 설계 배경과 검토 결과는 [docs/DESIGN.md](docs/DESIGN.md)를 참고하세요.
