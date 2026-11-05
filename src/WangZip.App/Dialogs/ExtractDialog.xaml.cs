@@ -32,10 +32,7 @@ public partial class ExtractDialog : Window
             ? $"선택한 {selectedCount}개 항목만 압축 풀기"
             : "선택한 항목이 없습니다 (전체 압축 풀기만 가능)";
 
-        if (!hasSelection)
-        {
-            AllRadio.IsChecked = true;
-        }
+        AutoOpenBox.IsChecked = new AppSettings().AutoOpenAfterExtract;
     }
 
     public string DestinationDirectory => DestinationBox.Text.Trim();
@@ -44,6 +41,9 @@ public partial class ExtractDialog : Window
         (OverwriteCombo.SelectedItem as OverwriteOption)?.Policy ?? OverwritePolicy.Overwrite;
 
     public bool ExtractAll => AllRadio.IsChecked == true;
+
+    /// <summary>성공 후 대상 폴더를 열지 여부 (설정에 저장됩니다).</summary>
+    public bool AutoOpenAfterExtract => AutoOpenBox.IsChecked == true;
 
     private void Browse_Click(object sender, RoutedEventArgs e)
     {
@@ -55,6 +55,23 @@ public partial class ExtractDialog : Window
         if (dialog.ShowDialog(this) == true)
         {
             DestinationBox.Text = dialog.FolderName;
+        }
+    }
+
+    private void QuickLocation_Click(object sender, RoutedEventArgs e)
+    {
+        string folder = (sender as Button)?.Tag as string switch
+        {
+            "Desktop" => Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+            "Downloads" => Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"),
+            "Documents" => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            _ => string.Empty,
+        };
+
+        if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
+        {
+            DestinationBox.Text = folder;
         }
     }
 

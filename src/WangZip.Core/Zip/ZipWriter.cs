@@ -116,7 +116,7 @@ public static class ZipWriter
         };
     }
 
-    private static List<FileItem> CollectItems(
+    internal static List<FileItem> CollectItems(
         IReadOnlyList<string> sources,
         CreationOptions options,
         string outputPath,

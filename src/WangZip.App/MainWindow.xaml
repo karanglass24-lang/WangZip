@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Icon="pack://application:,,,/Assets/app-icon.ico"
         Title="{Binding Title}"
-        Width="1120" Height="740"
-        MinWidth="820" MinHeight="520"
+        Width="1180" Height="760"
+        MinWidth="900" MinHeight="560"
         WindowStartupLocation="CenterScreen"
         AllowDrop="True"
         DragOver="Window_DragOver"
@@ -13,7 +13,7 @@
         Closing="Window_Closing">
 
     <DockPanel>
-        <Menu DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}" Padding="4,2">
+        <Menu DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}" Padding="4,1">
             <MenuItem Header="파일(_F)">
                 <MenuItem Header="압축 파일 열기..." InputGestureText="Ctrl+O" Click="Open_Click" />
                 <MenuItem Header="압축하기..." InputGestureText="Ctrl+N" Click="Create_Click" />
@@ -21,8 +21,13 @@
                 <MenuItem Header="끝내기" InputGestureText="Alt+F4" Click="Exit_Click" />
             </MenuItem>
             <MenuItem Header="도구(_T)">
-                <MenuItem Header="압축 풀기..." InputGestureText="Ctrl+E" Click="Extract_Click" />
-                <MenuItem Header="무결성 검사..." Click="Verify_Click" />
+                <MenuItem Header="빠른 압축 풀기 (전체 항목)" InputGestureText="Ctrl+E" Click="QuickExtractAll_Click" />
+                <MenuItem Header="선택 항목만 압축 풀기" Click="QuickExtractSelected_Click" />
+                <MenuItem Header="압축 풀기 상세..." Click="Extract_Click" />
+                <Separator />
+                <MenuItem Header="무결성 검사" Click="Verify_Click" />
+                <Separator />
+                <MenuItem Header="재구성: 선택 항목 압축 파일에서 삭제" Click="Delete_Click" />
                 <Separator />
                 <MenuItem Header="새로 고침" InputGestureText="F5" Click="Refresh_Click" />
             </MenuItem>
@@ -32,47 +37,108 @@
         </Menu>
 
         <Border DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}"
-                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,1" Padding="10,6">
-            <StackPanel Orientation="Horizontal">
-                <Button Style="{StaticResource ToolButton}" Click="Open_Click" ToolTip="압축 파일 열기 (Ctrl+O)">
-                    <StackPanel>
-                        <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                   HorizontalAlignment="Center" Foreground="{StaticResource AccentBrush}" />
-                        <TextBlock Text="열기" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center" />
-                    </StackPanel>
-                </Button>
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10,7,10,9">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Vertical" VerticalAlignment="Top">
+                    <TextBlock Text="압축 풀기 위치" FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3" />
+                    <ComboBox x:Name="QuickDestCombo" Width="240" Height="30"
+                              DisplayMemberPath="Label" SelectionChanged="QuickDest_Changed" />
+                </StackPanel>
 
-                <Button Style="{StaticResource ToolButton}" Click="Extract_Click" ToolTip="압축 풀기 (Ctrl+E)">
-                    <StackPanel>
-                        <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                   HorizontalAlignment="Center" Foreground="{StaticResource AccentBrush}" />
-                        <TextBlock Text="압축 풀기" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center" />
-                    </StackPanel>
-                </Button>
+                <TextBlock DockPanel.Dock="Right" Width="12" />
 
-                <Button Style="{StaticResource ToolButton}" Click="Create_Click" ToolTip="압축하기 (Ctrl+N)">
-                    <StackPanel>
-                        <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                   HorizontalAlignment="Center" Foreground="{StaticResource AccentBrush}" />
-                        <TextBlock Text="압축하기" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center" />
-                    </StackPanel>
-                </Button>
+                <StackPanel DockPanel.Dock="Right" Orientation="Vertical" VerticalAlignment="Top">
+                    <TextBlock Text="파일명 인코딩" FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3" />
+                    <ComboBox x:Name="EncodingCombo" Width="210" Height="30"
+                              DisplayMemberPath="Label" SelectionChanged="Encoding_Changed" />
+                </StackPanel>
 
-                <Button Style="{StaticResource ToolButton}" Click="Refresh_Click" ToolTip="새로 고침 (F5)">
-                    <StackPanel>
-                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                   HorizontalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
-                        <TextBlock Text="새로 고침" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center" />
-                    </StackPanel>
-                </Button>
+                <StackPanel Orientation="Horizontal">
+                    <!-- 열기 -->
+                    <Button Style="{StaticResource RibbonTool}" Click="Open_Click" ToolTip="압축 파일 열기 (Ctrl+O)">
+                        <StackPanel>
+                            <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#3E7BEA" />
+                            <TextBlock Text="열기" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
 
-                <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="10,4" />
+                    <!-- 빠른 압축 풀기(전체) -->
+                    <Button x:Name="QuickAll" Style="{StaticResource RibbonTool}" Click="QuickExtractAll_Click"
+                            IsEnabled="{Binding HasArchive}" ToolTip="위에 선택한 위치로 전체 항목 압축 풀기 (Ctrl+E)">
+                        <StackPanel>
+                            <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#3E7BEA" />
+                            <TextBlock Text="압축 풀기" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
 
-                <TextBlock Text="파일명 인코딩" VerticalAlignment="Center"
-                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0" />
-                <ComboBox x:Name="EncodingCombo" Width="200" Height="30" VerticalAlignment="Center"
-                          DisplayMemberPath="Label" SelectionChanged="Encoding_Changed" />
-            </StackPanel>
+                    <!-- 선택 압축 풀기 -->
+                    <Button x:Name="QuickSel" Style="{StaticResource RibbonTool}" Click="QuickExtractSelected_Click"
+                            IsEnabled="{Binding HasArchive}" ToolTip="목록에서 선택한 항목만 풀기">
+                        <StackPanel>
+                            <TextBlock Text="&#xE8D0;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#3E7BEA" />
+                            <TextBlock Text="선택 풀기" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="6,4" />
+
+                    <!-- 압축하기 -->
+                    <Button Style="{StaticResource RibbonTool}" Click="Create_Click" ToolTip="새 압축 파일 만들기 (Ctrl+N)">
+                        <StackPanel>
+                            <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#2FA45C" />
+                            <TextBlock Text="압축하기" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- 파일 추가 -->
+                    <Button x:Name="AddEntryButton" Style="{StaticResource RibbonTool}" Click="AddFiles_Click"
+                            IsEnabled="{Binding HasArchive}" ToolTip="열려 있는 ZIP에 파일/폴더 추가">
+                        <StackPanel>
+                            <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#2FA45C" />
+                            <TextBlock Text="파일 추가" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- 항목 삭제 -->
+                    <Button x:Name="DeleteEntryButton" Style="{StaticResource RibbonTool}" Click="Delete_Click"
+                            IsEnabled="{Binding HasArchive}" ToolTip="선택 항목을 ZIP에서 삭제">
+                        <StackPanel>
+                            <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#D9483B" />
+                            <TextBlock Text="항목 삭제" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="6,4" />
+
+                    <!-- 검사 -->
+                    <Button x:Name="VerifyButton" Style="{StaticResource RibbonTool}" Click="Verify_Click"
+                            IsEnabled="{Binding HasArchive}" ToolTip="무결성 검사 (CRC)">
+                        <StackPanel>
+                            <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#7B61C4" />
+                            <TextBlock Text="검사" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- 새로 고침 -->
+                    <Button x:Name="RefreshButton" Style="{StaticResource RibbonTool}" Click="Refresh_Click"
+                            ToolTip="새로 고침 (F5)">
+                        <StackPanel>
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                            <TextBlock Text="새로 고침" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
         </Border>
 
         <StatusBar DockPanel.Dock="Bottom" Background="{StaticResource SurfaceBrush}"
@@ -81,61 +147,102 @@
                 <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource TextSecondaryBrush}" />
             </StatusBarItem>
             <StatusBarItem DockPanel.Dock="Right" HorizontalAlignment="Right">
-                <TextBlock Text="{Binding EncodingDescription}" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBlock Foreground="{StaticResource TextSecondaryBrush}">
+                    <Run Text="{Binding TotalCount, Mode=OneWay}" /><Run Text="개 (현재 폴더 " /><Run Text="{Binding EntriesCount, Mode=OneWay}" /><Run Text="개)" />
+                </TextBlock>
             </StatusBarItem>
         </StatusBar>
 
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" Padding="16,9"
-                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
-                <TextBlock Text="{Binding ArchivePath}" Foreground="{StaticResource TextSecondaryBrush}"
-                           TextTrimming="CharacterEllipsis" />
-            </Border>
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="250" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-            <Grid Grid.Row="1">
-                <DataGrid x:Name="EntryGrid"
-                          ItemsSource="{Binding Entries}"
-                          AutoGenerateColumns="False"
-                          IsReadOnly="True"
-                          CanUserAddRows="False"
-                          CanUserDeleteRows="False"
-                          CanUserResizeRows="False"
-                          HeadersVisibility="Column"
-                          GridLinesVisibility="Horizontal"
-                          HorizontalGridLinesBrush="{StaticResource BorderBrush}"
-                          Background="{StaticResource SurfaceBrush}"
-                          BorderThickness="0"
-                          RowHeight="32"
-                          SelectionMode="Extended"
-                          SelectionUnit="FullRow"
-                          MouseDoubleClick="EntryGrid_MouseDoubleClick">
-                    <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="이름" Width="*">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="15" Foreground="{StaticResource AccentBrush}"
-                                                   VerticalAlignment="Center" Margin="0,0,8,0" />
-                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="크기" Binding="{Binding SizeText}" Width="110" />
-                        <DataGridTextColumn Header="압축 크기" Binding="{Binding CompressedText}" Width="110" />
-                        <DataGridTextColumn Header="압축률" Binding="{Binding RatioText}" Width="80" />
-                        <DataGridTextColumn Header="수정일" Binding="{Binding ModifiedText}" Width="140" />
-                        <DataGridTextColumn Header="방식" Binding="{Binding MethodText}" Width="90" />
-                    </DataGrid.Columns>
-                </DataGrid>
+                <!-- 폴더 트리 -->
+                <DockPanel Grid.Column="0" Background="{StaticResource SurfaceBrush}">
+                    <Border DockPanel.Dock="Top" BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="0,0,0,1" Padding="10,6">
+                        <TextBlock Text="폴더 계층" Style="{StaticResource SectionTitle}" Margin="0" />
+                    </Border>
+                    <TreeView x:Name="FolderTree"
+                              ItemsSource="{Binding TreeRoots}"
+                              SelectedItemChanged="FolderTree_SelectedItemChanged"
+                              ItemContainerStyle="{StaticResource TreeItem}"
+                              BorderThickness="0"
+                              Background="Transparent" />
+                </DockPanel>
 
-                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
+                              Background="{StaticResource BorderBrush}" ResizeBehavior="PreviousAndNext" />
+
+                <DockPanel Grid.Column="2" Background="{StaticResource SurfaceBrush}">
+                    <!-- 경로 / 전체 보기 -->
+                    <Border DockPanel.Dock="Top" BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="0,0,0,1" Padding="10,6">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}"
+                                    Padding="8,3" Content="전체" MinWidth="54" Margin="8,0,0,0"
+                                    Click="ShowAll_Click" />
+                            <TextBlock Text="{Binding PathText}" Foreground="{StaticResource TextSecondaryBrush}"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+
+                    <DataGrid x:Name="EntryGrid"
+                              ItemsSource="{Binding Entries}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              CanUserResizeRows="False"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="{StaticResource BorderBrush}"
+                              Background="{StaticResource SurfaceBrush}"
+                              BorderThickness="0"
+                              RowHeight="32"
+                              SelectionMode="Extended"
+                              SelectionUnit="FullRow"
+                              MouseDoubleClick="EntryGrid_MouseDoubleClick">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="이름" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock x:Name="Glyph" Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="15" Foreground="#3E7BEA"
+                                                       VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding LockText}" FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="13" Foreground="#7B61C4"
+                                                       VerticalAlignment="Center" Margin="6,0,0,0" />
+                                        </StackPanel>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsDirectory}" Value="True">
+                                                <Setter TargetName="Glyph" Property="Foreground" Value="#E9A13C" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="크기" Binding="{Binding SizeText}" Width="110" />
+                            <DataGridTextColumn Header="압축 크기" Binding="{Binding CompressedText}" Width="110" />
+                            <DataGridTextColumn Header="압축률" Binding="{Binding RatioText}" Width="80" />
+                            <DataGridTextColumn Header="수정일" Binding="{Binding ModifiedText}" Width="140" />
+                            <DataGridTextColumn Header="방식" Binding="{Binding MethodText}" Width="100" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+
+                <!-- 파일 없을 때 안내 -->
+                <TextBlock Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                            Foreground="{StaticResource TextSecondaryBrush}" FontSize="14">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">

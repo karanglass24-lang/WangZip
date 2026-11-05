@@ -11,6 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="WangZip.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="SharpCompress" Version="0.50.8" />
   </ItemGroup>
 

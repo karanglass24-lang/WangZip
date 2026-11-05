@@ -148,4 +148,90 @@
         <Setter Property="Margin" Value="0,0,0,6" />
     </Style>
 
+    <!-- 리본형 큰 도구 버튼 -->
+    <Style x:Key="RibbonTool" TargetType="Button" BasedOn="{StaticResource ToolButton}">
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="MinWidth" Value="62" />
+    </Style>
+
+    <!-- 왼쪽 폴더 트리 -->
+    <Style x:Key="TreeItem" TargetType="TreeViewItem">
+        <Setter Property="IsExpanded" Value="False" />
+        <Setter Property="Padding" Value="2,1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TreeViewItem">
+                    <StackPanel>
+                        <Grid>
+                            <Grid ColumnDefinitions="Auto,*">
+                                <ToggleButton x:Name="Expander" Focusable="False" ClickMode="Press"
+                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
+                                              Width="18" Height="18">
+                                    <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="9"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               RenderTransformOrigin="0.5,0.5">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="RenderTransform">
+                                                    <Setter.Value>
+                                                        <RotateTransform Angle="0" />
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                                        <Setter Property="RenderTransform">
+                                                            <Setter.Value>
+                                                                <RotateTransform Angle="90" />
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </ToggleButton>
+                                <ContentPresenter Grid.Column="1" x:Name="Part_Header"
+                                                  ContentSource="Header" Margin="2,2,2,2" />
+                            </Grid>
+                        </Grid>
+                        <ItemsPresenter x:Name="ItemsHost" Margin="16,0,0,0" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="False">
+                            <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="HasItems" Value="False">
+                            <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="HeaderTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <Border x:Name="ItemBorder" CornerRadius="4" Padding="4,3" MinWidth="220" HorizontalAlignment="Stretch">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Icon}"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="#D1960F"
+                                       VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBlock Text="{Binding Name}"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="#DCE8FF" />
+                        </DataTrigger>
+                        <Trigger SourceName="ItemBorder" Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="#F5F8FE" />
+                        </Trigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>
