@@ -48,7 +48,7 @@ public sealed class PathGuard
             throw new UnsafeArchiveEntryException($"압축 파일 밖으로 벗어나는 경로입니다: '{entryName}'");
         }
 
-        string unique = EnsureUnique(combined, collision);
+        string? unique = EnsureUnique(combined, collision);
         return unique;
     }
 
