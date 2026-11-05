@@ -331,7 +331,7 @@ internal static class Program
         if (Loc.IsEnglish)
         {
             Console.WriteLine("""
-                WangZip - ad-free open-source archive utility (v0.6.3)
+                WangZip - ad-free open-source archive utility (v0.7.0)
 
                 Usage:
                   wangzip list    <archive> [--encoding auto|utf8|cp949|raw] [--json] [--password PASSWORD]
@@ -350,7 +350,7 @@ internal static class Program
         }
 
         Console.WriteLine("""
-            WangZip - 광고 없는 오픈소스 압축 프로그램 (v0.6.3)
+            WangZip - 광고 없는 오픈소스 압축 프로그램 (v0.7.0)
 
             사용법:
               wangzip list    <압축파일> [--encoding auto|utf8|cp949|raw] [--json] [--password 비밀번호]
