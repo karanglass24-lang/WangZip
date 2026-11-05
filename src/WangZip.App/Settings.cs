@@ -15,7 +15,7 @@ public sealed class AppSettings
     /// <summary>"빠른 압축 풀기" 목적지. 0=자동 폴더, 1=바탕 화면, 2=다운로드, 3=문서, 4=압축 파일이 있던 폴더</summary>
     public int QuickDestination { get; set; } = 0;
 
-    /// <summary>탐색기 우클릭 메뉴 노출 여부(설치 시 기록). 실제 등록은 설치 프로그램이 합니다.</summary>
+    /// <summary>환경설정 창에서 마지막으로 저장한 우클릭 메뉴 선택(참고용). 실제 상태는 레지스트리를 기준으로 합니다.</summary>
     public bool ShellMenuEnabled { get; set; } = true;
 
     /// <summary>실행 시 새 버전을 확인하고, 발견하면 자동으로 받아 설치합니다 (설치형만).</summary>
@@ -60,11 +60,14 @@ public sealed class AppSettings
         {
             string directory = Path.GetDirectoryName(FilePath)!;
             Directory.CreateDirectory(directory);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(this, new JsonSerializerOptions
+            // 임시 파일에 쓴 뒤 교체해, 쓰는 도중 종료돼도 설정 파일이 깨지지 않게 합니다.
+            string temp = FilePath + "." + Environment.ProcessId + ".tmp";
+            File.WriteAllText(temp, JsonSerializer.Serialize(this, new JsonSerializerOptions
             {
                 WriteIndented = true,
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             }), new UTF8Encoding(false));
+            File.Move(temp, FilePath, overwrite: true);
         }
         catch
         {

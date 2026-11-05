@@ -206,6 +206,7 @@ public sealed class ZipArchiveSource : IArchiveSource
         var throttle = new ProgressThrottle(progress);
         long processed = 0;
         int checkedCount = 0;
+        int unsupported = 0;
         var buffer = ArrayPool<byte>.Shared.Rent(128 * 1024);
 
         RawZipEntry? encrypted = _raw.FirstOrDefault(item => item.IsEncrypted);
@@ -229,6 +230,7 @@ public sealed class ZipArchiveSource : IArchiveSource
 
                 if (item.RealMethod is not (0 or 8))
                 {
+                    unsupported++;
                     continue;
                 }
 
@@ -244,6 +246,12 @@ public sealed class ZipArchiveSource : IArchiveSource
                         cancellationToken.ThrowIfCancellationRequested();
                         crc = Crc32.Append(crc, buffer.AsSpan(0, read));
                         written += read;
+                        if (written > item.UncompressedSize)
+                        {
+                            throw new ArchiveException(
+                                $"항목이 선언된 크기보다 큽니다(손상되었거나 악의적인 파일): {item.DecodedName}");
+                        }
+
                         processed += read;
                         throttle.Report(processed, totalBytes, item.DecodedName);
                     }
@@ -284,6 +292,13 @@ public sealed class ZipArchiveSource : IArchiveSource
         }
 
         throttle.Report(processed, totalBytes, null, force: true);
+
+        if (unsupported > 0)
+        {
+            throw new UnsupportedArchiveException(
+                $"{checkedCount:N0}개 항목은 정상이지만, {unsupported:N0}개 항목은 지원하지 않는 압축 방식이라 검사하지 못했습니다.");
+        }
+
         return checkedCount;
     }
 
@@ -322,9 +337,16 @@ public sealed class ZipArchiveSource : IArchiveSource
                         while ((read = data.Read(buffer, 0, buffer.Length)) > 0)
                         {
                             cancellationToken.ThrowIfCancellationRequested();
+                            written += read;
+                            // 압축 폭탄 방어: 선언된 크기를 넘으면 더 쓰지 않고 중단합니다.
+                            if (written > item.UncompressedSize)
+                            {
+                                throw new ArchiveException(
+                                    $"항목이 선언된 크기보다 큽니다(손상되었거나 악의적인 파일): {item.DecodedName}");
+                            }
+
                             output.Write(buffer, 0, read);
                             crc = Crc32.Append(crc, buffer.AsSpan(0, read));
-                            written += read;
                             throttle.Report(processedBefore + written, totalBytes, item.DecodedName);
                         }
                     }
@@ -374,6 +396,7 @@ public sealed class ZipArchiveSource : IArchiveSource
                 File.SetLastWriteTime(PathGuard.ToExtended(temporary), item.ModifiedLocal);
             }
 
+            MarkOfTheWeb.Copy(_archivePath, temporary);
             File.Move(PathGuard.ToExtended(temporary), PathGuard.ToExtended(target), overwrite: true);
         }
         catch

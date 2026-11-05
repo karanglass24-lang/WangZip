@@ -55,8 +55,15 @@ public sealed class SharpCompressSource : IArchiveSource
 
             foreach (IArchiveEntry entry in archive.Entries)
             {
-                string name = (entry.Key ?? string.Empty).Replace('\\', '/');
+                string name = ReaderArchiveSource.NormalizeKey(entry.Key);
                 keys.Add(name);
+
+                // tar의 루트 항목("./")은 실제 파일이 아니므로 목록에서 뺍니다(번호는 원래 위치 그대로 유지).
+                if (name.Length == 0)
+                {
+                    index++;
+                    continue;
+                }
 
                 long size = SafeSize(entry);
                 long compressed = SafeCompressedSize(entry);
@@ -150,7 +157,8 @@ public sealed class SharpCompressSource : IArchiveSource
 
                 if (!all && !selected.Contains(current)) continue;
 
-                string entryName = (entry.Key ?? $"entry-{current}").Replace('\\', '/');
+                string entryName = ReaderArchiveSource.NormalizeKey(entry.Key ?? $"entry-{current}");
+                if (entryName.Length == 0) continue;
                 string? target = guard.Resolve(entryName, options.Collision);
                 if (target is null)
                 {
@@ -222,6 +230,7 @@ public sealed class SharpCompressSource : IArchiveSource
                         File.SetLastWriteTime(PathGuard.ToExtended(temporary), modified);
                     }
 
+                    MarkOfTheWeb.Copy(_archivePath, temporary);
                     File.Move(PathGuard.ToExtended(temporary), PathGuard.ToExtended(target), overwrite: true);
                     extractedFiles++;
                 }
@@ -231,6 +240,11 @@ public sealed class SharpCompressSource : IArchiveSource
                     throw;
                 }
             }
+        }
+        catch (Exception exception) when (exception is not ArchiveException and not OperationCanceledException && IsPasswordError(exception))
+        {
+            throw new EncryptedArchiveException(
+                "비밀번호가 필요하거나 올바르지 않습니다.\n압축 풀기 화면에서 올바른 비밀번호를 입력해 주세요.");
         }
         catch (Exception exception) when (exception is not ArchiveException and not OperationCanceledException)
         {

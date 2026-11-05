@@ -54,10 +54,12 @@ public static class ZipWriter
         var throttle = new ProgressThrottle(progress);
         long processed = 0;
 
+        // 임시 파일에 쓴 뒤 교체하므로, 실패·취소해도 기존 파일이 손상되지 않습니다.
+        string tempOutput = TempSibling(fullOutput);
         try
         {
             using (var file = new FileStream(
-                       PathGuard.ToExtended(fullOutput), FileMode.Create, FileAccess.ReadWrite,
+                       PathGuard.ToExtended(tempOutput), FileMode.Create, FileAccess.ReadWrite,
                        FileShare.None, bufferSize: 128 * 1024))
             using (var archive = new ZipArchive(
                        file, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: nameEncoding))
@@ -103,10 +105,12 @@ public static class ZipWriter
                     }
                 }
             }
+
+            File.Move(PathGuard.ToExtended(tempOutput), PathGuard.ToExtended(fullOutput), overwrite: true);
         }
         catch
         {
-            ExtractionHelpers.TryDelete(fullOutput);
+            ExtractionHelpers.TryDelete(tempOutput);
             throw;
         }
 
@@ -122,6 +126,10 @@ public static class ZipWriter
             Warnings = warnings,
         };
     }
+
+    /// <summary>출력 파일과 같은 폴더의 임시 파일 경로(같은 볼륨이라 이동이 원자적입니다).</summary>
+    internal static string TempSibling(string outputPath) =>
+        Path.Combine(Path.GetDirectoryName(outputPath)!, "." + Guid.NewGuid().ToString("N") + ".wang-tmp");
 
     internal static List<FileItem> CollectItems(
         IReadOnlyList<string> sources,

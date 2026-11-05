@@ -61,10 +61,13 @@ internal static class EncryptedZipWriter
         var throttle = new ProgressThrottle(progress);
         long processed = 0;
 
+        // 임시 파일에 쓴 뒤 교체하므로, 실패·취소해도 기존 파일이 손상되지 않습니다.
+        string tempPath = ZipWriter.TempSibling(outputPath);
         try
         {
+            { // 파일을 닫은 뒤 교체하기 위한 범위
             using var file = new FileStream(
-                PathGuard.ToExtended(outputPath), FileMode.Create, FileAccess.ReadWrite,
+                PathGuard.ToExtended(tempPath), FileMode.Create, FileAccess.ReadWrite,
                 FileShare.None, bufferSize: 128 * 1024);
 
             var records = new List<EntryRecord>(items.Count);
@@ -91,6 +94,11 @@ internal static class EncryptedZipWriter
                         WriteLocalHeader(file, name, [], PlainVersionNeeded, nameFlags, 0, dosTime, dosDate, 0, 0, 0);
                         records.Add(new EntryRecord(name, [], nameFlags, 0, dosTime, dosDate, 0, 0, (uint)localOffset));
                         continue;
+                    }
+
+                    if (item.Length >= 0xFFFFFFF0)
+                    {
+                        throw new ArchiveException($"4GB를 넘는 항목은 암호 ZIP으로 만들 수 없습니다: {item.EntryName}");
                     }
 
                     ushort method = options.Level == CompressionLevel.NoCompression ? (ushort)0 : (ushort)8;
@@ -186,10 +194,13 @@ internal static class EncryptedZipWriter
 
             WriteEndOfCentralDirectory(
                 file, (ushort)records.Count, (uint)centralSize, (uint)centralOffset, comment);
+            }
+
+            File.Move(PathGuard.ToExtended(tempPath), PathGuard.ToExtended(outputPath), overwrite: true);
         }
         catch
         {
-            ExtractionHelpers.TryDelete(outputPath);
+            ExtractionHelpers.TryDelete(tempPath);
             throw;
         }
 

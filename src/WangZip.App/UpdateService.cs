@@ -123,7 +123,12 @@ public static class UpdateService
 
         if (info.Sha256 is { } expected)
         {
-            byte[] hash = await SHA256.HashDataAsync(File.OpenRead(target), cancellationToken);
+            byte[] hash;
+            await using (var stream = File.OpenRead(target))
+            {
+                hash = await SHA256.HashDataAsync(stream, cancellationToken);
+            }
+
             string actual = Convert.ToHexString(hash).ToLowerInvariant();
             if (!string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase))
             {

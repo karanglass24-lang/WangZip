@@ -170,6 +170,13 @@ public partial class CreateDialog : Window
             return;
         }
 
+        if (File.Exists(output) &&
+            MessageBox.Show(this, $"같은 이름의 파일이 이미 있습니다. 덮어쓸까요?\n\n{output}", "왕집",
+                MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
         DialogResult = true;
     }
 
@@ -194,7 +201,9 @@ public partial class CreateDialog : Window
         string first = Sources[0];
         string directory = (File.Exists(first) ? Path.GetDirectoryName(first) : Path.GetDirectoryName(first.TrimEnd('\\')))
             ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        string name = Path.GetFileNameWithoutExtension(first.TrimEnd('\\'));
+        string name = File.Exists(first)
+            ? Path.GetFileNameWithoutExtension(first)
+            : Path.GetFileName(first.TrimEnd('\\'));
 
         OutputBox.Text = Path.Combine(directory, name + ".zip");
     }

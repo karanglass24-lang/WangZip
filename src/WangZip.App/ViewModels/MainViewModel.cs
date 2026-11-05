@@ -220,14 +220,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    public async Task OpenAsync(string archivePath, NameEncodingMode encodingMode)
+    public async Task OpenAsync(string archivePath, NameEncodingMode encodingMode, string? password = null)
     {
         IsBusy = true;
         try
         {
             (IArchiveSource Source, List<EntryRow> Rows) loaded = await Task.Run(() =>
             {
-                IArchiveSource opened = ArchiveService.Open(archivePath, encodingMode);
+                IArchiveSource opened = ArchiveService.Open(archivePath, encodingMode, password);
                 List<EntryRow> rows = opened.Entries.Select(entry => new EntryRow(entry)).ToList();
                 return (opened, rows);
             });
@@ -255,6 +255,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public void SelectFolder(string? path)
     {
         _currentPath = path ?? "";
+
+        // 폴더를 직접 고르면 검색을 끝내고 그 폴더를 보여 줍니다.
+        if (_filterText.Length > 0)
+        {
+            _filterText = "";
+            OnPropertyChanged(nameof(FilterText));
+        }
+
         ApplyFilter();
     }
 
@@ -280,7 +288,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             var found = new List<EntryRow>();
             foreach (EntryRow row in _allRows)
             {
-                if (row.Info.Name.Contains(needle, StringComparison.CurrentCultureIgnoreCase))
+                // 상위 폴더 이름만 맞는 항목까지 걸리지 않도록 마지막 이름 부분만 비교합니다.
+                string trimmed = row.Info.Name.TrimEnd('/');
+                string leaf = trimmed[(trimmed.LastIndexOf('/') + 1)..];
+                if (leaf.Contains(needle, StringComparison.CurrentCultureIgnoreCase))
                 {
                     row.FullPathMode = true;
                     found.Add(row);
@@ -423,6 +434,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         Directory.CreateDirectory(temporary);
 
         int[] indices = ExpandRows(selected).Select(row => row.Info.Index).ToArray();
+        if (indices.Length == 0) return [];
+
         source.Extract(
             indices,
             new ExtractionOptions
@@ -462,6 +475,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 continue;
             }
 
+            // 폴더 항목 자신도 포함해야 빈 폴더 선택이 "전체"로 오해되지 않고, 삭제 시 폴더 항목이 남지 않습니다.
+            if (row.Info.Index >= 0 && seen.Add(row.Info.Index)) result.Add(row);
+
             string prefix = row.Info.Name.TrimEnd('/') + "/";
             foreach (EntryRow candidate in _allRows)
             {
@@ -477,6 +493,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return result;
     }
 
+    /// <summary>현재 폴더·검색 결과와 무관하게 압축 파일 안의 모든 항목.</summary>
+    public IReadOnlyList<EntryRow> AllRows => _allRows;
+
     public int EntriesCount => Entries.Count;
     public int TotalCount => _allRows.Count;
 
@@ -491,6 +510,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             IArchiveSource source = _source ?? throw new InvalidOperationException("먼저 압축 파일을 열어 주세요.");
             int[] indices = ExpandRows(rows).Select(row => row.Info.Index).ToArray();
+
+            // 빈 배열은 소스가 "전체"로 해석하므로, 풀 것이 없으면 아예 호출하지 않습니다.
+            if (indices.Length == 0) return new ExtractionResult();
 
             return await Task.Run(
                 () => source.Extract(indices, options, progress, cancellationToken),
@@ -588,6 +610,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
 
             int[] indices = ExpandRows(rows).Select(row => row.Info.Index).ToArray();
+            if (indices.Length == 0) throw new ArchiveException("삭제할 항목을 선택해 주세요.");
             string path = _archivePath;
             var modified = await Task.Run(
                 () => ZipRewriter.DeleteEntries(path, indices, cancellationToken),

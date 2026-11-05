@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using WangZip.App.Dialogs;
@@ -11,7 +10,7 @@ namespace WangZip.App;
 /// 탐색기 우클릭 메뉴용 짧은 명령 모드.
 ///   WangZip.exe here-extract "파일.zip"     → 압축 파일 옆에 폴더를 만들어 풉니다.
 ///   WangZip.exe here-create  "폴더|파일"   → 같은 폴더에 "이름.zip"을 만듭니다.
-/// 명령 실행에 성공하면 종료하고, 실패하면 안내 후 종료합니다 (창을 띄우지 않음).
+/// 진행 창을 보여 주고, 끝나면 결과를 알린 뒤 종료합니다 (메인 창은 띄우지 않음).
 /// </summary>
 internal static class ShellCommands
 {
@@ -19,119 +18,214 @@ internal static class ShellCommands
     {
         if (args.Length < 2) return false;
 
-        bool handled = args[0].ToLowerInvariant() switch
-        {
-            "here-extract" => RunExtract(args[1]),
-            "here-create" => RunCreate(args[1]),
-            _ => false,
-        };
+        // 대화상자가 닫혀도 작업이 끝나기 전에는 종료되지 않도록 합니다.
+        Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
-        if (handled)
+        switch (args[0].ToLowerInvariant())
+        {
+            case "here-extract":
+                _ = RunAsync(() => RunExtractAsync(args[1]));
+                return true;
+            case "here-create":
+                _ = RunAsync(() => RunCreateAsync(args[1]));
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static async Task RunAsync(Func<Task> work)
+    {
+        try
+        {
+            await work();
+        }
+        catch (Exception exception)
+        {
+            Show("오류: " + exception.Message);
+        }
+        finally
         {
             Application.Current?.Shutdown();
         }
-
-        return handled;
     }
 
-    private static bool RunExtract(string archivePath)
+    private static async Task RunExtractAsync(string archivePath)
     {
-        try
+        if (!File.Exists(archivePath))
         {
-            if (!File.Exists(archivePath))
+            throw new FileNotFoundException("압축 파일을 찾을 수 없습니다.", archivePath);
+        }
+
+        string zip = Path.GetFullPath(archivePath);
+
+        // 파일 이름까지 암호화된 압축 파일은 열 때부터 비밀번호가 필요합니다.
+        IArchiveSource? source = null;
+        string? password = null;
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            try
             {
-                throw new FileNotFoundException("압축 파일을 찾을 수 없습니다.", archivePath);
+                source = ArchiveService.Open(zip, NameEncodingMode.Auto, password);
+                break;
+            }
+            catch (EncryptedArchiveException)
+            {
+                password = PromptPassword(attempt > 0);
+                if (password is null) return;
+            }
+        }
+
+        if (source is null)
+        {
+            Show("비밀번호가 올바르지 않습니다.");
+            return;
+        }
+
+        using (source)
+        {
+            if (source.Entries.Count == 0)
+            {
+                Show("압축 파일 안에 항목이 없습니다.");
+                return;
             }
 
-            string zip = Path.GetFullPath(archivePath);
-            string destination = Path.Combine(
-                Path.GetDirectoryName(zip)!,
-                Path.GetFileNameWithoutExtension(zip));
-
-            IArchiveSource source = ArchiveService.Open(zip);
-
-            string? password = null;
-            if (source.Entries.Any(entry => entry.IsEncrypted))
+            if (password is null && source.Entries.Any(entry => entry.IsEncrypted))
             {
-                password = PromptPassword(zip);
-                if (password is null)
-                {
-                    Show("취소했습니다.");
-                    return true;
-                }
+                password = PromptPassword(false);
+                if (password is null) return;
             }
 
-            var result = source.Extract(
-                [],
-                new ExtractionOptions
-                {
-                    DestinationDirectory = destination,
-                    Overwrite = OverwritePolicy.Rename,
-                    Password = password,
-                },
-                null,
-                CancellationToken.None);
+            string parent = Path.GetDirectoryName(zip)!;
+            string destination = SingleTopLevelFolder(source)
+                ? parent
+                : FreeFolder(Path.Combine(parent, FolderNameFor(zip)));
 
+            ExtractionResult? result = null;
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                bool wrongPassword = false;
+                string? currentPassword = password;
+                bool ok = await ProgressDialog.RunAsync(null!, "압축을 푸는 중입니다", async (progress, token) =>
+                {
+                    try
+                    {
+                        result = await Task.Run(() => source.Extract(
+                            [],
+                            new ExtractionOptions
+                            {
+                                DestinationDirectory = destination,
+                                Overwrite = OverwritePolicy.Rename,
+                                Password = currentPassword,
+                            },
+                            progress,
+                            token), token);
+                    }
+                    catch (EncryptedArchiveException)
+                    {
+                        wrongPassword = true;
+                    }
+                });
+
+                if (!ok) return;
+                if (!wrongPassword) break;
+
+                // 비밀번호가 틀렸으면 다시 묻습니다.
+                password = PromptPassword(true);
+                if (password is null) return;
+            }
+
+            if (result is null) return;
             Show($"압축을 풀었습니다: 파일 {result.ExtractedFiles:N0}개\n{destination}");
-            return true;
-        }
-        catch (EncryptedArchiveException)
-        {
-            Show("비밀번호가 올바르지 않습니다. 다시 시도해 주세요.");
-            return true;
-        }
-        catch (Exception exception)
-        {
-            Show("오류: " + exception.Message);
-            return true;
         }
     }
 
-    private static string? PromptPassword(string zipPath)
+    /// <summary>"x.tar.gz" → "x" 처럼 이중 확장자를 함께 제거한 폴더 이름.</summary>
+    internal static string FolderNameFor(string archivePath)
     {
-        MessageBox.Show(
-            "압축 파일에 비밀번호가 걸려 있습니다.\n비밀번호를 입력해 주세요.",
-            "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+        string name = Path.GetFileNameWithoutExtension(archivePath);
+        if (name.EndsWith(".tar", StringComparison.OrdinalIgnoreCase)) name = name[..^4];
+        return string.IsNullOrWhiteSpace(name) ? "압축 풀기" : name;
+    }
+
+    /// <summary>모든 항목이 하나의 최상위 폴더 안에 있으면 그 폴더가 이미 래퍼 역할을 합니다.</summary>
+    private static bool SingleTopLevelFolder(IArchiveSource source)
+    {
+        string? top = null;
+        foreach (ArchiveEntryInfo entry in source.Entries)
+        {
+            string name = entry.Name.TrimStart('/');
+            int slash = name.IndexOf('/');
+            if (slash <= 0) return false;
+
+            string first = name[..slash];
+            if (top is null) top = first;
+            else if (!string.Equals(top, first, StringComparison.OrdinalIgnoreCase)) return false;
+        }
+
+        return top is not null;
+    }
+
+    internal static string FreeFolder(string path)
+    {
+        if (!Directory.Exists(path) && !File.Exists(path)) return path;
+
+        for (int i = 2; i < 1000; i++)
+        {
+            string candidate = $"{path} ({i})";
+            if (!Directory.Exists(candidate) && !File.Exists(candidate)) return candidate;
+        }
+
+        throw new IOException("풀 폴더 이름을 찾을 수 없습니다.");
+    }
+
+    private static string? PromptPassword(bool wrong)
+    {
         var dialog = new PasswordDialog();
-        if (dialog.ShowDialog() == true)
+        if (wrong)
         {
-            return dialog.Password;
+            dialog.Title = "비밀번호가 올바르지 않습니다 — 다시 입력";
         }
-        return null;
+
+        return dialog.ShowDialog() == true ? dialog.Password : null;
     }
 
-    private static bool RunCreate(string sourcePath)
+    private static async Task RunCreateAsync(string sourcePath)
     {
-        try
+        string full = Path.GetFullPath(sourcePath);
+
+        if (!File.Exists(full) && !Directory.Exists(full))
         {
-            string full = Path.GetFullPath(sourcePath);
-            string directory = Path.GetDirectoryName(full)!;
-
-            if (!File.Exists(full) && !Directory.Exists(full))
-            {
-                throw new FileNotFoundException("파일이나 폴더를 찾을 수 없습니다.", full);
-            }
-
-            string name = Path.GetFileNameWithoutExtension(full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-            string outputName = string.IsNullOrEmpty(name) ? "압축" : name;
-            string output = Path.Combine(directory, outputName + ".zip");
-
-            int attempt = 1;
-            while (File.Exists(output) || Directory.Exists(output))
-            {
-                attempt++;
-                if (attempt > 999) throw new IOException("저장 이름을 찾을 수 없습니다.");
-                output = Path.Combine(directory, $"{outputName}-{attempt}.zip");
-            }
-
-            var created = ZipWriter.Create(output, [full], new CreationOptions(), null, CancellationToken.None);
-            Show($"압축 파일을 만들었습니다:\n{created.OutputPath}\n({created.EntryCount:N0}개 항목)");
-            return true;
+            throw new FileNotFoundException("파일이나 폴더를 찾을 수 없습니다.", full);
         }
-        catch (Exception exception)
+
+        string trimmed = full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        string directory = Path.GetDirectoryName(trimmed)
+            ?? throw new IOException("이 위치(드라이브 최상위)에서는 압축 파일을 만들 수 없습니다. 하위 폴더를 선택해 주세요.");
+
+        // 폴더 이름의 점(my.project)을 확장자로 오해하지 않습니다.
+        string name = File.Exists(full) ? Path.GetFileNameWithoutExtension(full) : Path.GetFileName(trimmed);
+        string outputName = string.IsNullOrEmpty(name) ? "압축" : name;
+        string output = Path.Combine(directory, outputName + ".zip");
+
+        int attempt = 1;
+        while (File.Exists(output) || Directory.Exists(output))
         {
-            Show("오류: " + exception.Message);
-            return true;
+            attempt++;
+            if (attempt > 999) throw new IOException("저장 이름을 찾을 수 없습니다.");
+            output = Path.Combine(directory, $"{outputName}-{attempt}.zip");
+        }
+
+        CreationResult? created = null;
+        bool ok = await ProgressDialog.RunAsync(null!, "압축하는 중입니다", async (progress, token) =>
+        {
+            created = await Task.Run(
+                () => ZipWriter.Create(output, [full], new CreationOptions(), progress, token), token);
+        });
+
+        if (ok && created is not null)
+        {
+            Show($"압축 파일을 만들었습니다:\n{created.OutputPath}\n({created.EntryCount:N0}개 항목)");
         }
     }
 

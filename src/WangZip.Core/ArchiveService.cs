@@ -38,7 +38,7 @@ public static class ArchiveService
         {
             throw new UnsupportedArchiveException(
                 $"지원하지 않는 형식입니다: {Path.GetFileName(fullPath)}\n" +
-                "지원 형식: ZIP, 7z, TAR, GZ, BZ2, XZ, RAR(읽기), ISO/CAB/LHA(읽기)");
+                "지원 형식: ZIP, 7z, TAR, GZ, BZ2, XZ, RAR(읽기)");
         }
 
         if (IsCompressedTar(fullPath))

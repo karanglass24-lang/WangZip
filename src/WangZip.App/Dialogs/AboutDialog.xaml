@@ -33,7 +33,7 @@
             <StackPanel>
                 <TextBlock Text="지원 형식" Style="{StaticResource SectionTitle}" />
                 <TextBlock TextWrapping="Wrap" Margin="0,0,0,12"
-                           Text="ZIP (읽기/쓰기, ZIP64, 한글 파일명 자동 복원) · 7z · TAR · GZ · BZ2 · XZ · RAR 읽기 · ISO/CAB/LHA 읽기 (SharpCompress)" />
+                           Text="ZIP (읽기/쓰기, ZIP64, 한글 파일명 자동 복원) · 7z · TAR · GZ · BZ2 · XZ · RAR 읽기 (SharpCompress)" />
 
                 <TextBlock Text="오픈소스 구성요소" Style="{StaticResource SectionTitle}" />
                 <TextBlock TextWrapping="Wrap" Margin="0,0,0,12">

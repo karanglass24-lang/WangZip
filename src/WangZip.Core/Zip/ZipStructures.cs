@@ -209,7 +209,7 @@ internal static class ZipCentralDirectory
         if (diskNumber != 0 || cdStartDisk != 0)
         {
             throw new UnsupportedArchiveException(
-                "분할 ZIP(.z01 / .001)은 아직 지원하지 않습니다. v0.2에서 추가될 예정입니다.");
+                "분할 ZIP(.z01 / .001)은 아직 지원하지 않습니다.");
         }
 
         return (cdOffset, cdSize, count);

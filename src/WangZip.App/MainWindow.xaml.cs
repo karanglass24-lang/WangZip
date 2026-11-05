@@ -48,7 +48,25 @@ public partial class MainWindow : Window
         {
             Mouse.OverrideCursor = Cursors.Wait;
             _viewModel.CurrentMode = _encodingMode;
-            await _viewModel.OpenAsync(path, _encodingMode);
+            string? password = null;
+            while (true)
+            {
+                try
+                {
+                    await _viewModel.OpenAsync(path, _encodingMode, password);
+                    break;
+                }
+                catch (EncryptedArchiveException) when (ArchiveService.DetectFormat(path) is ArchiveFormat.SevenZip or ArchiveFormat.Rar)
+                {
+                    // 파일 이름까지 암호화된 압축 파일은 목록을 읽으려면 비밀번호가 필요합니다.
+                    Mouse.OverrideCursor = null;
+                    var passwordDialog = new PasswordDialog { Owner = this };
+                    if (passwordDialog.ShowDialog() != true) return;
+                    password = passwordDialog.Password;
+                    Mouse.OverrideCursor = Cursors.Wait;
+                }
+            }
+
             ExpandTreeRoot();
         }
         catch (Exception exception)
@@ -82,7 +100,7 @@ public partial class MainWindow : Window
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Title = "압축 파일 열기",
-            Filter = "압축 파일|*.zip;*.7z;*.rar;*.tar;*.gz;*.tgz;*.bz2;*.xz;*.cab;*.iso;*.lzh;*.jar;*.apk|모든 파일 (*.*)|*.*",
+            Filter = "압축 파일|*.zip;*.7z;*.rar;*.tar;*.gz;*.tgz;*.bz2;*.xz;*.jar;*.apk|모든 파일 (*.*)|*.*",
         };
 
         if (dialog.ShowDialog(this) == true)
@@ -116,7 +134,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dialog = new ExtractDialog(_viewModel.DefaultExtractDirectory, EntryGrid.SelectedItems.Count, selectionOnly)
+        var dialog = new ExtractDialog(_viewModel.DefaultExtractDirectory, EntryGrid.SelectedItems.Count, selectionOnly, _settings)
         {
             Owner = this,
         };
@@ -128,7 +146,7 @@ public partial class MainWindow : Window
         _settings.Save();
 
         List<EntryRow> rows = dialog.ExtractAll
-            ? _viewModel.Entries.ToList()
+            ? _viewModel.AllRows.Where(row => row.Info.Index >= 0).ToList()
             : EntryGrid.SelectedItems.Cast<EntryRow>().ToList();
 
         if (rows.Count == 0)
@@ -195,7 +213,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dialog = new ExtractDialog(_viewModel.DefaultExtractDirectory, EntryGrid.SelectedItems.Count)
+        var dialog = new ExtractDialog(_viewModel.DefaultExtractDirectory, EntryGrid.SelectedItems.Count, false, _settings)
         {
             Owner = this,
         };
@@ -203,7 +221,7 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog() != true) return;
 
         List<EntryRow> rows = dialog.ExtractAll
-            ? _viewModel.Entries.ToList()
+            ? _viewModel.AllRows.Where(row => row.Info.Index >= 0).ToList()
             : EntryGrid.SelectedItems.Cast<EntryRow>().ToList();
 
         if (rows.Count == 0)
@@ -317,7 +335,7 @@ public partial class MainWindow : Window
         }
 
         string? password = null;
-        if (_viewModel.ExpandRows(_viewModel.Entries).Any(row => row.Info.IsEncrypted))
+        if (_viewModel.ExpandRows(_viewModel.AllRows).Any(row => row.Info.IsEncrypted))
         {
             var passwordDialog = new PasswordDialog { Owner = this };
             if (passwordDialog.ShowDialog() != true) return;
@@ -501,6 +519,8 @@ public partial class MainWindow : Window
     /// <summary>폴더를 두 번 누르면 그 폴더로 들어가고, 왼쪽 폴더 트리도 함께 펼칩니다.</summary>
     private void EntryGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
+        // 열 머리글·스크롤바 더블클릭은 무시합니다.
+        if (RowAt(e.OriginalSource as DependencyObject) is null) return;
         if (EntryGrid.SelectedItem is not EntryRow row) return;
 
         if (row.IsDirectory)
@@ -586,8 +606,22 @@ public partial class MainWindow : Window
         return false;
     }
 
+    private static readonly HashSet<string> RiskyExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".exe", ".com", ".scr", ".bat", ".cmd", ".ps1", ".vbs", ".vbe", ".js", ".jse", ".wsf", ".hta",
+        ".msi", ".msp", ".lnk", ".jar", ".reg", ".cpl", ".docm", ".xlsm", ".pptm",
+    };
+
     private async Task PreviewSelectedAsync(EntryRow row)
     {
+        if (RiskyExtensions.Contains(Path.GetExtension(row.Info.Name.TrimEnd('/'))) &&
+            MessageBox.Show(this,
+                $"'{row.Info.Name}'은(는) 실행되는 형식의 파일입니다.\n압축을 풀어 바로 실행하면 위험할 수 있습니다. 계속할까요?",
+                "왕집", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
         try
         {
             Mouse.OverrideCursor = Cursors.Wait;
@@ -609,9 +643,12 @@ public partial class MainWindow : Window
         await RunCreateAsync(dialog);
     }
 
+    /// <summary>왕집에서 끌어낸 임시 파일을 같은 창에 놓았을 때 무시하기 위한 표시.</summary>
+    private bool _draggingOut;
+
     private void Window_DragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop)
+        e.Effects = !_draggingOut && e.Data.GetDataPresent(DataFormats.FileDrop)
             ? DragDropEffects.Copy
             : DragDropEffects.None;
         e.Handled = true;
@@ -619,6 +656,7 @@ public partial class MainWindow : Window
 
     private async void Window_Drop(object sender, DragEventArgs e)
     {
+        if (_draggingOut) return;
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length == 0) return;
 
         if (_viewModel.IsBusy)
@@ -694,6 +732,15 @@ public partial class MainWindow : Window
         await RunUpdateCheckAsync(manual: true);
     }
 
+    private void Preferences_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new PreferencesDialog(_settings) { Owner = this };
+        if (dialog.ShowDialog() == true)
+        {
+            AutoUpdateMenu.IsChecked = _settings.AutoUpdate;
+        }
+    }
+
     private void AutoUpdateMenu_Click(object sender, RoutedEventArgs e)
     {
         _settings.AutoUpdate = AutoUpdateMenu.IsChecked == true;
@@ -711,7 +758,8 @@ public partial class MainWindow : Window
         UpdateInfo? info;
         try
         {
-            Mouse.OverrideCursor = Cursors.Wait;
+            // 시작할 때 자동으로 확인하는 경우에는 커서를 바꾸지 않습니다(배경에서 조용히 확인).
+            if (manual) Mouse.OverrideCursor = Cursors.Wait;
             info = await UpdateService.CheckLatestAsync();
         }
         catch (Exception exception)
@@ -794,6 +842,14 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        // 작업 중에 닫으면 출력 파일이 손상되거나 임시 파일이 남으므로 막습니다.
+        if (_viewModel.IsBusy)
+        {
+            ShowInfo("작업이 진행 중입니다. 작업이 끝난 뒤 닫아 주세요.");
+            e.Cancel = true;
+            return;
+        }
+
         SaveWindowState();
         _viewModel.Dispose();
     }
@@ -842,7 +898,8 @@ public partial class MainWindow : Window
         _settings.WindowTop = bounds.Top;
         _settings.WindowWidth = bounds.Width;
         _settings.WindowHeight = bounds.Height;
-        _settings.WindowMaximized = WindowState == WindowState.Maximized;
+        // 최소화 상태로 닫으면 최대화 여부를 알 수 없으므로 이전 값을 유지합니다.
+        if (WindowState != WindowState.Minimized) _settings.WindowMaximized = WindowState == WindowState.Maximized;
         _settings.TreeWidth = TreeColumn.ActualWidth;
         _settings.ColumnWidths = Enumerable.Range(1, 5).Select(i => EntryGrid.Columns[i].ActualWidth).ToArray();
         _settings.Save();
@@ -969,7 +1026,9 @@ public partial class MainWindow : Window
             if (paths.Count == 0) return;
 
             var data = new DataObject(DataFormats.FileDrop, paths.ToArray());
-            DragDrop.DoDragDrop(EntryGrid, data, DragDropEffects.Copy);
+            _draggingOut = true;
+            try { DragDrop.DoDragDrop(EntryGrid, data, DragDropEffects.Copy); }
+            finally { _draggingOut = false; }
         }
         catch (Exception exception)
         {

@@ -20,7 +20,8 @@ public partial class App : Application
         };
 
         // 탐색기 우클릭 메뉴 명령 모드 (here-extract / here-create)
-        if (e.Args.Length >= 2 && e.Args[0] is "here-extract" or "here-create")
+        if (e.Args.Length >= 2 &&
+            e.Args[0].ToLowerInvariant() is "here-extract" or "here-create")
         {
             if (!ShellCommands.TryRun(e.Args))
             {

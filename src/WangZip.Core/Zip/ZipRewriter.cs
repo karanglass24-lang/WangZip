@@ -126,6 +126,11 @@ public static class ZipRewriter
             fresh.Add(item);
         }
 
+        if (fresh.Count > 0 && entries.Any(entry => entry.IsEncrypted))
+        {
+            warnings.Add("이 ZIP은 암호가 걸려 있지만, 새로 추가한 항목은 암호화되지 않았습니다.");
+        }
+
         // 복사 범위: 로컬 헤더 + 이름/확장 필드 + 압축 데이터 (데이터 디스크립터는 없다고 검증함)
         var ordered = entries.OrderBy(entry => entry.LocalHeaderOffset).ToList();
         for (int i = 1; i < ordered.Count; i++)
@@ -137,7 +142,7 @@ public static class ZipRewriter
         }
 
         long copyBytes = 0;
-        var copies = new List<(RawZipEntry Entry, long Start, int Length)>();
+        var copies = new List<(RawZipEntry Entry, long Start, long Length)>();
         Span<byte> head = stackalloc byte[30];
         foreach (RawZipEntry entry in ordered)
         {
@@ -161,7 +166,7 @@ public static class ZipRewriter
                 throw new ArchiveException($"항목 데이터가 파일 범위를 벗어납니다: {entry.DecodedName}");
             }
 
-            copies.Add((entry, entry.LocalHeaderOffset, (int)length));
+            copies.Add((entry, entry.LocalHeaderOffset, length));
             copyBytes += length;
         }
 
@@ -202,10 +207,10 @@ public static class ZipRewriter
 
                         long newOffset = output.Position;
                         source.Position = start;
-                        int remaining = length;
+                        long remaining = length;
                         while (remaining > 0)
                         {
-                            int read = source.Read(buffer, 0, Math.Min(remaining, buffer.Length));
+                            int read = source.Read(buffer, 0, (int)Math.Min(remaining, buffer.Length));
                             if (read <= 0) throw new EndOfStreamException();
                             output.Write(buffer, 0, read);
                             remaining -= read;
@@ -217,7 +222,8 @@ public static class ZipRewriter
                             entry.Crc, entry.Method, entry.Flags,
                             entry.ModTime, entry.ModDate,
                             Clamp(entry.UncompressedSize), Clamp(entry.CompressedSize),
-                            entry.RawName, entry.Extra, newOffset));
+                            entry.RawName, entry.Extra, newOffset, entry.ExternalAttributes));
+                        EnsureZip32Limit(output.Position);
                     }
                 }
 
@@ -232,49 +238,66 @@ public static class ZipRewriter
                     if (item.EntryName.EndsWith('/'))
                     {
                         long newOffset = output.Position;
-                        WriteLocalEntry(output, nameBytes, flags, 0, 0, modTime, modDate, 0, []);
+                        WriteLocalEntry(output, nameBytes, flags, 0, 0, modTime, modDate, 0, null, 0);
                         central.Add(new CentralRecord(
-                            0, 0, flags, modTime, modDate, 0, 0, nameBytes, [], newOffset));
+                            0, 0, flags, modTime, modDate, 0, 0, nameBytes, [], newOffset, 0x10));
                         continue;
                     }
 
-                    long fileOffset = output.Position;
-                    uint crc;
-                    byte[] payload;
-                    using (var input = new FileStream(
-                               PathGuard.ToExtended(item.FullPath), FileMode.Open, FileAccess.Read,
-                               FileShare.Read, bufferSize: 128 * 1024, FileOptions.SequentialScan))
+                    if (item.Length >= 0xFFFFFFF0)
                     {
-                        var compressed = new MemoryStream();
-                        crc = 0;
-                        using (var deflate = new DeflateStream(compressed, CompressionLevel.Optimal, leaveOpen: true))
-                        {
-                            int read;
-                            while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                cancellationToken.ThrowIfCancellationRequested();
-                                crc = Crc32.Append(crc, buffer.AsSpan(0, read));
-                                deflate.Write(buffer, 0, read);
-                                processed += read;
-                                throttle.Report(Math.Min(processed, totalWork), totalWork, item.EntryName);
-                            }
-                        }
-
-                        payload = compressed.ToArray();
-                        if (payload.Length >= item.Length)
-                        {
-                            input.Position = 0;
-                            payload = new byte[item.Length];
-                            ReadFully(input, payload);
-                        }
+                        throw new UnsupportedArchiveException(
+                            $"4GB 이상 파일은 기존 ZIP에 추가할 수 없습니다: {item.EntryName}");
                     }
 
-                    ushort method = payload.Length < item.Length ? (ushort)8 : ( ushort)0;
-                    WriteLocalEntry(output, nameBytes, flags, method, crc, modTime, modDate,
-                        (uint)item.Length, payload);
-                    central.Add(new CentralRecord(
-                        crc, method, flags, modTime, modDate,
-                        Clamp(item.Length), Clamp(payload.Length), nameBytes, [], fileOffset));
+                    long fileOffset = output.Position;
+                    uint crc = 0;
+                    string payloadPath = Path.Combine(
+                        Path.GetDirectoryName(zipPath)!, "." + Guid.NewGuid().ToString("N") + ".wang-pay");
+                    try
+                    {
+                        long payloadLength;
+                        bool stored;
+                        // 압축 결과는 메모리가 아닌 임시 파일에 모읍니다.
+                        using (var input = new FileStream(
+                                   PathGuard.ToExtended(item.FullPath), FileMode.Open, FileAccess.Read,
+                                   FileShare.Read, bufferSize: 128 * 1024, FileOptions.SequentialScan))
+                        using (var compressed = new FileStream(
+                                   payloadPath, FileMode.CreateNew, FileAccess.ReadWrite,
+                                   FileShare.None, 128 * 1024, FileOptions.SequentialScan))
+                        {
+                            using (var deflate = new DeflateStream(compressed, CompressionLevel.Optimal, leaveOpen: true))
+                            {
+                                int read;
+                                while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+                                {
+                                    cancellationToken.ThrowIfCancellationRequested();
+                                    crc = Crc32.Append(crc, buffer.AsSpan(0, read));
+                                    deflate.Write(buffer, 0, read);
+                                    processed += read;
+                                    throttle.Report(Math.Min(processed, totalWork), totalWork, item.EntryName);
+                                }
+                            }
+
+                            stored = compressed.Length >= item.Length;
+                            payloadLength = stored ? item.Length : compressed.Length;
+                            if (stored) input.Position = 0;
+                            else compressed.Position = 0;
+
+                            WriteLocalEntry(output, nameBytes, flags, stored ? (ushort)0 : (ushort)8, crc,
+                                modTime, modDate, (uint)item.Length, stored ? input : compressed, payloadLength);
+                        }
+
+                        central.Add(new CentralRecord(
+                            crc, stored ? (ushort)0 : (ushort)8, flags, modTime, modDate,
+                            Clamp(item.Length), Clamp(payloadLength), nameBytes, [], fileOffset, 0x20));
+                    }
+                    finally
+                    {
+                        ExtractionHelpers.TryDelete(payloadPath);
+                    }
+
+                    EnsureZip32Limit(output.Position);
                 }
 
                 // 중앙 디렉터리
@@ -284,7 +307,7 @@ public static class ZipRewriter
                     var header = new byte[46];
                     BinaryPrimitives.WriteUInt32LittleEndian(header, 0x02014B50);
                     BinaryPrimitives.WriteUInt16LittleEndian(header.AsSpan(4), 20);
-                    BinaryPrimitives.WriteUInt16LittleEndian(header.AsSpan(6), 20);
+                    BinaryPrimitives.WriteUInt16LittleEndian(header.AsSpan(6), record.Method == 99 ? (ushort)51 : (ushort)20);
                     BinaryPrimitives.WriteUInt16LittleEndian(header.AsSpan(8), record.Flags);
                     BinaryPrimitives.WriteUInt16LittleEndian(header.AsSpan(10), record.Method);
                     BinaryPrimitives.WriteUInt16LittleEndian(header.AsSpan(12), record.ModTime);
@@ -297,13 +320,14 @@ public static class ZipRewriter
                     BinaryPrimitives.WriteUInt16LittleEndian(header.AsSpan(32), 0);
                     BinaryPrimitives.WriteUInt16LittleEndian(header.AsSpan(34), 0);
                     BinaryPrimitives.WriteUInt16LittleEndian(header.AsSpan(36), 0);
-                    BinaryPrimitives.WriteUInt32LittleEndian(header.AsSpan(38), 0);
+                    BinaryPrimitives.WriteUInt32LittleEndian(header.AsSpan(38), record.ExternalAttributes);
                     BinaryPrimitives.WriteUInt32LittleEndian(header.AsSpan(42), (uint)record.NewOffset);
                     output.Write(header);
                     output.Write(record.RawName);
                     output.Write(record.Extra);
                 }
                 long centralSize = output.Position - centralOffset;
+                EnsureZip32Limit(output.Position);
 
                 Span<byte> eocd = stackalloc byte[22];
                 BinaryPrimitives.WriteUInt32LittleEndian(eocd, 0x06054B50);
@@ -348,7 +372,18 @@ public static class ZipRewriter
         uint CompressedSize,
         byte[] RawName,
         byte[] Extra,
-        long NewOffset);
+        long NewOffset,
+        uint ExternalAttributes);
+
+    /// <summary>ZIP64를 쓰지 않으므로 결과가 4GB에 가까워지면 중단합니다(임시 파일은 지워지고 원본은 그대로 남습니다).</summary>
+    private static void EnsureZip32Limit(long position)
+    {
+        if (position >= 0xFFFFFF00)
+        {
+            throw new UnsupportedArchiveException(
+                "결과 ZIP이 4GB를 넘어 항목을 추가할 수 없습니다. 원본 파일은 변경되지 않았습니다.");
+        }
+    }
 
     private static uint Clamp(long value) => value > uint.MaxValue ? uint.MaxValue : (uint)value;
 
@@ -366,7 +401,8 @@ public static class ZipRewriter
         ushort modTime,
         ushort modDate,
         uint uncompressedSize,
-        byte[] payload)
+        Stream? payload,
+        long payloadLength)
     {
         var head = new byte[30];
         BinaryPrimitives.WriteUInt32LittleEndian(head, 0x04034B50);
@@ -376,23 +412,29 @@ public static class ZipRewriter
         BinaryPrimitives.WriteUInt16LittleEndian(head.AsSpan(10), modTime);
         BinaryPrimitives.WriteUInt16LittleEndian(head.AsSpan(12), modDate);
         BinaryPrimitives.WriteUInt32LittleEndian(head.AsSpan(14), crc);
-        BinaryPrimitives.WriteUInt32LittleEndian(head.AsSpan(18), (uint)payload.Length);
+        BinaryPrimitives.WriteUInt32LittleEndian(head.AsSpan(18), (uint)payloadLength);
         BinaryPrimitives.WriteUInt32LittleEndian(head.AsSpan(22), uncompressedSize);
         BinaryPrimitives.WriteUInt16LittleEndian(head.AsSpan(26), (ushort)name.Length);
         BinaryPrimitives.WriteUInt16LittleEndian(head.AsSpan(28), 0);
         output.Write(head);
         output.Write(name);
-        output.Write(payload);
-    }
+        if (payload is null || payloadLength == 0) return;
 
-    private static void ReadFully(Stream source, byte[] target)
-    {
-        int total = 0;
-        while (total < target.Length)
+        byte[] chunk = System.Buffers.ArrayPool<byte>.Shared.Rent(128 * 1024);
+        try
         {
-            int read = source.Read(target, total, target.Length - total);
-            if (read <= 0) throw new EndOfStreamException();
-            total += read;
+            long remaining = payloadLength;
+            while (remaining > 0)
+            {
+                int read = payload.Read(chunk, 0, (int)Math.Min(remaining, chunk.Length));
+                if (read <= 0) throw new EndOfStreamException("추가하는 파일이 작업 중에 변경되었습니다.");
+                output.Write(chunk, 0, read);
+                remaining -= read;
+            }
+        }
+        finally
+        {
+            System.Buffers.ArrayPool<byte>.Shared.Return(chunk);
         }
     }
 

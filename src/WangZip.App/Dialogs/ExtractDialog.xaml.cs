@@ -11,9 +11,11 @@ public partial class ExtractDialog : Window
 {
     private sealed record OverwriteOption(string Label, OverwritePolicy Policy);
 
-    public ExtractDialog(string defaultDestination, int selectedCount, bool preferSelection = false)
+    public ExtractDialog(
+        string defaultDestination, int selectedCount, bool preferSelection = false, AppSettings? settings = null)
     {
         InitializeComponent();
+        settings ??= AppSettings.Load();
 
         DestinationBox.Text = defaultDestination;
 
@@ -30,7 +32,7 @@ public partial class ExtractDialog : Window
             .Concat([new QuickDestination("직접 입력 (경로 지정)", null, "")])
             .ToList();
         QuickDestCombo.ItemsSource = quickOptions;
-        int remembered = new AppSettings().QuickDestination;
+        int remembered = settings.QuickDestination;
         QuickDestCombo.SelectedIndex = Math.Clamp(remembered, 0, quickOptions.Count - 1);
         _selectedQuick = QuickDestCombo.SelectedIndex;
 
@@ -48,7 +50,7 @@ public partial class ExtractDialog : Window
             ? $"선택한 {selectedCount}개 항목만 압축 풀기"
             : "선택한 항목이 없습니다 (전체 압축 풀기만 가능)";
 
-        AutoOpenBox.IsChecked = new AppSettings().AutoOpenAfterExtract;
+        AutoOpenBox.IsChecked = settings.AutoOpenAfterExtract;
     }
 
     private int _selectedQuick;

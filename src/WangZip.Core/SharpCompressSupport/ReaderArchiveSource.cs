@@ -206,6 +206,7 @@ public sealed class ReaderArchiveSource : IArchiveSource
                         File.SetLastWriteTime(PathGuard.ToExtended(temporary), modified);
                     }
 
+                    MarkOfTheWeb.Copy(_archivePath, temporary);
                     File.Move(PathGuard.ToExtended(temporary), PathGuard.ToExtended(target), overwrite: true);
                     extractedFiles++;
                 }
@@ -215,6 +216,11 @@ public sealed class ReaderArchiveSource : IArchiveSource
                     throw;
                 }
             }
+        }
+        catch (Exception exception) when (exception is not ArchiveException and not OperationCanceledException && SharpCompressSource.IsPasswordError(exception))
+        {
+            throw new EncryptedArchiveException(
+                "비밀번호가 필요하거나 올바르지 않습니다.\n압축 풀기 화면에서 올바른 비밀번호를 입력해 주세요.");
         }
         catch (Exception exception) when (exception is not ArchiveException and not OperationCanceledException)
         {
@@ -245,7 +251,7 @@ public sealed class ReaderArchiveSource : IArchiveSource
         });
 
     /// <summary>"./문서/파일" 형태의 TAR 경로를 정리합니다.</summary>
-    private static string NormalizeKey(string? key)
+    internal static string NormalizeKey(string? key)
     {
         string name = (key ?? string.Empty).Replace('\\', '/');
 
@@ -254,7 +260,7 @@ public sealed class ReaderArchiveSource : IArchiveSource
             name = name[2..];
         }
 
-        return name;
+        return name == "." ? string.Empty : name;
     }
 
     private static long SafeLong(Func<long> getter)

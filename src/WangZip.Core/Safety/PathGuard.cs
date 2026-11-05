@@ -191,6 +191,8 @@ public sealed class PathGuard
     {
         if (path.StartsWith(@"\\?\", StringComparison.Ordinal)) return path;
         if (path.Length < 248) return path;
+        // UNC(\\server\share)는 \\?\UNC\server\share 형태여야 합니다.
+        if (path.StartsWith(@"\\", StringComparison.Ordinal)) return @"\\?\UNC\" + path[2..];
         return @"\\?\" + path;
     }
 }
