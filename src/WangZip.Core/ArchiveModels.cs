@@ -108,6 +108,12 @@ public sealed class CreationOptions
     public NameEncodingMode NameEncoding { get; set; } = NameEncodingMode.Auto;
     public bool IncludeEmptyDirectories { get; set; } = true;
     public string? Comment { get; set; }
+
+    /// <summary>
+    /// 비어 있지 않으면 WinZip AES-256(AE-2)으로 항목을 암호화합니다.
+    /// 비밀번호는 UTF-8로 기록됩니다.
+    /// </summary>
+    public string? Password { get; set; }
 }
 
 public sealed class CreationResult

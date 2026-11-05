@@ -48,11 +48,15 @@ public partial class CreateDialog : Window
 
     public string OutputPath => OutputBox.Text.Trim();
 
+    /// <summary>"암호 걸기"가 켜져 있을 때만 값이 있습니다.</summary>
+    public string? Password => UsePasswordCheck.IsChecked == true ? PasswordBox.Password : null;
+
     public CreationOptions Options => new()
     {
         Level = (LevelCombo.SelectedItem as LevelOption)?.Level ?? CompressionLevel.Optimal,
         NameEncoding = (EncodingCombo.SelectedItem as EncodingOption)?.Mode ?? NameEncodingMode.Auto,
         IncludeEmptyDirectories = true,
+        Password = Password,
     };
 
     private void AddFiles_Click(object sender, RoutedEventArgs e)
@@ -136,6 +140,25 @@ public partial class CreateDialog : Window
         if (!Path.HasExtension(output)) output += ".zip";
         OutputBox.Text = output;
 
+        if (UsePasswordCheck.IsChecked == true)
+        {
+            if (string.IsNullOrEmpty(PasswordBox.Password))
+            {
+                MessageBox.Show(this, "비밀번호를 입력해 주세요.", "왕집",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                PasswordBox.Focus();
+                return;
+            }
+
+            if (!string.Equals(PasswordBox.Password, PasswordConfirmBox.Password, StringComparison.Ordinal))
+            {
+                MessageBox.Show(this, "비밀번호가 서로 다릅니다. 다시 확인해 주세요.", "왕집",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                PasswordConfirmBox.Focus();
+                return;
+            }
+        }
+
         try
         {
             string? directory = Path.GetDirectoryName(output);
@@ -151,6 +174,17 @@ public partial class CreateDialog : Window
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
+
+    private void UsePassword_Changed(object sender, RoutedEventArgs e)
+    {
+        if (PasswordPanel is null) return;
+
+        PasswordPanel.IsEnabled = UsePasswordCheck.IsChecked == true;
+        if (UsePasswordCheck.IsChecked == true)
+        {
+            PasswordBox.Focus();
+        }
+    }
 
     private void UpdateSuggestedOutput()
     {

@@ -90,7 +90,7 @@
                     <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="6,4" />
 
                     <!-- 압축하기 -->
-                    <Button Style="{StaticResource RibbonTool}" Click="Create_Click" ToolTip="새 압축 파일 만들기 (Ctrl+N)">
+                    <Button x:Name="CreateButton" Style="{StaticResource RibbonTool}" Click="Create_Click" ToolTip="새 압축 파일 만들기 (Ctrl+N)">
                         <StackPanel>
                             <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#2FA45C" />

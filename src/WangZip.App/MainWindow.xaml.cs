@@ -292,11 +292,14 @@ public partial class MainWindow : Window
 
         if (!ok || created is null) return;
 
+        bool encrypted = !string.IsNullOrEmpty(dialog.Options.Password);
+
         MessageBox.Show(
             this,
             $"압축 파일을 만들었습니다.\n\n" +
             $"{created.EntryCount:N0}개 항목 · {Format.Bytes(created.SourceBytes)} → {Format.Bytes(created.OutputBytes)} " +
-            $"({Format.CompressionRate(created.Ratio)})\n{created.OutputPath}",
+            $"({Format.CompressionRate(created.Ratio)})\n{created.OutputPath}" +
+            (encrypted ? "\n\n암호: AES-256으로 보호됨" : string.Empty),
             "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
 
         await OpenArchiveAsync(created.OutputPath);

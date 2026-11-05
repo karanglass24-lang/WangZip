@@ -214,6 +214,7 @@ internal static class Program
         CompressionLevel level = ParseLevel(Value(args, "--level"));
         NameEncodingMode encoding = ParseEncoding(Value(args, "--encoding"));
         string? comment = Value(args, "--comment");
+        string? password = Value(args, "--password");
         bool quiet = Has(args, "--quiet");
 
         using var cancellation = new CancellationTokenSource();
@@ -232,6 +233,7 @@ internal static class Program
                 Level = level,
                 NameEncoding = encoding,
                 Comment = comment,
+                Password = password,
             },
             progress,
             cancellation.Token);
@@ -272,7 +274,10 @@ internal static class Program
 
     private static int Version()
     {
-        Console.WriteLine("WangZip CLI 0.4.0 (GPL-3.0)");
+        string version = typeof(Program).Assembly.GetName().Version is { } value
+            ? value.ToString(3)
+            : "0.0.0";
+        Console.WriteLine($"WangZip CLI {version} (GPL-3.0)");
         Console.WriteLine("압축 엔진: 직접 구현 ZIP + SharpCompress");
         return 0;
     }
@@ -323,12 +328,12 @@ internal static class Program
     private static void PrintHelp()
     {
         Console.WriteLine("""
-            WangZip - 광고 없는 오픈소스 압축 프로그램 (v0.4)
+            WangZip - 광고 없는 오픈소스 압축 프로그램 (v0.5)
 
             사용법:
               wangzip list    <압축파일> [--encoding auto|utf8|cp949|raw] [--json] [--password 비밀번호]
               wangzip extract <압축파일> [대상폴더] [--encoding ...] [--overwrite overwrite|skip|rename] [--password 비밀번호]
-              wangzip create  <출력.zip> <파일|폴더>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "설명"]
+              wangzip create  <출력.zip> <파일|폴더>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "설명"] [--password 비밀번호]
               wangzip verify  <압축파일> [--password 비밀번호]
 
             예시:
@@ -336,6 +341,7 @@ internal static class Program
               wangzip extract "사진.zip" "C:\Temp\사진" --encoding cp949
               wangzip extract "비밀.zip" "C:\Temp\비밀" --password "1234"
               wangzip create "백업.zip" "C:\작업" --level optimal
+              wangzip create "보안.zip" "C:\작업" --password "비밀번호"
             """);
     }
 

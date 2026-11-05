@@ -37,6 +37,13 @@ public static class ZipWriter
         long totalBytes = items.Sum(item => item.Length);
         Directory.CreateDirectory(PathGuard.ToExtended(Path.GetDirectoryName(fullOutput)!));
 
+        // 비밀번호가 있으면 WinZip AES-256으로 기록합니다. (별도 구현: .NET ZipArchive는 암호화 쓰기 미지원)
+        if (options.Password is { Length: > 0 })
+        {
+            return EncryptedZipWriter.Create(
+                fullOutput, items, options, totalBytes, warnings, progress, cancellationToken);
+        }
+
         Encoding? nameEncoding = options.NameEncoding switch
         {
             NameEncodingMode.Cp949 => Encoding.GetEncoding(949),
