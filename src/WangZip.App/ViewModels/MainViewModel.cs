@@ -27,6 +27,35 @@ public abstract class ObservableObject : INotifyPropertyChanged
 
 public sealed record QuickDestination(string Label, Func<string>? Resolve, string Hint);
 
+/// <summary>확장자별 아이콘 배지(라벨 + 색).</summary>
+public static class FileTypeIcons
+{
+    public static (string Label, string Color) For(string name)
+    {
+        string ext = Path.GetExtension(name.TrimEnd('/')).TrimStart('.').ToLowerInvariant();
+        string label = ext.Length == 0 ? "" : ext.Length > 4 ? ext[..4].ToUpperInvariant() : ext.ToUpperInvariant();
+        string color = ext switch
+        {
+            "jpg" or "jpeg" or "png" or "gif" or "bmp" or "webp" or "tif" or "tiff" or "svg" or "ico" or "heic" => "#1FA67A",
+            "mp4" or "mkv" or "avi" or "mov" or "wmv" or "webm" or "flv" => "#D6455D",
+            "mp3" or "wav" or "flac" or "aac" or "ogg" or "m4a" or "wma" => "#E0752B",
+            "zip" or "7z" or "rar" or "tar" or "gz" or "tgz" or "bz2" or "xz" or "cab" or "iso" or "jar" => "#A36A2B",
+            "pdf" => "#D93025",
+            "doc" or "docx" or "hwp" or "hwpx" or "rtf" => "#2B579A",
+            "xls" or "xlsx" or "csv" => "#217346",
+            "ppt" or "pptx" => "#D24726",
+            "txt" or "md" or "log" or "ini" => "#6B7280",
+            "cs" or "js" or "ts" or "py" or "java" or "c" or "cpp" or "h" or "go" or "rs" or "json" or "xml"
+                or "html" or "htm" or "css" or "yml" or "yaml" or "sql" or "xaml" or "sh" or "ps1" => "#5B6ABF",
+            "exe" or "msi" or "bat" or "cmd" or "dll" => "#4B5563",
+            _ => "#3E7BEA",
+        };
+        return (label, color);
+    }
+}
+
+public sealed record PathCrumb(string Label, string Path);
+
 public sealed class EntryRow
 {
     public EntryRow(ArchiveEntryInfo info)
@@ -36,9 +65,25 @@ public sealed class EntryRow
 
     public ArchiveEntryInfo Info { get; }
 
-    public string Icon => Info.IsDirectory ? "\uE8B7" : Info.IsSymlink ? "\uE71B" : "\uE7C3";
+    public string IconLabel => Info.IsDirectory ? "" : Info.IsSymlink ? "LNK" : FileTypeIcons.For(Info.Name).Label;
+    public string IconColor => Info.IsDirectory ? "#E9A13C" : Info.IsSymlink ? "#7B61C4" : FileTypeIcons.For(Info.Name).Color;
+
+    public System.Windows.Media.Brush IconBrush
+    {
+        get
+        {
+            var brush = (System.Windows.Media.SolidColorBrush)new System.Windows.Media.BrushConverter().ConvertFromString(IconColor)!;
+            brush.Freeze();
+            return brush;
+        }
+    }
     /// <summary>현재 폴더 기준의 표시 이름 (마지막 경로 조각).</summary>
-    public string Name => Segment(Info.Name);
+    public string Name => FullPathMode ? Info.Name.TrimEnd('/') : Segment(Info.Name);
+    /// <summary>검색 결과 보기에서는 전체 경로를 이름으로 보여 줍니다.</summary>
+    public bool FullPathMode { get; set; }
+    public long SortSize => Info.IsDirectory ? -1 : Info.Size;
+    public long SortCompressed => Info.IsDirectory ? -1 : Info.CompressedSize;
+    public double SortRatio => Info.IsDirectory ? -1 : Info.Ratio;
     public string SizeText => Info.IsDirectory ? string.Empty : Info.SizeText;
     public string CompressedText => Info.IsDirectory ? string.Empty : Info.CompressedText;
     public string RatioText => Info.IsDirectory ? string.Empty : Info.RatioText;
@@ -75,6 +120,33 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private List<EntryRow> _allRows = [];
 
     public ObservableCollection<EntryRow> Entries { get; } = [];
+    public ObservableCollection<PathCrumb> Crumbs { get; } = [];
+
+    private string _filterText = "";
+    private string _sortKey = "Name";
+    private bool _sortAscending = true;
+
+    /// <summary>이름 검색어. 비어 있지 않으면 압축 파일 전체에서 찾습니다.</summary>
+    public string FilterText
+    {
+        get => _filterText;
+        set
+        {
+            if (!Set(ref _filterText, value ?? "")) return;
+            if (HasArchive) ApplyFilter();
+        }
+    }
+
+    public string SortKey => _sortKey;
+    public bool SortAscending => _sortAscending;
+
+    /// <summary>같은 열을 다시 누르면 방향을 바꿉니다.</summary>
+    public void SortBy(string key)
+    {
+        if (_sortKey == key) _sortAscending = !_sortAscending;
+        else { _sortKey = key; _sortAscending = true; }
+        if (HasArchive) ApplyFilter();
+    }
     public ObservableCollection<FolderNode> TreeRoots { get; } = [];
 
     public string? ArchivePath
@@ -105,6 +177,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         get => _encodingDescription;
         private set => Set(ref _encodingDescription, value);
+    }
+
+    /// <summary>현재 폴더 경로 ("" = 루트, 끝 슬래시 없음).</summary>
+    public string CurrentFolder => (_currentPath ?? "").TrimEnd('/');
+
+    public bool CanGoUp => CurrentFolder.Length > 0;
+
+    /// <summary>상위 폴더 경로 ("" = 루트).</summary>
+    public string ParentFolder
+    {
+        get
+        {
+            string current = CurrentFolder;
+            int slash = current.LastIndexOf('/');
+            return slash <= 0 ? "" : current[..slash];
+        }
     }
 
     /// <summary>현재 보고 있는 폴더 경로 (탐색 바).</summary>
@@ -151,6 +239,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ArchivePath = _source.ArchivePath;
             EncodingDescription = "파일명 인코딩: " + _source.EncodingDescription;
 
+            _filterText = "";
+            OnPropertyChanged(nameof(FilterText));
             RebuildTree();
             SelectFolder("");
             UpdateStatus();
@@ -181,32 +271,210 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         string current = _currentPath ?? "";
         if (current.Length > 0 && !current.EndsWith('/')) current += '/';
 
-        IEnumerable<EntryRow> rows = _allRows.Where(row =>
+        foreach (EntryRow all in _allRows) all.FullPathMode = false;
+
+        string needle = _filterText.Trim();
+        if (needle.Length > 0)
+        {
+            // 검색: 압축 파일 전체에서 이름에 검색어가 들어간 항목
+            var found = new List<EntryRow>();
+            foreach (EntryRow row in _allRows)
+            {
+                if (row.Info.Name.Contains(needle, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    row.FullPathMode = true;
+                    found.Add(row);
+                }
+            }
+
+            ReplaceEntries(found);
+            PathText = $"검색: {needle}";
+            RebuildCrumbs("");
+            OnPropertyChanged(nameof(CanGoUp));
+            OnPropertyChanged(nameof(EntriesCount));
+            OnPropertyChanged(nameof(TotalCount));
+            return;
+        }
+
+        var rows = new List<EntryRow>();
+        var seenFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var implicitFolders = new Dictionary<string, DateTimeOffset>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (EntryRow row in _allRows)
         {
             string name = row.Info.Name;
-            if (!name.StartsWith(current, StringComparison.OrdinalIgnoreCase)) return false;
+            if (!name.StartsWith(current, StringComparison.OrdinalIgnoreCase)) continue;
             string relative = name[current.Length..];
+            if (relative.Length == 0) continue; // 현재 폴더 자신
+
             int slash = relative.IndexOf('/');
             if (row.Info.IsDirectory)
             {
                 // 폴더: 현재 폴더의 직하위 폴더만
-                return slash == -1 || slash == relative.Length - 1;
+                if (slash == -1 || slash == relative.Length - 1)
+                {
+                    rows.Add(row);
+                    seenFolders.Add(relative.TrimEnd('/'));
+                }
+                else
+                {
+                    TrackImplicit(implicitFolders, relative[..slash], row.Info.Modified);
+                }
             }
-
-            return slash == -1;
-        });
-
-        Entries.Clear();
-        foreach (var row in rows.OrderBy(r => r.Info.IsDirectory ? 0 : 1)
-                     .ThenBy(r => r.Name, StringComparer.CurrentCulture))
-        {
-            Entries.Add(row);
+            else if (slash == -1)
+            {
+                rows.Add(row);
+            }
+            else
+            {
+                // 폴더 항목 없이 파일 경로로만 존재하는 하위 폴더도 목록에 보여 줍니다.
+                TrackImplicit(implicitFolders, relative[..slash], row.Info.Modified);
+            }
         }
 
+        foreach (var pair in implicitFolders)
+        {
+            if (seenFolders.Contains(pair.Key)) continue;
+            rows.Add(new EntryRow(new ArchiveEntryInfo
+            {
+                Index = -1,
+                Name = current + pair.Key + "/",
+                IsDirectory = true,
+                Modified = pair.Value,
+            }));
+        }
+
+        ReplaceEntries(rows);
+        RebuildCrumbs(current.TrimEnd('/'));
+
         PathText = current.Length == 0 ? "/" : current;
+        OnPropertyChanged(nameof(CanGoUp));
 
         OnPropertyChanged(nameof(EntriesCount));
         OnPropertyChanged(nameof(TotalCount));
+    }
+
+    private void ReplaceEntries(List<EntryRow> rows)
+    {
+        Func<EntryRow, IComparable> key = _sortKey switch
+        {
+            "Size" => r => r.SortSize,
+            "Compressed" => r => r.SortCompressed,
+            "Ratio" => r => r.SortRatio,
+            "Modified" => r => r.Info.Modified,
+            "Method" => r => r.MethodText,
+            _ => r => r.Name,
+        };
+
+        IOrderedEnumerable<EntryRow> ordered = rows.OrderBy(r => r.Info.IsDirectory ? 0 : 1);
+        ordered = _sortAscending
+            ? ordered.ThenBy(key, SortComparer.Instance).ThenBy(r => r.Name, StringComparer.CurrentCulture)
+            : ordered.ThenByDescending(key, SortComparer.Instance).ThenBy(r => r.Name, StringComparer.CurrentCulture);
+
+        Entries.Clear();
+        foreach (EntryRow row in ordered) Entries.Add(row);
+    }
+
+    private sealed class SortComparer : IComparer<IComparable>
+    {
+        public static readonly SortComparer Instance = new();
+
+        public int Compare(IComparable? x, IComparable? y) =>
+            x is string a && y is string b
+                ? string.Compare(a, b, StringComparison.CurrentCultureIgnoreCase)
+                : x?.CompareTo(y) ?? (y is null ? 0 : -1);
+    }
+
+    private void RebuildCrumbs(string folder)
+    {
+        Crumbs.Clear();
+        string rootLabel = ArchivePath is null ? "/" : Path.GetFileName(ArchivePath);
+        Crumbs.Add(new PathCrumb(rootLabel, ""));
+
+        string accumulated = "";
+        foreach (string part in folder.Split('/', StringSplitOptions.RemoveEmptyEntries))
+        {
+            accumulated = accumulated.Length == 0 ? part : accumulated + "/" + part;
+            Crumbs.Add(new PathCrumb(part, accumulated));
+        }
+    }
+
+    /// <summary>끌어서 내보내기용: 선택 항목을 임시 폴더로 풀고 각 항목의 실제 경로를 돌려줍니다.</summary>
+    public List<string> ExtractToTemp(IReadOnlyList<EntryRow> selected)
+    {
+        IArchiveSource source = _source ?? throw new InvalidOperationException("먼저 압축 파일을 열어 주세요.");
+
+        string root = Path.Combine(Path.GetTempPath(), "WangZip", "drag");
+        try
+        {
+            if (Directory.Exists(root))
+            {
+                foreach (string stale in Directory.EnumerateDirectories(root))
+                {
+                    try { Directory.Delete(stale, recursive: true); } catch (IOException) { }
+                }
+            }
+        }
+        catch (IOException)
+        {
+        }
+
+        string temporary = Path.Combine(root, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(temporary);
+
+        int[] indices = ExpandRows(selected).Select(row => row.Info.Index).ToArray();
+        source.Extract(
+            indices,
+            new ExtractionOptions
+            {
+                DestinationDirectory = temporary,
+                Overwrite = OverwritePolicy.Overwrite,
+                CheckFreeSpace = false,
+            },
+            null,
+            CancellationToken.None);
+
+        var paths = new List<string>();
+        foreach (EntryRow row in selected)
+        {
+            string path = Path.Combine(temporary, row.Info.Name.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(path) || Directory.Exists(path)) paths.Add(path);
+        }
+
+        return paths;
+    }
+
+    private static void TrackImplicit(Dictionary<string, DateTimeOffset> map, string name, DateTimeOffset modified)
+    {
+        if (!map.TryGetValue(name, out DateTimeOffset existing) || modified > existing) map[name] = modified;
+    }
+
+    /// <summary>폴더 행은 그 안의 모든 실제 항목으로 펼쳐 중복 없이 돌려줍니다.</summary>
+    public List<EntryRow> ExpandRows(IEnumerable<EntryRow> rows)
+    {
+        var result = new List<EntryRow>();
+        var seen = new HashSet<int>();
+        foreach (EntryRow row in rows)
+        {
+            if (!row.IsDirectory)
+            {
+                if (row.Info.Index >= 0 && seen.Add(row.Info.Index)) result.Add(row);
+                continue;
+            }
+
+            string prefix = row.Info.Name.TrimEnd('/') + "/";
+            foreach (EntryRow candidate in _allRows)
+            {
+                if (candidate.Info.Index >= 0 &&
+                    candidate.Info.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+                    seen.Add(candidate.Info.Index))
+                {
+                    result.Add(candidate);
+                }
+            }
+        }
+
+        return result;
     }
 
     public int EntriesCount => Entries.Count;
@@ -222,7 +490,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         try
         {
             IArchiveSource source = _source ?? throw new InvalidOperationException("먼저 압축 파일을 열어 주세요.");
-            int[] indices = rows.Select(row => row.Info.Index).ToArray();
+            int[] indices = ExpandRows(rows).Select(row => row.Info.Index).ToArray();
 
             return await Task.Run(
                 () => source.Extract(indices, options, progress, cancellationToken),
@@ -319,7 +587,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 throw new ArchiveException("항목 삭제는 ZIP 형식에서만 지원합니다.");
             }
 
-            int[] indices = rows.Select(row => row.Info.Index).Distinct().ToArray();
+            int[] indices = ExpandRows(rows).Select(row => row.Info.Index).ToArray();
             string path = _archivePath;
             var modified = await Task.Run(
                 () => ZipRewriter.DeleteEntries(path, indices, cancellationToken),

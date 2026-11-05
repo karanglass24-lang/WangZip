@@ -23,6 +23,7 @@ public partial class MainWindow : Window
         _viewModel.CurrentMode = _encodingMode;
         UpdateEncodingMenuChecks();
 
+        RestoreWindowState();
         AutoUpdateMenu.IsChecked = _settings.AutoUpdate;
         Loaded += (_, _) => _ = RunUpdateCheckAsync(manual: false);
     }
@@ -137,7 +138,7 @@ public partial class MainWindow : Window
         }
 
         string? password = null;
-        if (rows.Any(row => row.Info.IsEncrypted))
+        if (_viewModel.ExpandRows(rows).Any(row => row.Info.IsEncrypted))
         {
             var passwordDialog = new PasswordDialog { Owner = this };
             if (passwordDialog.ShowDialog() != true) return;
@@ -212,7 +213,7 @@ public partial class MainWindow : Window
         }
 
         string? password = null;
-        if (rows.Any(row => row.Info.IsEncrypted))
+        if (_viewModel.ExpandRows(rows).Any(row => row.Info.IsEncrypted))
         {
             var passwordDialog = new PasswordDialog { Owner = this };
             if (passwordDialog.ShowDialog() != true) return;
@@ -316,7 +317,7 @@ public partial class MainWindow : Window
         }
 
         string? password = null;
-        if (_viewModel.Entries.Any(row => row.Info.IsEncrypted))
+        if (_viewModel.ExpandRows(_viewModel.Entries).Any(row => row.Info.IsEncrypted))
         {
             var passwordDialog = new PasswordDialog { Owner = this };
             if (passwordDialog.ShowDialog() != true) return;
@@ -504,12 +505,15 @@ public partial class MainWindow : Window
 
         if (row.IsDirectory)
         {
+            ClearSearch();
             NavigateIntoFolder(row.Info.Name.TrimEnd('/'));
             return;
         }
 
         _ = PreviewSelectedAsync(row);
     }
+
+    private void GoUp_Click(object sender, RoutedEventArgs e) => NavigateIntoFolder(_viewModel.ParentFolder);
 
     private void NavigateIntoFolder(string folderPath)
     {
@@ -653,6 +657,25 @@ public partial class MainWindow : Window
             e.Handled = true;
             Create_Click(sender, e);
         }
+        else if (_viewModel.HasArchive && _viewModel.CanGoUp &&
+                 (e.Key == Key.Back && Keyboard.FocusedElement is not System.Windows.Controls.TextBox ||
+                  e.Key == Key.System && e.SystemKey == Key.Up))
+        {
+            e.Handled = true;
+            GoUp_Click(sender, e);
+        }
+        else if (control && e.Key == Key.F)
+        {
+            e.Handled = true;
+            SearchBox.Focus();
+            SearchBox.SelectAll();
+        }
+        else if (e.Key == Key.Escape && _viewModel.FilterText.Length > 0)
+        {
+            e.Handled = true;
+            ClearSearch();
+            EntryGrid.Focus();
+        }
         else if (e.Key == Key.F5)
         {
             e.Handled = true;
@@ -771,8 +794,193 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        SaveWindowState();
         _viewModel.Dispose();
     }
+
+    private void RestoreWindowState()
+    {
+        if (_settings.TreeWidth >= 120) TreeColumn.Width = new GridLength(_settings.TreeWidth);
+
+        if (_settings.ColumnWidths is { Length: 5 } widths)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                if (widths[i] >= 40) EntryGrid.Columns[i + 1].Width = new DataGridLength(widths[i]);
+            }
+        }
+
+        if (_settings.WindowWidth >= MinWidth && _settings.WindowHeight >= MinHeight)
+        {
+            double left = _settings.WindowLeft, top = _settings.WindowTop;
+            double width = Math.Min(_settings.WindowWidth, SystemParameters.VirtualScreenWidth);
+            double height = Math.Min(_settings.WindowHeight, SystemParameters.VirtualScreenHeight);
+
+            // 화면 밖으로 나간 위치(모니터 구성 변경)는 무시합니다.
+            bool visible = left + width > SystemParameters.VirtualScreenLeft + 80 &&
+                           left < SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 80 &&
+                           top >= SystemParameters.VirtualScreenTop - 10 &&
+                           top < SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 80;
+            if (visible)
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                Left = left;
+                Top = top;
+            }
+
+            Width = width;
+            Height = height;
+        }
+
+        if (_settings.WindowMaximized) WindowState = WindowState.Maximized;
+    }
+
+    private void SaveWindowState()
+    {
+        Rect bounds = WindowState == WindowState.Normal ? new Rect(Left, Top, Width, Height) : RestoreBounds;
+        _settings.WindowLeft = bounds.Left;
+        _settings.WindowTop = bounds.Top;
+        _settings.WindowWidth = bounds.Width;
+        _settings.WindowHeight = bounds.Height;
+        _settings.WindowMaximized = WindowState == WindowState.Maximized;
+        _settings.TreeWidth = TreeColumn.ActualWidth;
+        _settings.ColumnWidths = Enumerable.Range(1, 5).Select(i => EntryGrid.Columns[i].ActualWidth).ToArray();
+        _settings.Save();
+    }
+
+    // ───────── 이동 막대 / 정렬 / 검색 ─────────
+
+    private void Crumb_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string path }) return;
+        ClearSearch();
+        NavigateIntoFolder(path);
+    }
+
+    private void ClearSearch()
+    {
+        if (_viewModel.FilterText.Length > 0) _viewModel.FilterText = "";
+    }
+
+    private void EntryGrid_Sorting(object sender, DataGridSortingEventArgs e)
+    {
+        e.Handled = true;
+        string? key = e.Column.SortMemberPath;
+        if (string.IsNullOrEmpty(key)) return;
+
+        _viewModel.SortBy(key);
+        foreach (DataGridColumn column in EntryGrid.Columns) column.SortDirection = null;
+        e.Column.SortDirection = _viewModel.SortAscending
+            ? System.ComponentModel.ListSortDirection.Ascending
+            : System.ComponentModel.ListSortDirection.Descending;
+    }
+
+    // ───────── 우클릭 메뉴 / 끌어서 내보내기 ─────────
+
+    private Point _dragStart;
+    private bool _dragCandidate;
+
+    private static DataGridRow? RowAt(DependencyObject? source)
+    {
+        while (source is not null && source is not DataGridRow)
+        {
+            source = source is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D
+                ? System.Windows.Media.VisualTreeHelper.GetParent(source)
+                : LogicalTreeHelper.GetParent(source);
+        }
+
+        return source as DataGridRow;
+    }
+
+    private void EntryGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        DataGridRow? row = RowAt(e.OriginalSource as DependencyObject);
+        if (row is not null && !row.IsSelected)
+        {
+            EntryGrid.SelectedItems.Clear();
+            row.IsSelected = true;
+        }
+    }
+
+    private void ContextOpen_Click(object sender, RoutedEventArgs e)
+    {
+        if (EntryGrid.SelectedItems.Count != 1 || EntryGrid.SelectedItem is not EntryRow row) return;
+
+        if (row.IsDirectory)
+        {
+            ClearSearch();
+            NavigateIntoFolder(row.Info.Name.TrimEnd('/'));
+        }
+        else
+        {
+            _ = PreviewSelectedAsync(row);
+        }
+    }
+
+    private void EntryGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        DataGridRow? row = RowAt(e.OriginalSource as DependencyObject);
+        _dragCandidate = row is not null && row.IsSelected && e.ClickCount == 1;
+        _dragStart = e.GetPosition(null);
+    }
+
+    private void EntryGrid_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_dragCandidate || e.LeftButton != MouseButtonState.Pressed) return;
+
+        Vector delta = e.GetPosition(null) - _dragStart;
+        if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        _dragCandidate = false;
+        StartDragOut();
+    }
+
+    /// <summary>선택 항목을 임시 폴더로 풀어 탐색기 등으로 끌어 놓을 수 있게 합니다.</summary>
+    private void StartDragOut()
+    {
+        if (!_viewModel.HasArchive || _viewModel.IsBusy) return;
+
+        var selected = EntryGrid.SelectedItems.Cast<EntryRow>().ToList();
+        if (selected.Count == 0) return;
+
+        List<EntryRow> expanded = _viewModel.ExpandRows(selected);
+        if (expanded.Any(row => row.Info.IsEncrypted))
+        {
+            ShowInfo("암호가 걸린 항목은 끌어서 내보낼 수 없습니다.\n'압축 풀기'를 사용해 주세요.");
+            return;
+        }
+
+        long total = expanded.Sum(row => row.Info.Size);
+        if (total > 500L * 1024 * 1024)
+        {
+            ShowInfo("끌어서 내보내기는 500MB 이하만 지원합니다.\n'압축 풀기'를 사용해 주세요.");
+            return;
+        }
+
+        try
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
+            List<string> paths = _viewModel.ExtractToTemp(selected);
+            Mouse.OverrideCursor = null;
+            if (paths.Count == 0) return;
+
+            var data = new DataObject(DataFormats.FileDrop, paths.ToArray());
+            DragDrop.DoDragDrop(EntryGrid, data, DragDropEffects.Copy);
+        }
+        catch (Exception exception)
+        {
+            ShowError(exception);
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+    }
+
 
     private void ShowInfo(string message) =>
         MessageBox.Show(this, message, "왕집", MessageBoxButton.OK, MessageBoxImage.Information);

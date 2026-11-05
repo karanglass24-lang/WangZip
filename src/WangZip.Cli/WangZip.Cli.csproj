@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>WangZip.Cli</RootNamespace>
     <AssemblyName>wangzip</AssemblyName>
-    <Version>0.6.0</Version>
+    <Version>0.6.1</Version>
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
 

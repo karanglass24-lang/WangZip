@@ -21,6 +21,16 @@ public sealed class AppSettings
     /// <summary>실행 시 새 버전을 확인하고, 발견하면 자동으로 받아 설치합니다 (설치형만).</summary>
     public bool AutoUpdate { get; set; } = true;
 
+    /// <summary>창 위치·크기 (0이면 저장된 값 없음).</summary>
+    public double WindowLeft { get; set; }
+    public double WindowTop { get; set; }
+    public double WindowWidth { get; set; }
+    public double WindowHeight { get; set; }
+    public bool WindowMaximized { get; set; }
+    public double TreeWidth { get; set; }
+    /// <summary>목록 열 너비(크기·압축 크기·압축률·수정일·방식 순).</summary>
+    public double[]? ColumnWidths { get; set; }
+
     public static string FilePath =>
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

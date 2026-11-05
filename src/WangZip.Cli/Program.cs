@@ -328,7 +328,7 @@ internal static class Program
     private static void PrintHelp()
     {
         Console.WriteLine("""
-            WangZip - 광고 없는 오픈소스 압축 프로그램 (v0.6)
+            WangZip - 광고 없는 오픈소스 압축 프로그램 (v0.6.1)
 
             사용법:
               wangzip list    <압축파일> [--encoding auto|utf8|cp949|raw] [--json] [--password 비밀번호]
