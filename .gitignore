@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+publish/
+artifacts/
+
+# Local toolchain (dotnet-install.ps1)
+.dotnet/
+.tools/
+dotnet-install.ps1
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Test / temp
+TestResults/
+*.tmp
+*.wang-tmp

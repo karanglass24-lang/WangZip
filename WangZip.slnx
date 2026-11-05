@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WangZip.App/WangZip.App.csproj" />
+    <Project Path="src/WangZip.Cli/WangZip.Cli.csproj" />
+    <Project Path="src/WangZip.Core/WangZip.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WangZip.Core.Tests/WangZip.Core.Tests.csproj" />
+  </Folder>
+</Solution>

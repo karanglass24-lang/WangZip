@@ -1,0 +1,54 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore WangZip.slnx
+
+      - name: Test
+        run: dotnet test tests/WangZip.Core.Tests/WangZip.Core.Tests.csproj -c Release --no-restore
+
+      - name: Build app
+        run: dotnet build src/WangZip.App/WangZip.App.csproj -c Release --no-restore
+
+      - name: Build CLI
+        run: dotnet build src/WangZip.Cli/WangZip.Cli.csproj -c Release --no-restore
+
+      - name: Publish portable app
+        run: >
+          dotnet publish src/WangZip.App/WangZip.App.csproj -c Release -r win-x64
+          --self-contained true -p:DebugType=None -o artifacts/app
+
+      - name: Publish CLI
+        run: >
+          dotnet publish src/WangZip.Cli/WangZip.Cli.csproj -c Release -r win-x64
+          --self-contained true -p:DebugType=None -o artifacts/app/cli
+
+      - name: Copy notices
+        shell: pwsh
+        run: |
+          Copy-Item LICENSE artifacts/app -Force
+          Copy-Item THIRD_PARTY_NOTICES.md artifacts/app -Force
+          Copy-Item LICENSE artifacts/app/cli -Force
+          Copy-Item THIRD_PARTY_NOTICES.md artifacts/app/cli -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WangZip-win-x64
+          path: artifacts/app
