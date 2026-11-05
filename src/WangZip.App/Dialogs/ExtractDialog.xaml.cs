@@ -60,7 +60,7 @@ public partial class ExtractDialog : Window
 
     private void QuickLocation_Click(object sender, RoutedEventArgs e)
     {
-        string folder = (sender as Button)?.Tag as string switch
+        string folder = ((sender as Button)?.Tag as string) switch
         {
             "Desktop" => Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
             "Downloads" => Path.Combine(
