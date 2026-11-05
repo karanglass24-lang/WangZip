@@ -154,7 +154,7 @@ public sealed class PathGuard
         return segment;
     }
 
-    private string EnsureUnique(string fullPath, CollisionPolicy policy)
+    private string? EnsureUnique(string fullPath, CollisionPolicy policy)
     {
         if (_used.Add(fullPath)) return fullPath;
 
