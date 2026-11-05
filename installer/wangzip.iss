@@ -25,6 +25,7 @@ DefaultGroupName={#MyAppName}
 UninstallDisplayName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExe}
 LicenseFile=..\LICENSE
+SetupIconFile=..\src\WangZip.App\Assets\app-icon.ico
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern

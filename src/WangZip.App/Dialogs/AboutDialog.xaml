@@ -1,6 +1,7 @@
 <Window x:Class="WangZip.App.Dialogs.AboutDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Icon="Assets/app-icon.ico"
         Title="왕집 정보"
         Width="520" Height="460"
         ResizeMode="NoResize"

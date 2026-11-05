@@ -9,6 +9,7 @@
     <RootNamespace>WangZip.App</RootNamespace>
     <AssemblyName>WangZip</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
     <Version>0.1.0</Version>
     <Product>WangZip</Product>
     <AssemblyTitle>WangZip - 광고 없는 압축 프로그램</AssemblyTitle>
@@ -17,6 +18,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WangZip.Core\WangZip.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\app-icon.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -22,6 +22,7 @@
 - **CLI** (`wangzip`): `list`, `extract`, `create`, `verify`, `--json`
 - **WPF UI**: 열기/압축 풀기/압축하기/무결성 검사, 드래그 앤 드롭, 미리보기, 인코딩 전환
 - **배포**: `publish.ps1`(자체 포함 포터블 + ZIP), GitHub Actions 빌드
+- **앱 아이콘**: 두목 마스코트 아이콘 (왕관·금니·붕대) — `resources/make-icon.ps1`로 렌더링
 - **설치형**: Inno Setup 7 기반 한국어 설치 마법사 (`WangZip-0.1.0-setup.exe`)
   - 사용자 단위 설치(관리자 권한 불필요), 시작 메뉴/바탕 화면 바로 가기, 프로그램 제거 등록
   - `installer/wangzip.iss` + `installer/build-installer.ps1`
