@@ -117,7 +117,7 @@ public sealed class SharpCompressSource : IArchiveSource
         var selected = new HashSet<int>(indices);
 
         long totalBytes;
-        string password = options.Password ?? _password;
+        string? password = options.Password ?? _password;
         using (IArchive probe = OpenArchive(_archivePath, password))
         {
             totalBytes = probe.Entries
