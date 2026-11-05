@@ -144,6 +144,10 @@ internal static class ShellIntegration
             else DeleteTree(path);
         }
 
+        const string file = @"Software\Classes\*\shell\WangZipCompress";
+        if (enabled) WriteMenu(file, "왕집: ZIP으로 압축", $"\"{exePath}\" here-create \"%1\"", exePath);
+        else DeleteTree(file);
+
         const string directory = @"Software\Classes\Directory\shell\WangZipCreate";
         const string background = @"Software\Classes\Directory\Background\shell\WangZipCreateBackground";
         if (enabled)

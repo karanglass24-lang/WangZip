@@ -59,7 +59,7 @@
                     <!-- 열기 -->
                     <Button Style="{StaticResource RibbonTool}" Click="Open_Click" ToolTip="압축 파일 열기 (Ctrl+O)">
                         <StackPanel>
-                            <Image Source="/Assets/tool-open.png" Width="41" Height="41"
+                            <Image Source="/Assets/tool-open.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
                             <TextBlock Text="열기" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
@@ -70,7 +70,7 @@
                     <Button x:Name="QuickAll" Style="{StaticResource RibbonTool}" Click="QuickExtractAll_Click"
                             IsEnabled="{Binding HasArchive}" ToolTip="압축 풀기(대상 폴더를 선택해 풉니다) (Ctrl+E)">
                         <StackPanel>
-                            <Image Source="/Assets/tool-extract.png" Width="41" Height="41"
+                            <Image Source="/Assets/tool-extract.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
                             <TextBlock Text="압축 풀기" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
@@ -81,7 +81,7 @@
                     <Button x:Name="QuickSel" Style="{StaticResource RibbonTool}" Click="QuickExtractSelected_Click"
                             IsEnabled="{Binding HasArchive}" ToolTip="목록에서 선택한 항목만 풀기">
                         <StackPanel>
-                            <Image Source="/Assets/tool-extract-selected.png" Width="41" Height="41"
+                            <Image Source="/Assets/tool-extract-selected.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
                             <TextBlock Text="선택 풀기" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
@@ -93,7 +93,7 @@
                     <!-- 압축하기 -->
                     <Button x:Name="CreateButton" Style="{StaticResource RibbonTool}" Click="Create_Click" ToolTip="새 압축 파일 만들기 (Ctrl+N)">
                         <StackPanel>
-                            <Image Source="/Assets/tool-create.png" Width="41" Height="41"
+                            <Image Source="/Assets/tool-create.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
                             <TextBlock Text="압축하기" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
@@ -104,7 +104,7 @@
                     <Button x:Name="AddEntryButton" Style="{StaticResource RibbonTool}" Click="AddFiles_Click"
                             IsEnabled="{Binding HasArchive}" ToolTip="열려 있는 ZIP에 파일/폴더 추가">
                         <StackPanel>
-                            <Image Source="/Assets/tool-add.png" Width="41" Height="41"
+                            <Image Source="/Assets/tool-add.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
                             <TextBlock Text="파일 추가" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
@@ -115,7 +115,7 @@
                     <Button x:Name="DeleteEntryButton" Style="{StaticResource RibbonTool}" Click="Delete_Click"
                             IsEnabled="{Binding HasArchive}" ToolTip="선택 항목을 ZIP에서 삭제">
                         <StackPanel>
-                            <Image Source="/Assets/tool-delete.png" Width="41" Height="41"
+                            <Image Source="/Assets/tool-delete.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
                             <TextBlock Text="항목 삭제" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
@@ -128,7 +128,7 @@
                     <Button x:Name="VerifyButton" Style="{StaticResource RibbonTool}" Click="Verify_Click"
                             IsEnabled="{Binding HasArchive}" ToolTip="무결성 검사 (CRC)">
                         <StackPanel>
-                            <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="28"
+                            <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="29"
                                        HorizontalAlignment="Center" Foreground="#7B61C4" />
                             <TextBlock Text="검사" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
                         </StackPanel>
@@ -138,7 +138,7 @@
                     <Button x:Name="RefreshButton" Style="{StaticResource RibbonTool}" Click="Refresh_Click"
                             ToolTip="새로 고침 (F5)">
                         <StackPanel>
-                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="28"
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="29"
                                        HorizontalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
                             <TextBlock Text="새로 고침" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
                         </StackPanel>

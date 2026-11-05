@@ -27,7 +27,7 @@ internal static class ShellCommands
                 _ = RunAsync(() => RunExtractAsync(args[1]));
                 return true;
             case "here-create":
-                _ = RunAsync(() => RunCreateAsync(args[1]));
+                _ = RunAsync(() => CollectAndCreateAsync(args[1]));
                 return true;
             default:
                 return false;
@@ -190,21 +190,79 @@ internal static class ShellCommands
         return dialog.ShowDialog() == true ? dialog.Password : null;
     }
 
-    private static async Task RunCreateAsync(string sourcePath)
-    {
-        string full = Path.GetFullPath(sourcePath);
+    private const string CollectName = "WangZip.HereCreate";
 
-        if (!File.Exists(full) && !Directory.Exists(full))
+    /// <summary>
+    /// 탐색기는 여러 항목을 선택하면 항목마다 프로세스를 따로 띄웁니다.
+    /// 먼저 뜬 프로세스가 잠시 기다리며 나머지 경로를 받아, 하나의 ZIP으로 묶습니다.
+    /// </summary>
+    private static async Task CollectAndCreateAsync(string firstPath)
+    {
+        using var mutex = new Mutex(true, @"Local\" + CollectName, out bool leader);
+        if (!leader)
         {
-            throw new FileNotFoundException("파일이나 폴더를 찾을 수 없습니다.", full);
+            try
+            {
+                using var client = new System.IO.Pipes.NamedPipeClientStream(".", CollectName, System.IO.Pipes.PipeDirection.Out);
+                await client.ConnectAsync(5000);
+                using var writer = new StreamWriter(client, new System.Text.UTF8Encoding(false)) { AutoFlush = true };
+                await writer.WriteLineAsync(firstPath);
+            }
+            catch (Exception)
+            {
+                // 대표 프로세스가 이미 끝났다면 이 항목만 따로 압축합니다.
+                await RunCreateAsync([firstPath]);
+            }
+
+            return;
         }
 
+        var paths = new List<string> { firstPath };
+        DateTime deadline = DateTime.UtcNow.AddMilliseconds(900);
+        while (DateTime.UtcNow < deadline)
+        {
+            using var server = new System.IO.Pipes.NamedPipeServerStream(
+                CollectName, System.IO.Pipes.PipeDirection.In, 1,
+                System.IO.Pipes.PipeTransmissionMode.Byte, System.IO.Pipes.PipeOptions.Asynchronous);
+            Task wait = server.WaitForConnectionAsync();
+            Task finished = await Task.WhenAny(wait, Task.Delay(deadline - DateTime.UtcNow));
+            if (finished != wait)
+            {
+                _ = wait.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                break;
+            }
+
+            using var reader = new StreamReader(server, new System.Text.UTF8Encoding(false));
+            string? line = await reader.ReadLineAsync();
+            if (!string.IsNullOrWhiteSpace(line)) paths.Add(line);
+            deadline = DateTime.UtcNow.AddMilliseconds(600);
+        }
+
+        mutex.ReleaseMutex();
+        await RunCreateAsync(paths);
+    }
+
+    private static async Task RunCreateAsync(IReadOnlyList<string> sourcePaths)
+    {
+        var sources = sourcePaths.Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        foreach (string item in sources)
+        {
+            if (!File.Exists(item) && !Directory.Exists(item))
+            {
+                throw new FileNotFoundException("파일이나 폴더를 찾을 수 없습니다.", item);
+            }
+        }
+
+        string full = sources[0];
         string trimmed = full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         string directory = Path.GetDirectoryName(trimmed)
             ?? throw new IOException("이 위치(드라이브 최상위)에서는 압축 파일을 만들 수 없습니다. 하위 폴더를 선택해 주세요.");
 
         // 폴더 이름의 점(my.project)을 확장자로 오해하지 않습니다.
-        string name = File.Exists(full) ? Path.GetFileNameWithoutExtension(full) : Path.GetFileName(trimmed);
+        // 여러 항목이면 그 항목들이 들어 있는 폴더 이름을 씁니다.
+        string name = sources.Count > 1
+            ? Path.GetFileName(directory.TrimEnd(Path.DirectorySeparatorChar))
+            : File.Exists(full) ? Path.GetFileNameWithoutExtension(full) : Path.GetFileName(trimmed);
         string outputName = string.IsNullOrEmpty(name) ? "압축" : name;
         string output = Path.Combine(directory, outputName + ".zip");
 
@@ -220,7 +278,7 @@ internal static class ShellCommands
         bool ok = await ProgressDialog.RunAsync(null!, "압축하는 중입니다", async (progress, token) =>
         {
             created = await Task.Run(
-                () => ZipWriter.Create(output, [full], new CreationOptions(), progress, token), token);
+                () => ZipWriter.Create(output, sources, new CreationOptions(), progress, token), token);
         });
 
         if (ok && created is not null)

@@ -17,7 +17,7 @@
 
         <TextBlock Text="탐색기 우클릭 메뉴" FontWeight="SemiBold" />
         <CheckBox x:Name="ShellMenuBox" Margin="0,8,0,0"
-                  Content="'왕집: 여기에 풀기' (ZIP·7z·RAR·tar 등)와 '왕집: 이 폴더 압축' 메뉴를 추가합니다" />
+                  Content="'왕집: 여기에 풀기' (ZIP·7z·RAR·tar 등), 모든 파일·폴더의 '왕집: ZIP으로 압축' 메뉴를 추가합니다" />
         <TextBlock Text="Windows 11에서는 '더 많은 옵션 표시' 아래에 나타납니다."
                    Foreground="{StaticResource TextSecondaryBrush}" Margin="22,2,0,0" />
 

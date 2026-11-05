@@ -47,7 +47,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 [Tasks]
 Name: "desktopicon"; Description: "{#MyAppShortName} 바탕 화면 바로 가기 만들기(&D)"; GroupDescription: "추가 작업:"; Flags: unchecked
 Name: "fileassoc"; Description: "압축 파일 형식(zip, 7z, rar 등)의 '연결 프로그램' 목록에 왕집 등록(&A)"; GroupDescription: "추가 작업:"
-Name: "shellmenu"; Description: "탐색기 마우스 오른쪽 메뉴에 '여기에 풀기 / 이 폴더 압축' 추가(&M) (Win11은 '여러 항목 표시' 아래)"; GroupDescription: "추가 작업:"
+Name: "shellmenu"; Description: "탐색기 마우스 오른쪽 메뉴에 '여기에 풀기 / ZIP으로 압축' 추가(&M) (Win11은 '여러 항목 표시' 아래)"; GroupDescription: "추가 작업:"
 
 [Languages]
 Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
@@ -66,6 +66,10 @@ Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipEx
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
 ; 폴더: 압축하기
+; 모든 파일: 왕집으로 압축 (여러 개를 선택하면 하나의 ZIP으로 묶음)
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "왕집: ZIP으로 압축"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate"; ValueType: string; ValueName: ""; ValueData: "왕집: 이 폴더 압축"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
@@ -139,6 +143,7 @@ Root: HKCU; Subkey: "Software\Classes\WangZip.Archive"; ValueType: none; Flags: 
 Root: HKCU; Subkey: "Software\Classes\Applications\WangZip.exe"; ValueType: none; Flags: dontcreatekey uninsdeletekey
 Root: HKCU; Subkey: "Software\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
 Root: HKCU; Subkey: "Software\RegisteredApplications"; ValueType: none; ValueName: "WangZip"; Flags: dontcreatekey uninsdeletevalue
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress"; ValueType: none; Flags: dontcreatekey uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate"; ValueType: none; Flags: dontcreatekey uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZipCreateBackground"; ValueType: none; Flags: dontcreatekey uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\zipfile\shell\WangZipExtract"; ValueType: none; Flags: dontcreatekey uninsdeletekey
