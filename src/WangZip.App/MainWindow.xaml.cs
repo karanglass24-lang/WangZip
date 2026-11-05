@@ -29,7 +29,7 @@ public partial class MainWindow : Window
         _viewModel.QuickDestinationIndex = QuickDestCombo.SelectedIndex;
 
         AutoUpdateMenu.IsChecked = _settings.AutoUpdate;
-        Loaded += (_, _) => _ = RunUpdateCheckAsync(promptEvenWithoutUpdate: false, manual: false);
+        Loaded += (_, _) => _ = RunUpdateCheckAsync(manual: false);
     }
 
     public void OpenFromCommandLine(string path)
@@ -583,7 +583,7 @@ public partial class MainWindow : Window
     /// <summary>업데이트 확인(메뉴) — 직접 눌렀을 때.</summary>
     private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
     {
-        await RunUpdateCheckAsync(promptEvenWithoutUpdate: true, manual: true);
+        await RunUpdateCheckAsync(manual: true);
     }
 
     private void AutoUpdateMenu_Click(object sender, RoutedEventArgs e)
@@ -596,7 +596,7 @@ public partial class MainWindow : Window
     /// 최신 출시를 확인해 새 버전이면 안내하고 내려받아 설치합니다.
     /// manual=false(구동 시 자동 확인)는 자동 업데이트 설정이 켜져 있을 때만 동작합니다.
     /// </summary>
-    private async Task RunUpdateCheckAsync(bool promptEvenWithoutUpdate, bool manual)
+    private async Task RunUpdateCheckAsync(bool manual)
     {
         if (!manual && !_settings.AutoUpdate) return;
 
