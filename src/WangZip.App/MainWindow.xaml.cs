@@ -20,13 +20,8 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         DataContext = _viewModel;
-        EncodingCombo.ItemsSource = MainViewModel.EncodingOptions;
-        EncodingCombo.SelectedIndex = 0;
         _viewModel.CurrentMode = _encodingMode;
-
-        QuickDestCombo.ItemsSource = MainViewModel.QuickDestinations;
-        QuickDestCombo.SelectedIndex = Math.Clamp(_settings.QuickDestination, 0, MainViewModel.QuickDestinations.Count - 1);
-        _viewModel.QuickDestinationIndex = QuickDestCombo.SelectedIndex;
+        UpdateEncodingMenuChecks();
 
         AutoUpdateMenu.IsChecked = _settings.AutoUpdate;
         Loaded += (_, _) => _ = RunUpdateCheckAsync(manual: false);
@@ -76,6 +71,7 @@ public partial class MainWindow : Window
             if (container is not null)
             {
                 container.IsExpanded = true;
+                container.IsSelected = true;
             }
         }
     }
@@ -461,12 +457,14 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void Encoding_Changed(object sender, SelectionChangedEventArgs e)
+    private async void EncodingMenu_Click(object sender, RoutedEventArgs e)
     {
-        if (EncodingCombo.SelectedItem is not EncodingOption option) return;
+        if (sender is not MenuItem item || item.Tag is not string tag) return;
+        if (!Enum.TryParse(tag, out NameEncodingMode mode)) return;
 
-        _encodingMode = option.Mode;
-        _viewModel.CurrentMode = _encodingMode;
+        _encodingMode = mode;
+        _viewModel.CurrentMode = mode;
+        UpdateEncodingMenuChecks();
 
         if (_viewModel.HasArchive && _viewModel.ArchivePath is string path)
         {
@@ -474,11 +472,13 @@ public partial class MainWindow : Window
         }
     }
 
-    private void QuickDest_Changed(object sender, SelectionChangedEventArgs e)
+    /// <summary>인코딩 메뉴는 항상 하나만 선택된 상태로 유지합니다.</summary>
+    private void UpdateEncodingMenuChecks()
     {
-        _viewModel.QuickDestinationIndex = QuickDestCombo.SelectedIndex;
-        _settings.QuickDestination = QuickDestCombo.SelectedIndex;
-        _settings.Save();
+        EncodingAutoMenu.IsChecked = _encodingMode == NameEncodingMode.Auto;
+        EncodingUtf8Menu.IsChecked = _encodingMode == NameEncodingMode.Utf8;
+        EncodingCp949Menu.IsChecked = _encodingMode == NameEncodingMode.Cp949;
+        EncodingRawMenu.IsChecked = _encodingMode == NameEncodingMode.Raw;
     }
 
     private void FolderTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -497,11 +497,93 @@ public partial class MainWindow : Window
         container?.SetValue(System.Windows.Controls.Primitives.Selector.IsSelectedProperty, true);
     }
 
-    /// <summary>현재 폴더 대신 전체 항목목록 보기.</summary>
-    private async void EntryGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    /// <summary>폴더를 두 번 누르면 그 폴더로 들어가고, 왼쪽 폴더 트리도 함께 펼칩니다.</summary>
+    private void EntryGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (EntryGrid.SelectedItem is not EntryRow row || row.IsDirectory) return;
+        if (EntryGrid.SelectedItem is not EntryRow row) return;
 
+        if (row.IsDirectory)
+        {
+            NavigateIntoFolder(row.Info.Name.TrimEnd('/'));
+            return;
+        }
+
+        _ = PreviewSelectedAsync(row);
+    }
+
+    private void NavigateIntoFolder(string folderPath)
+    {
+        _viewModel.SelectFolder(folderPath);
+        SelectTreeNode(folderPath);
+        EntryGrid.SelectedItems.Clear();
+        EntryGrid.Focus();
+    }
+
+    /// <summary>지정한 경로의 폴더 노드까지 트리를 펼치고 선택합니다.</summary>
+    private void SelectTreeNode(string folderPath, bool retried = false)
+    {
+        if (_viewModel.TreeRoots.Count == 0) return;
+
+        var chain = new List<FolderNode>();
+        if (!BuildNodeChain(_viewModel.TreeRoots[0], folderPath, chain)) return;
+
+        ItemsControl parent = FolderTree;
+        TreeViewItem? container = null;
+
+        foreach (FolderNode node in chain)
+        {
+            parent.UpdateLayout();
+            container = parent.ItemContainerGenerator.ContainerFromItem(node) as TreeViewItem;
+            if (container is null)
+            {
+                parent.UpdateLayout();
+                container = parent.ItemContainerGenerator.ContainerFromItem(node) as TreeViewItem;
+            }
+
+            if (container is null)
+            {
+                // 컨테이너가 아직 만들어지지 않았으면 레이아웃이 끝난 뒤 한 번만 다시 시도합니다.
+                if (!retried)
+                {
+                    Dispatcher.BeginInvoke(
+                        System.Windows.Threading.DispatcherPriority.Loaded,
+                        () => SelectTreeNode(folderPath, retried: true));
+                }
+
+                return;
+            }
+
+            container.IsExpanded = true;
+            container.UpdateLayout();
+            parent = container;
+        }
+
+        if (container is null) return;
+
+        container.IsSelected = true;
+        container.BringIntoView();
+    }
+
+    private static bool BuildNodeChain(FolderNode node, string target, List<FolderNode> chain)
+    {
+        chain.Add(node);
+
+        if (string.Equals(node.FullPath, target, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        foreach (FolderNode child in node.Children)
+        {
+            if (BuildNodeChain(child, target, chain)) return true;
+        }
+
+        chain.RemoveAt(chain.Count - 1);
+        return false;
+    }
+
+    private async Task PreviewSelectedAsync(EntryRow row)
+    {
         try
         {
             Mouse.OverrideCursor = Cursors.Wait;

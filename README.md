@@ -8,7 +8,7 @@
 - 플랫폼: Windows 11 우선 (Windows 10은 최선 노력 지원)
 - 런타임: .NET 10 / WPF
 
-> **현재 상태: v0.5 개발판.** ZIP 읽기/쓰기와 한글 파일명 복원, 암호 걸린 압축 해제,
+> **현재 상태: v0.6 개발판.** ZIP 읽기/쓰기와 한글 파일명 복원, 암호 걸린 압축 해제,
 > **AES-256 암호 걸어 압축 만들기**, CLI, WPF UI가 동작합니다.
 > 설치형·포터블 배포본은 [Releases](https://github.com/karanglass24-lang/WangZip/releases)에 있습니다.
 > 분할 압축·Win11 새 우클릭 메뉴는 아직 없습니다. 아래 [제한 사항](#제한-사항)을 참고하세요.
@@ -37,10 +37,10 @@ WangZip은 다음 원칙으로 그 문제를 없앱니다.
 소스 빌드 없이 쓰려면 [Releases](https://github.com/karanglass24-lang/WangZip/releases)에서 받습니다.
 둘 다 자체 포함 빌드라 별도 .NET 설치가 필요 없습니다.
 
-- **설치형(권장)**: `WangZip-0.5.0-setup.exe` 실행. 폴더 선택, 시작 메뉴 바로 가기,
+- **설치형(권장)**: `WangZip-0.6.0-setup.exe` 실행. 폴더 선택, 시작 메뉴 바로 가기,
   바탕 화면 바로 가기(선택 사항), 프로그램 제거 등록까지 해 줍니다.
   관리자 권한 없이 사용자 단위(`LocalAppData\Programs\WangZip`)에 설치됩니다.
-- **포터블**: `WangZip-0.5.0-win-x64.zip`을 풀고 `WangZip.exe`를 실행.
+- **포터블**: `WangZip-0.6.0-win-x64.zip`을 풀고 `WangZip.exe`를 실행.
 
 ### 1. .NET 10 SDK 준비 (소스 빌드할 때만)
 
@@ -83,7 +83,7 @@ powershell -ExecutionPolicy Bypass -File .\dotnet-install.ps1 -Channel 10.0 -Ins
 .\publish.ps1 -Zip       # ZIP까지 생성
 ```
 
-결과는 `artifacts/WangZip-0.5.0-win-x64/`에 생성됩니다.
+결과는 `artifacts/WangZip-0.6.0-win-x64/`에 생성됩니다.
 
 - `WangZip.exe` — GUI
 - `cli/wangzip.exe` — CLI (Windows는 대소문자를 구분하지 않아 `WangZip.exe`와 같은 폴더에 둘 수 없습니다)
@@ -96,7 +96,7 @@ powershell -ExecutionPolicy Bypass -File .\dotnet-install.ps1 -Channel 10.0 -Ins
 .\installer\build-installer.ps1
 ```
 
-`artifacts/WangZip-0.5.0-setup.exe`가 만들어집니다 (약 70MB, 한국어 설치 마법사).
+`artifacts/WangZip-0.6.0-setup.exe`가 만들어집니다 (약 70MB, 한국어 설치 마법사).
 배포본 폴더가 있으면 그대로 쓰고(`-SkipPublish`로 재사용), 없으면 자동으로 `publish.ps1`을 먼저 실행합니다.
 
 사전 준비 — Inno Setup 7을 `.tools\inno`에 사용자 단위로 설치:
@@ -280,7 +280,8 @@ docs/
 | v0.2 | 암호 걸린 압축 풀기(ZIP ZipCrypto/WinZip AES, 7z), 크래시 수정, 잠금/정리 보강 |
 | v0.3 | 리본형 도구 모음, 폴더 트리, 압축 풀기 흐름, ZIP 항목 추가/삭제, 탐색기 우클릭 메뉴(고전) |
 | v0.4 | 압축 풀기 대상 콤보(대화상자 이동), 레이아웃/콤보 정렬 수정, 자동 업데이트 |
-| v0.5 (현재) | 암호 걸어 ZIP 만들기(AES-256), CLI `--password` |
+| v0.5 | 암호 걸어 ZIP 만들기(AES-256), CLI `--password` |
+| v0.6 (현재) | 폴더 더블클릭 탐색·트리 수정, 폴더 항목 기록, 도구 메뉴 정리, 새 아이콘 |
 | 다음 | Win11 새 콘텍스트 메뉴, 7z/TAR 쓰기, 분할 ZIP, 드래그 아웃 |
 
 자세한 설계 배경과 검토 결과는 [docs/DESIGN.md](docs/DESIGN.md)를 참고하세요.

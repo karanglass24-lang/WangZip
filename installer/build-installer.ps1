@@ -1,14 +1,15 @@
-# WangZip 설치 프로그램 빌드
+﻿# WangZip 설치 프로그램 빌드
 #   .\installer\build-installer.ps1
 # 필요: .tools\inno\ISCC.exe (Inno Setup 7, README 참고) + publish.ps1 결과물
 [CmdletBinding()]
 param(
-    [switch]$SkipPublish
+    [switch]$SkipPublish,
+    [switch]$TestBuild   # 실제 설치와 AppId/폴더가 분리된 테스트용 setup 생성
 )
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
-$version = '0.5.0'
+$version = '0.6.0'
 
 $publishDir = Join-Path $root "artifacts\WangZip-$version-win-x64"
 if (-not $SkipPublish -and -not (Test-Path (Join-Path $publishDir 'WangZip.exe'))) {
@@ -25,7 +26,9 @@ if (-not (Test-Path $iscc)) {
 }
 
 $iss = Join-Path $PSScriptRoot 'wangzip.iss'
-& $iscc $iss
+$isccArgs = @()
+if ($TestBuild) { $isccArgs += '/DTestBuild' }
+& $iscc @isccArgs $iss
 if ($LASTEXITCODE -ne 0) { throw 'ISCC 컴파일 실패' }
 
 $out = Join-Path $root "artifacts\WangZip-$version-setup.exe"

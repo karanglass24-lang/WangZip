@@ -25,7 +25,7 @@ public class ZipRoundTripTests
             CancellationToken.None);
 
         Assert.True(File.Exists(zip));
-        Assert.Equal(2, created.EntryCount);
+        Assert.Equal(4, created.EntryCount); // 파일 2 + 폴더 항목 2
 
         using var source = ZipArchiveSource.Open(zip, NameEncodingMode.Auto);
         Assert.Contains("작업/문서/보고서.txt", source.Entries.Select(entry => entry.Name));
@@ -212,5 +212,53 @@ public class ZipRoundTripTests
         }
 
         return -1;
+    }
+}
+
+public class FolderEntryAndTreeTests
+{
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Created_zip_records_folder_entries_including_empty(bool encrypted)
+    {
+        using var work = new TempDir();
+        using var output = new TempDir();
+        work.Write("루트/a/b/파일.txt", "x");
+        Directory.CreateDirectory(work.File("루트/빈폴더"));
+
+        string zip = output.File("dirs.zip");
+        ZipWriter.Create(
+            zip,
+            [work.File("루트")],
+            new CreationOptions { Password = encrypted ? "pw1234" : null },
+            null,
+            CancellationToken.None);
+
+        using var source = ZipArchiveSource.Open(zip, NameEncodingMode.Auto);
+        var dirs = source.Entries.Where(e => e.IsDirectory).Select(e => e.Name.TrimEnd('/')).ToHashSet();
+        Assert.Contains("루트", dirs);
+        Assert.Contains("루트/a", dirs);
+        Assert.Contains("루트/a/b", dirs);
+        Assert.Contains("루트/빈폴더", dirs);
+    }
+
+    [Fact]
+    public void Tree_builder_links_nested_folders_from_dirs_and_files()
+    {
+        FolderNode root = FolderTreeBuilder.Build("t.zip",
+        [
+            ("DB/", true),
+            ("DB/sub/", true),
+            ("EX/x/y.txt", false),
+            ("top.txt", false),
+        ]);
+
+        Assert.True(root.IsRoot);
+        Assert.Equal(["DB", "EX"], root.Children.Select(c => c.Name).ToArray());
+        Assert.Equal("DB/sub", root.Children[0].Children.Single().FullPath);
+        FolderNode x = root.Children[1].Children.Single();
+        Assert.Equal("EX/x", x.FullPath);
+        Assert.Empty(x.Children);
     }
 }

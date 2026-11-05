@@ -8,6 +8,9 @@
     <SolidColorBrush x:Key="BorderBrush" Color="#E3E7ED" />
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1E2430" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#6B7280" />
+    <SolidColorBrush x:Key="FolderIconBrush" Color="#D1960F" />
+    <SolidColorBrush x:Key="TreeSelectedBrush" Color="#DCE8FF" />
+    <SolidColorBrush x:Key="TreeHoverBrush" Color="#F5F8FE" />
 
     <Style TargetType="Window">
         <Setter Property="FontFamily" Value="Malgun Gothic, Segoe UI" />
@@ -40,7 +43,7 @@
                             <Setter TargetName="Root" Property="Background" Value="#EAF1FF" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="#DCE8FF" />
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource TreeSelectedBrush}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.4" />
@@ -113,10 +116,10 @@
         <Setter Property="BorderThickness" Value="0" />
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="#F5F8FE" />
+                <Setter Property="Background" Value="{StaticResource TreeHoverBrush}" />
             </Trigger>
             <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="#DCE8FF" />
+                <Setter Property="Background" Value="{StaticResource TreeSelectedBrush}" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -233,7 +236,7 @@
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding Icon}"
                                        FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                       Foreground="#D1960F"
+                                       Foreground="{StaticResource FolderIconBrush}"
                                        VerticalAlignment="Center" Margin="0,0,6,0" />
                             <TextBlock Text="{Binding Name}"
                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -241,10 +244,10 @@
                     </Border>
                     <DataTemplate.Triggers>
                         <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}" Value="True">
-                            <Setter TargetName="ItemBorder" Property="Background" Value="#DCE8FF" />
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource TreeSelectedBrush}" />
                         </DataTrigger>
                         <Trigger SourceName="ItemBorder" Property="IsMouseOver" Value="True">
-                            <Setter TargetName="ItemBorder" Property="Background" Value="#F5F8FE" />
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource TreeHoverBrush}" />
                         </Trigger>
                     </DataTemplate.Triggers>
                 </DataTemplate>

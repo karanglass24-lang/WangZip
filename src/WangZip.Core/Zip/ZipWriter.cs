@@ -152,26 +152,22 @@ public static class ZipWriter
                     AttributesToSkip = FileAttributes.ReparsePoint,
                 };
 
-                var files = Directory.EnumerateFiles(trimmed, "*", enumerationOptions).ToList();
-                if (files.Count == 0 && options.IncludeEmptyDirectories)
+                // 폴더 항목을 항상 기록합니다 (탐색기 호환, 빈 폴더 보존, 하위 폴더 행 표시).
+                // 내용이 있는 폴더는 항상, 빈 폴더는 옵션에 따라 기록합니다.
+                AddDirectoryEntry(items, usedNames, trimmed, baseDirectory);
+
+                foreach (string directory in Directory.EnumerateDirectories(trimmed, "*", enumerationOptions))
                 {
-                    AddDirectoryEntry(items, usedNames, trimmed, baseDirectory);
+                    bool empty = !Directory.EnumerateFileSystemEntries(directory).Any();
+                    if (!empty || options.IncludeEmptyDirectories)
+                    {
+                        AddDirectoryEntry(items, usedNames, directory, baseDirectory);
+                    }
                 }
 
-                foreach (string file in files)
+                foreach (string file in Directory.EnumerateFiles(trimmed, "*", enumerationOptions))
                 {
                     AddFile(items, usedNames, file, baseDirectory, outputPath, warnings);
-                }
-
-                if (options.IncludeEmptyDirectories)
-                {
-                    foreach (string directory in Directory.EnumerateDirectories(trimmed, "*", enumerationOptions))
-                    {
-                        if (!Directory.EnumerateFileSystemEntries(directory).Any())
-                        {
-                            AddDirectoryEntry(items, usedNames, directory, baseDirectory);
-                        }
-                    }
                 }
             }
             else

@@ -27,7 +27,7 @@ public class ZipRewriterTests
 
         using (var source = ZipArchiveSource.Open(zip, NameEncodingMode.Auto))
         {
-            Assert.Equal(2, source.Entries.Count);
+            Assert.Equal(3, source.Entries.Count);
 
             // 추가
             var added = ZipRewriter.AddEntries(zip, [Path.Combine(dir, "extra.txt")]);
@@ -37,7 +37,7 @@ public class ZipRewriterTests
         byte[] extraContent = ReadBytes(Path.Combine(dir, "extra.txt"));
         using (var reopened = ZipArchiveSource.Open(zip, NameEncodingMode.Auto))
         {
-            Assert.Equal(3, reopened.Entries.Count);
+            Assert.Equal(4, reopened.Entries.Count);
             Assert.Contains(reopened.Entries, entry => entry.Name == "extra.txt");
 
             int checkedCount = reopened.Verify(null, CancellationToken.None);
@@ -58,7 +58,7 @@ public class ZipRewriterTests
 
         using (var final = ZipArchiveSource.Open(zip, NameEncodingMode.Auto))
         {
-            Assert.Equal(2, final.Entries.Count);
+            Assert.Equal(3, final.Entries.Count);
             int checkedCount = final.Verify(null, CancellationToken.None);
             Assert.Equal(2, checkedCount);
 
@@ -85,7 +85,7 @@ public class ZipRewriterTests
         System.Console.WriteLine("scratchzip=" + zip);
 
         using var source = ZipArchiveSource.Open(zip, NameEncodingMode.Auto);
-        Assert.Equal(2, source.Entries.Count);   // 빈 폴더 항목 0개 + 파일 2개
+        Assert.Equal(4, source.Entries.Count);   // 폴더 항목 2개 + 파일 2개
         var options = new ExtractionOptions { DestinationDirectory = Path.Combine(dir, "out") };
         source.Extract([], options, null, CancellationToken.None);
         Assert.Equal(single, ReadBytes(Path.Combine(dir, "out", "one.dat")));

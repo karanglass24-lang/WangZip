@@ -25,22 +25,7 @@ public abstract class ObservableObject : INotifyPropertyChanged
     }
 }
 
-public sealed record EncodingOption(string Label, NameEncodingMode Mode);
-
-/// <summary>빠른 압축 풀기 목적지. Resolve가 null이면 압축 파일 옆 폴더입니다.</summary>
 public sealed record QuickDestination(string Label, Func<string>? Resolve, string Hint);
-
-/// <summary>나무형 폴더 트리 노드.</summary>
-public sealed class FolderNode
-{
-    public string Name { get; init; } = "";
-    /// <summary>루트부터 "/" 구분자로 이어진 전체 경로 (루트는 빈 문자열).</summary>
-    public string FullPath { get; init; } = "";
-    public ObservableCollection<FolderNode> Children { get; } = [];
-    public bool IsRoot { get; init; }
-
-    public string Icon => IsRoot ? "\uE8A5" : "\uE8B7";
-}
 
 public sealed class EntryRow
 {
@@ -72,14 +57,6 @@ public sealed class EntryRow
 
 public sealed class MainViewModel : ObservableObject, IDisposable
 {
-    public static IReadOnlyList<EncodingOption> EncodingOptions { get; } =
-    [
-        new("자동 감지 (권장)", NameEncodingMode.Auto),
-        new("UTF-8", NameEncodingMode.Utf8),
-        new("CP949 / EUC-KR (구형)", NameEncodingMode.Cp949),
-        new("원본 바이트", NameEncodingMode.Raw),
-    ];
-
     public static IReadOnlyList<QuickDestination> QuickDestinations { get; } =
     [
         new("압축 파일 옆 폴더 (권장)", null, "압축 파일과 같은 이름의 폴더를 새로 만들어 풉니다."),
@@ -95,7 +72,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private string _pathText = "";
     private bool _isBusy;
     private string? _currentPath = "";
-    private int _quickDestinationIndex;
     private List<EntryRow> _allRows = [];
 
     public ObservableCollection<EntryRow> Entries { get; } = [];
@@ -143,27 +119,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         get => _isBusy;
         private set => Set(ref _isBusy, value);
     }
-
-    /// <summary>빠른 압축 풀기 목적지 (AppSettings에 유지).</summary>
-    public int QuickDestinationIndex
-    {
-        get => _quickDestinationIndex;
-        set
-        {
-            if (Set(ref _quickDestinationIndex, value))
-            {
-                var destinations = QuickDestinations;
-                string label = value >= 0 && value < destinations.Count ? destinations[value].Label : "";
-                StatusText = HasArchive ? $"압축 풀기 위치: {label}" : _statusText;
-                OnPropertyChanged(nameof(SelectedQuickHint));
-            }
-        }
-    }
-
-    public string SelectedQuickHint =>
-        QuickDestinationIndex >= 0 && QuickDestinationIndex < QuickDestinations.Count
-            ? QuickDestinations[QuickDestinationIndex].Hint
-            : "";
 
     public string DefaultExtractDirectory
     {
@@ -216,78 +171,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private void RebuildTree()
     {
         TreeRoots.Clear();
-
-        var root = new FolderNode
-        {
-            IsRoot = true,
-            Name = ArchivePath is null ? "압축 파일" : Path.GetFileName(ArchivePath),
-            FullPath = "",
-        };
-
-        var map = new Dictionary<string, FolderNode>(StringComparer.OrdinalIgnoreCase)
-        {
-            [""] = root,
-        };
-
-        // 디렉터리 항목 먼저 등록 (파일 경로로도 폴더 조상을 자동 생성)
-        void Ensures(string path)
-        {
-            while (!string.IsNullOrEmpty(path))
-            {
-                if (map.ContainsKey(path)) break;
-                int slash = path.LastIndexOf('/');
-                string parent = slash <= 0 ? "" : path[..slash];
-                EnsureFolder(map, path, parent);
-                path = parent;
-            }
-        }
-
-        foreach (var row in _allRows)
-        {
-            string path = row.Info.Name.TrimEnd('/');
-            int slash = path.LastIndexOf('/');
-            string parent = slash <= 0 ? "" : path[..slash];
-            Ensures(parent);
-            if (row.Info.IsDirectory)
-            {
-                EnsureFolder(map, path, parent);
-            }
-        }
-
-        // 부모-자식 연결 후 폴더順 정렬 (가나다 순)
-        foreach (var pair in map)
-        {
-            if (pair.Key == "") continue;
-            string path = pair.Key;
-            int slash = path.LastIndexOf('/');
-            string parent = slash <= 0 ? "" : path[..slash];
-            if (map.TryGetValue(parent, out var parentNode) && parentNode.Children.All(c => !c.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase)))
-            {
-                parentNode.Children.Add(pair.Value);
-            }
-        }
-
-        foreach (var pair in map)
-        {
-            var sorted = pair.Value.Children.OrderBy(c => c.Name, StringComparer.CurrentCulture).ToList();
-            pair.Value.Children.Clear();
-            foreach (var child in sorted) pair.Value.Children.Add(child);
-        }
-
-        TreeRoots.Add(root);
-    }
-
-    private static void EnsureFolder(
-        Dictionary<string, FolderNode> map, string path, string parent)
-    {
-        if (map.ContainsKey(path)) return;
-
-        string name = path;
-        int slash = path.LastIndexOf('/');
-        if (slash >= 0) name = path[(slash + 1)..];
-
-        var node = new FolderNode { Name = name, FullPath = path };
-        map[path] = node;
+        string rootName = ArchivePath is null ? "압축 파일" : Path.GetFileName(ArchivePath);
+        TreeRoots.Add(FolderTreeBuilder.Build(
+            rootName, _allRows.Select(r => (r.Info.Name, r.Info.IsDirectory))));
     }
 
     private void ApplyFilter()
@@ -446,22 +332,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             IsBusy = false;
         }
-    }
-
-    /// <summary>빠른 압축 풀기 목적지 결정.</summary>
-    public string ResolveQuickDestination()
-    {
-        var destination = QuickDestinationIndex >= 0 && QuickDestinationIndex < QuickDestinations.Count
-            ? QuickDestinations[QuickDestinationIndex]
-            : QuickDestinations[0];
-
-        if (destination.Resolve is { } resolver)
-        {
-            string path = resolver();
-            return Directory.Exists(path) ? path : DefaultExtractDirectory;
-        }
-
-        return DefaultExtractDirectory;
     }
 
     public async Task<string?> PreviewAsync(EntryRow row)

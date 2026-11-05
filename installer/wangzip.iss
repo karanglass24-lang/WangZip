@@ -4,7 +4,7 @@
 ; - 자체 포함 배포본(artifacts\WangZip-<버전>-win-x64)을 통째로 담아 .NET 설치가 필요 없게 합니다.
 ; - 사용자 단위 설치(권한 상승 없음, {autopf} → LocalAppData\Programs)를 씁니다.
 
-#define MyAppVersion "0.5.0"
+#define MyAppVersion "0.6.0"
 #define MyAppName "왕집 (WangZip)"
 #define MyAppShortName "왕집"
 #define MyAppExe "WangZip.exe"
@@ -12,7 +12,18 @@
 #define SourceDir "..\artifacts\WangZip-" + MyAppVersion + "-win-x64"
 
 [Setup]
+; 테스트 빌드(/DTestBuild)는 AppId·설치 폴더·그룹·출력 이름이 달라 실제 설치를 건드리지 않습니다.
+#ifdef TestBuild
+AppId={{B4F3D9E2-6C1A-4E8B-9D5F-2A7C0E1B8F31}
+DefaultDirName={autopf}\WangZip-Test
+DefaultGroupName={#MyAppName} 테스트
+OutputBaseFilename=WangZip-{#MyAppVersion}-TEST-setup
+#else
 AppId={{B4F3D9E2-6C1A-4E8B-9D5F-2A7C0E1B8F30}
+DefaultDirName={autopf}\WangZip
+DefaultGroupName={#MyAppName}
+OutputBaseFilename=WangZip-{#MyAppVersion}-setup
+#endif
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} v{#MyAppVersion}
@@ -20,8 +31,6 @@ AppPublisher=WangZip Project
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/issues
 AppUpdatesURL={#MyAppURL}/releases
-DefaultDirName={autopf}\WangZip
-DefaultGroupName={#MyAppName}
 UninstallDisplayName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExe}
 LicenseFile=..\LICENSE
@@ -31,7 +40,6 @@ SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
 OutputDir=..\artifacts
-OutputBaseFilename=WangZip-{#MyAppVersion}-setup
 CloseApplications=yes
 ArchitecturesInstallIn64BitMode=x64compatible
 
