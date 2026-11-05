@@ -9,7 +9,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
-$version = '0.6.2'
+$version = '0.6.3'
 
 $publishDir = Join-Path $root "artifacts\WangZip-$version-win-x64"
 if (-not $SkipPublish -and -not (Test-Path (Join-Path $publishDir 'WangZip.exe'))) {
