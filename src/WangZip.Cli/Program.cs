@@ -62,9 +62,11 @@ internal static class Program
 
         string archivePath = args[0];
         NameEncodingMode encoding = ParseEncoding(Value(args, "--encoding"));
+        string? password = Value(args, "--password");
         bool json = Has(args, "--json");
+        bool quiet = Has(args, "--quiet");
 
-        using IArchiveSource source = ArchiveService.Open(archivePath, encoding);
+        using IArchiveSource source = OpenArchiveInteractive(archivePath, encoding, password, quiet);
 
         if (json)
         {
@@ -104,9 +106,10 @@ internal static class Program
 
         foreach (ArchiveEntryInfo entry in source.Entries)
         {
+            string mark = entry.IsEncrypted ? " 🔒" : string.Empty;
             Console.WriteLine(
                 $"{entry.Index,6}  {entry.SizeText,12}  {entry.CompressedText,12}  " +
-                $"{entry.RatioText,7}  {entry.ModifiedText,16}  {entry.Name}");
+                $"{entry.RatioText,7}  {entry.ModifiedText,16}  {entry.Name}{mark}");
         }
 
         long totalSize = source.Entries.Sum(entry => entry.Size);
@@ -132,9 +135,10 @@ internal static class Program
         NameEncodingMode encoding = ParseEncoding(Value(args, "--encoding"));
         OverwritePolicy overwrite = ParseOverwrite(Value(args, "--overwrite"));
         string? selectText = Value(args, "--select");
+        string? password = Value(args, "--password");
         bool quiet = Has(args, "--quiet");
 
-        using IArchiveSource source = ArchiveService.Open(archivePath, encoding);
+        using IArchiveSource source = OpenArchiveInteractive(archivePath, encoding, password, quiet);
 
         destination ??= Path.Combine(
             Path.GetDirectoryName(Path.GetFullPath(archivePath))!,
@@ -173,6 +177,7 @@ internal static class Program
             {
                 DestinationDirectory = destination,
                 Overwrite = overwrite,
+                Password = password,
             },
             progress,
             cancellation.Token);
@@ -250,22 +255,24 @@ internal static class Program
 
         string archivePath = args[0];
         NameEncodingMode encoding = ParseEncoding(Value(args, "--encoding"));
+        string? password = Value(args, "--password");
+        bool quiet = Has(args, "--quiet");
 
-        using IArchiveSource source = ArchiveService.Open(archivePath, encoding);
+        using IArchiveSource source = OpenArchiveInteractive(archivePath, encoding, password, quiet);
         if (source is not ZipArchiveSource zip)
         {
             Console.WriteLine("검사는 ZIP 형식에서만 지원합니다. 항목 목록은 정상적으로 읽혔습니다.");
             return 0;
         }
 
-        int checkedCount = zip.Verify(null, CancellationToken.None);
+        int checkedCount = zip.Verify(null, CancellationToken.None, password);
         Console.WriteLine($"정상입니다. {checkedCount}개 항목의 CRC를 확인했습니다.");
         return 0;
     }
 
     private static int Version()
     {
-        Console.WriteLine("WangZip CLI 0.1.0 (GPL-3.0)");
+        Console.WriteLine("WangZip CLI 0.2.0 (GPL-3.0)");
         Console.WriteLine("압축 엔진: 직접 구현 ZIP + SharpCompress");
         return 0;
     }
@@ -277,6 +284,36 @@ internal static class Program
         return 1;
     }
 
+    /// <summary>암호 걸린 압축 파일일 때 화면에서 비밀번호를 한 번 묻고 다시 엽니다.</summary>
+    private static IArchiveSource OpenArchiveInteractive(
+        string archivePath, NameEncodingMode encoding, string? password, bool quiet)
+    {
+        while (true)
+        {
+            try
+            {
+                return ArchiveService.Open(archivePath, encoding, password);
+            }
+            catch (EncryptedArchiveException) when (password is null && !Console.IsOutputRedirected)
+            {
+                if (quiet)
+                {
+                    throw;
+                }
+
+                Console.Error.WriteLine("이 압축 파일은 비밀번호가 필요합니다. (--password 옵션으로도 지정 가능)");
+                Console.Error.Write("비밀번호: ");
+                string? typed = Console.ReadLine();
+                if (string.IsNullOrEmpty(typed))
+                {
+                    throw;
+                }
+
+                password = typed;
+            }
+        }
+    }
+
     private static int Usage(string message)
     {
         Console.Error.WriteLine(message);
@@ -286,17 +323,18 @@ internal static class Program
     private static void PrintHelp()
     {
         Console.WriteLine("""
-            WangZip - 광고 없는 오픈소스 압축 프로그램 (v0.1)
+            WangZip - 광고 없는 오픈소스 압축 프로그램 (v0.2)
 
             사용법:
-              wangzip list    <압축파일> [--encoding auto|utf8|cp949|raw] [--json]
-              wangzip extract <압축파일> [대상폴더] [--encoding ...] [--overwrite overwrite|skip|rename] [--select 이름1,이름2]
+              wangzip list    <압축파일> [--encoding auto|utf8|cp949|raw] [--json] [--password 비밀번호]
+              wangzip extract <압축파일> [대상폴더] [--encoding ...] [--overwrite overwrite|skip|rename] [--password 비밀번호]
               wangzip create  <출력.zip> <파일|폴더>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "설명"]
-              wangzip verify  <압축파일>
+              wangzip verify  <압축파일> [--password 비밀번호]
 
             예시:
               wangzip list "사진.zip"
               wangzip extract "사진.zip" "C:\Temp\사진" --encoding cp949
+              wangzip extract "비밀.zip" "C:\Temp\비밀" --password "1234"
               wangzip create "백업.zip" "C:\작업" --level optimal
             """);
     }

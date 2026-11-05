@@ -71,6 +71,12 @@ public sealed class ReaderArchiveSource : IArchiveSource
                 });
             }
         }
+        catch (Exception exception) when (exception is not ArchiveException && SharpCompressSource.IsPasswordError(exception))
+        {
+            throw new EncryptedArchiveException(
+                $"비밀번호가 필요하거나 올바르지 않습니다: {System.IO.Path.GetFileName(archivePath)}\n" +
+                "압축 풀기 화면이나 --password 옵션에 올바른 비밀번호를 입력해 주세요.");
+        }
         catch (Exception exception) when (exception is not ArchiveException)
         {
             throw new UnsupportedArchiveException(
@@ -113,7 +119,7 @@ public sealed class ReaderArchiveSource : IArchiveSource
 
         try
         {
-            using IReader reader = OpenReader(_archivePath, _password);
+            using IReader reader = OpenReader(_archivePath, options.Password ?? _password);
             int index = 0;
 
             while (reader.MoveToNextEntry())

@@ -34,4 +34,10 @@ public static class Crc32
     }
 
     public static uint Compute(ReadOnlySpan<byte> data) => Append(0, data);
+
+    /// <summary>
+    /// 최종 XOR 없이 1바이트를 반영합니다. (PKWARE ZipCrypto 키 갱신 등 내부 상태용)
+    /// </summary>
+    public static uint UpdateByte(uint crc, byte b) =>
+        Table[(crc ^ b) & 0xFF] ^ (crc >> 8);
 }

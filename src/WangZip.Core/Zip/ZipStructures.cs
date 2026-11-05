@@ -25,6 +25,12 @@ internal sealed class RawZipEntry
     public bool IsEncrypted;
     public bool IsSymlink;
     public byte[]? UnicodePathUtf8;
+    public byte? AesStrength;
+    public ushort? AesMethod;
+
+    public bool HasAes => AesStrength is not null;
+    /// <summary>중앙 디렉터리 Method(99 = AES) 대신 실제 압축 방식.</summary>
+    public ushort RealMethod => HasAes && AesMethod is ushort m ? m : Method;
 
     public DateTime ModifiedLocal => DosToDateTime(ModDate, ModTime);
 
@@ -122,6 +128,11 @@ internal static class ZipCentralDirectory
             TryReadUnicodePath(entry);
 
             entry.IsEncrypted = (entry.Flags & 0x0001) != 0;
+            if (ZipCryptography.FindAesExtension(entry.Extra) is { } aes)
+            {
+                entry.AesStrength = aes.Strength;
+                entry.AesMethod = aes.Method;
+            }
 
             entries.Add(entry);
         }

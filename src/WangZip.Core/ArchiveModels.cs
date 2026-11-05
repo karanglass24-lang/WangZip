@@ -88,6 +88,8 @@ public sealed class ExtractionOptions
     public bool CheckFreeSpace { get; set; } = true;
     /// <summary>압축 파일 안에서 중복/대소문자 충돌이 날 때의 처리 방식.</summary>
     public CollisionPolicy Collision { get; set; } = CollisionPolicy.Rename;
+    /// <summary>암호화 항목에 사용할 비밀번호. null이면 암호화 항목을 만나면 거부합니다.</summary>
+    public string? Password { get; set; }
 }
 
 public sealed class ExtractionResult

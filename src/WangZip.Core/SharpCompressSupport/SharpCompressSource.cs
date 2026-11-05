@@ -78,6 +78,12 @@ public sealed class SharpCompressSource : IArchiveSource
                 index++;
             }
         }
+        catch (Exception exception) when (exception is not ArchiveException && IsPasswordError(exception))
+        {
+            throw new EncryptedArchiveException(
+                $"비밀번호가 필요하거나 올바르지 않습니다: {System.IO.Path.GetFileName(archivePath)}\n" +
+                "압축 풀기 화면이나 --password 옵션에 올바른 비밀번호를 입력해 주세요.");
+        }
         catch (Exception exception) when (exception is not ArchiveException)
         {
             throw new UnsupportedArchiveException(
@@ -111,7 +117,8 @@ public sealed class SharpCompressSource : IArchiveSource
         var selected = new HashSet<int>(indices);
 
         long totalBytes;
-        using (IArchive probe = OpenArchive(_archivePath, _password))
+        string password = options.Password ?? _password;
+        using (IArchive probe = OpenArchive(_archivePath, password))
         {
             totalBytes = probe.Entries
                 .Where((entry, index) => !entry.IsDirectory && (all || selected.Contains(index)))
@@ -133,7 +140,7 @@ public sealed class SharpCompressSource : IArchiveSource
 
         try
         {
-            using IArchive archive = OpenArchive(_archivePath, _password);
+            using IArchive archive = OpenArchive(_archivePath, password);
             int index = 0;
 
             foreach (IArchiveEntry entry in archive.Entries)
@@ -291,6 +298,18 @@ public sealed class SharpCompressSource : IArchiveSource
         {
             return false;
         }
+    }
+
+    /// <summary>예외가 "비밀번호 문제"인지 대략 판별합니다 (7z/RAR/ZIP 암호화 관련).</summary>
+    internal static bool IsPasswordError(Exception exception)
+    {
+        string message = exception.Message;
+        return
+            message.Contains("password", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("encrypted", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("decrypt", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("cryptographic", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("hmac", StringComparison.OrdinalIgnoreCase);
     }
 
     public void Dispose()

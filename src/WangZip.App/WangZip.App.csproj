@@ -10,7 +10,7 @@
     <AssemblyName>WangZip</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Product>WangZip</Product>
     <AssemblyTitle>WangZip - 광고 없는 압축 프로그램</AssemblyTitle>
     <SatelliteResourceLanguages>ko;en</SatelliteResourceLanguages>
@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\app-icon.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Resource Include="Assets\app-icon.ico" />
   </ItemGroup>
 
 </Project>

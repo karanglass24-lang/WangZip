@@ -8,9 +8,9 @@
 - 플랫폼: Windows 11 우선 (Windows 10은 최선 노력 지원)
 - 런타임: .NET 10 / WPF
 
-> **현재 상태: v0.1 개발판.** ZIP 읽기/쓰기와 한글 파일명 복원, CLI, WPF UI가 동작합니다.
-> 설치형·포터블 배포본은 [Releases](https://github.com/karanglass24-lang/WangZip/releases)에 있습니다.
-> 암호·분할 압축·셸 확장(우클릭 메뉴)은 아직 없습니다. 아래 [제한 사항](#제한-사항)을 참고하세요.
+> **현재 상태: v0.2 개발판.** ZIP 읽기/쓰기와 한글 파일명 복원, CLI, WPF UI가 동작합니다.
+> 암호 걸린 압축 파일 풀기(ZIP ZipCrypto/WinZip AES, 7z 등)와 설치형·포터블 배포본은 [Releases](https://github.com/karanglass24-lang/WangZip/releases)에 있습니다.
+> 분할 압축·셸 확장(우클릭 메뉴)·압축 생성 암호는 아직 없습니다. 아래 [제한 사항](#제한-사항)을 참고하세요.
 
 ---
 
@@ -36,10 +36,10 @@ WangZip은 다음 원칙으로 그 문제를 없앱니다.
 소스 빌드 없이 쓰려면 [Releases](https://github.com/karanglass24-lang/WangZip/releases)에서 받습니다.
 둘 다 자체 포함 빌드라 별도 .NET 설치가 필요 없습니다.
 
-- **설치형(권장)**: `WangZip-0.1.0-setup.exe` 실행. 폴더 선택, 시작 메뉴 바로 가기,
+- **설치형(권장)**: `WangZip-0.2.0-setup.exe` 실행. 폴더 선택, 시작 메뉴 바로 가기,
   바탕 화면 바로 가기(선택 사항), 프로그램 제거 등록까지 해 줍니다.
   관리자 권한 없이 사용자 단위(`LocalAppData\Programs\WangZip`)에 설치됩니다.
-- **포터블**: `WangZip-0.1.0-win-x64.zip`을 풀고 `WangZip.exe`를 실행.
+- **포터블**: `WangZip-0.2.0-win-x64.zip`을 풀고 `WangZip.exe`를 실행.
 
 ### 1. .NET 10 SDK 준비 (소스 빌드할 때만)
 
@@ -82,7 +82,7 @@ powershell -ExecutionPolicy Bypass -File .\dotnet-install.ps1 -Channel 10.0 -Ins
 .\publish.ps1 -Zip       # ZIP까지 생성
 ```
 
-결과는 `artifacts/WangZip-0.1.0-win-x64/`에 생성됩니다.
+결과는 `artifacts/WangZip-0.2.0-win-x64/`에 생성됩니다.
 
 - `WangZip.exe` — GUI
 - `cli/wangzip.exe` — CLI (Windows는 대소문자를 구분하지 않아 `WangZip.exe`와 같은 폴더에 둘 수 없습니다)
@@ -95,7 +95,7 @@ powershell -ExecutionPolicy Bypass -File .\dotnet-install.ps1 -Channel 10.0 -Ins
 .\installer\build-installer.ps1
 ```
 
-`artifacts/WangZip-0.1.0-setup.exe`가 만들어집니다 (약 70MB, 한국어 설치 마법사).
+`artifacts/WangZip-0.2.0-setup.exe`가 만들어집니다 (약 70MB, 한국어 설치 마법사).
 배포본 폴더가 있으면 그대로 쓰고(`-SkipPublish`로 재사용), 없으면 자동으로 `publish.ps1`을 먼저 실행합니다.
 
 사전 준비 — Inno Setup 7을 `.tools\inno`에 사용자 단위로 설치:
@@ -110,10 +110,10 @@ powershell -c "& .\innosetup.exe /VERYSILENT /CURRENTUSER /DIR=\"$PWD\.tools\inn
 ## CLI 사용법
 
 ```text
-wangzip list    <압축파일> [--encoding auto|utf8|cp949|raw] [--json]
-wangzip extract <압축파일> [대상폴더] [--encoding ...] [--overwrite overwrite|skip|rename] [--select 이름1,이름2]
+wangzip list    <압축파일> [--encoding auto|utf8|cp949|raw] [--json] [--password 비밀번호]
+wangzip extract <압축파일> [대상폴더] [--encoding ...] [--overwrite overwrite|skip|rename] [--select 이름1,이름2] [--password 비밀번호]
 wangzip create  <출력.zip> <파일|폴더>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "설명"]
-wangzip verify  <압축파일>
+wangzip verify  <압축파일> [--password 비밀번호]
 ```
 
 예시:
@@ -205,9 +205,10 @@ ZIP은 파일명 인코딩이 통일되어 있지 않아 한국에서 특히 문
 현재 버전에서 **의도적으로 구현하지 않은** 것들입니다. README에 먼저 적어 두는 편이
 사용자 기대를 맞추는 데 낫다고 판단했습니다.
 
-- 암호가 걸린 ZIP/7z/RAR 열기 (v0.2 예정)
-- 분할 ZIP(`.z01`, `.001`), 분할 7z, 분할 RAR 읽기 (v0.2 예정)
-- 7z/TAR 쓰기 (v0.2 예정)
+- 암호가 걸린 압축 파일 풀기 — **지원** (ZIP ZipCrypto/WinZip AES, 7z/다른 형식은 라이브러리 경로로)
+  - 압축 파일 **생성 시 암호 걸기는 아직 지원하지 않습니다** (평문 ZIP만 생성)
+- 분할 ZIP(`.z01`, `.001`), 분할 7z, 분할 RAR 읽기 (v0.3 예정)
+- 7z/TAR 쓰기 (v0.3 예정)
 - 탐색기 우클릭 메뉴 / 파일 연결 (v0.3 예정)
 - 압축 파일에서 파일을 직접 드래그해 꺼내기 (셸 네임스페이스 확장, v0.3 예정)
 - 자동 업데이트 (v0.3 예정 — 보안 패치를 위해 필요)
@@ -230,7 +231,7 @@ src/
 installer/
   wangzip.iss            Inno Setup 설치 프로그램 정의
 tests/
-  WangZip.Core.Tests/    xUnit 테스트 35개
+  WangZip.Core.Tests/    xUnit 테스트 43개
 docs/
   DESIGN.md             설계 결정과 로드맵
 ```
@@ -259,6 +260,10 @@ docs/
 - zip-slip 거부, 예약 장치명, ADS, 대소문자 충돌, 긴 경로
 - 생성→목록→추출 라운드트립, 빈 폴더 보존, 덮어쓰기 정책, CRC 손상 감지
 - `.tar.gz` 중첩 압축 목록/추출
+- 암호화 ZIP: PKWARE ZipCrypto(STORE/DEFLATE), WinZip AES-128/256 라운드트립,
+  잘못된 비밀번호 거부, 암호 항목 무결성 검사
+- 외부 호환: python zipfile이 왕집이 만든 ZipCrypto 파일을 읽고,
+  pyzipper(7-Zip 호환 AE-2)가 만든 AES ZIP을 왕집이 풀 수 있음
 
 ---
 
@@ -266,9 +271,9 @@ docs/
 
 | 버전 | 내용 |
 |---|---|
-| v0.1 (현재) | ZIP 읽기/쓰기, 한글 파일명, CLI, WPF UI, 안전 계층, 설치형 설치 프로그램 |
-| v0.2 | 암호(ZIP AES/ZipCrypto, 7z AES), 분할 ZIP, 7z/TAR 쓰기, 대용량 실측 |
-| v0.3 | 탐색기 우클릭 메뉴(Win11 sparse package), 파일 연결, 자동 업데이트, 드래그 아웃 |
+| v0.1 | ZIP 읽기/쓰기, 한글 파일명, CLI, WPF UI, 안전 계층, 설치형 설치 프로그램 |
+| v0.2 (현재) | 암호 걸린 압축 풀기(ZIP ZipCrypto/WinZip AES, 7z), 크래시 수정, 잠금/정리 보강 |
+| v0.3 | 암호 분할 ZIP 읽기 완성, 7z/TAR 쓰기, 크래시 없는 암호 생성, 탐색기 메뉴/파일 연결 |
 | v0.4 | ALZ/EGG 조사 결과 반영, 셸 네임스페이스 확장, 미리보기 강화 |
 
 자세한 설계 배경과 검토 결과는 [docs/DESIGN.md](docs/DESIGN.md)를 참고하세요.

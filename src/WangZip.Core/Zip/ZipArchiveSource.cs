@@ -101,11 +101,11 @@ public sealed class ZipArchiveSource : IArchiveSource
         List<RawZipEntry> selected = Select(indices);
 
         RawZipEntry? encrypted = selected.FirstOrDefault(item => item.IsEncrypted);
-        if (encrypted is not null)
+        if (encrypted is not null && options.Password is null)
         {
             throw new EncryptedArchiveException(
                 $"암호가 설정된 항목이 있습니다: {encrypted.DecodedName}\n" +
-                "암호 지원은 v0.2에서 추가될 예정입니다.");
+                "압축 풀기 화면에서 비밀번호를 입력한 뒤 다시 시도해 주세요.");
         }
 
         long totalBytes = selected
@@ -154,9 +154,9 @@ public sealed class ZipArchiveSource : IArchiveSource
                 continue;
             }
 
-            if (item.Method is not (0 or 8))
+            if (item.RealMethod is not (0 or 8))
             {
-                warnings.Add($"지원하지 않는 압축 방식({item.Method})이라 건너뜁니다: {item.DecodedName}");
+                warnings.Add($"지원하지 않는 압축 방식({item.RealMethod})이라 건너뜁니다: {item.DecodedName}");
                 skippedFiles++;
                 continue;
             }
@@ -199,14 +199,22 @@ public sealed class ZipArchiveSource : IArchiveSource
         };
     }
 
-    /// <summary>압축을 풀지 않고 각 항목의 CRC만 검사합니다.</summary>
-    public int Verify(IProgress<ProgressReport>? progress, CancellationToken cancellationToken)
+    /// <summary>압축을 풀지 않고 각 항목의 CRC만 검사합니다. 암호화 항목은 비밀번호가 필요합니다.</summary>
+    public int Verify(IProgress<ProgressReport>? progress, CancellationToken cancellationToken, string? password = null)
     {
         long totalBytes = _raw.Where(item => !item.IsDirectory).Sum(item => item.UncompressedSize);
         var throttle = new ProgressThrottle(progress);
         long processed = 0;
         int checkedCount = 0;
         var buffer = ArrayPool<byte>.Shared.Rent(128 * 1024);
+
+        RawZipEntry? encrypted = _raw.FirstOrDefault(item => item.IsEncrypted);
+        if (encrypted is not null && password is null)
+        {
+            throw new EncryptedArchiveException(
+                $"암호가 설정된 항목이 있습니다: {encrypted.DecodedName}\n" +
+                "비밀번호를 입력한 뒤 다시 시도해 주세요.");
+        }
 
         try
         {
@@ -219,12 +227,7 @@ public sealed class ZipArchiveSource : IArchiveSource
                 cancellationToken.ThrowIfCancellationRequested();
                 if (item.IsDirectory) continue;
 
-                if (item.IsEncrypted)
-                {
-                    throw new EncryptedArchiveException($"암호가 설정된 항목은 검사할 수 없습니다: {item.DecodedName}");
-                }
-
-                if (item.Method is not (0 or 8))
+                if (item.RealMethod is not (0 or 8))
                 {
                     continue;
                 }
@@ -232,15 +235,29 @@ public sealed class ZipArchiveSource : IArchiveSource
                 uint crc = 0;
                 long written = 0;
 
-                using Stream data = OpenEntryData(item, fs);
-                int read;
-                while ((read = data.Read(buffer, 0, buffer.Length)) > 0)
+                (Stream data, Stream? deflate) = OpenEntryData(item, fs, password);
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    crc = Crc32.Append(crc, buffer.AsSpan(0, read));
-                    written += read;
-                    processed += read;
-                    throttle.Report(processed, totalBytes, item.DecodedName);
+                    int read;
+                    while ((read = data.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        crc = Crc32.Append(crc, buffer.AsSpan(0, read));
+                        written += read;
+                        processed += read;
+                        throttle.Report(processed, totalBytes, item.DecodedName);
+                    }
+
+                    // WinZip AES는 압축 해제가 끝나도 암문 뒤의 HMAC이 남았으므로 끝까지 읽습니다.
+                    if (deflate is not null && item.HasAes)
+                    {
+                        while (deflate.Read(buffer, 0, buffer.Length) > 0) { }
+                    }
+                }
+                finally
+                {
+                    data.Dispose();
+                    deflate?.Dispose();
                 }
 
                 if (written != item.UncompressedSize)
@@ -250,7 +267,8 @@ public sealed class ZipArchiveSource : IArchiveSource
                         $"(기대 {item.UncompressedSize:N0}바이트, 실제 {written:N0}바이트)");
                 }
 
-                if (crc != item.Crc)
+                // WinZip AES는 CRC 대신 항목 뒤의 HMAC을 스트림이 직접 검증합니다.
+                if (!item.HasAes && crc != item.Crc)
                 {
                     throw new CrcMismatchException(
                         $"CRC가 일치하지 않습니다: {item.DecodedName} " +
@@ -286,44 +304,68 @@ public sealed class ZipArchiveSource : IArchiveSource
             using (var fs = new FileStream(
                        _archivePath, FileMode.Open, FileAccess.Read, FileShare.Read,
                        bufferSize: 128 * 1024, FileOptions.SequentialScan))
-            using (Stream data = OpenEntryData(item, fs))
             using (var output = new FileStream(
                        PathGuard.ToExtended(temporary), FileMode.CreateNew, FileAccess.Write,
                        FileShare.None, bufferSize: 128 * 1024, FileOptions.SequentialScan))
             {
-                var buffer = ArrayPool<byte>.Shared.Rent(128 * 1024);
-                uint crc = 0;
-                long written = 0;
+                (Stream data, Stream? deflate) = OpenEntryData(item, fs, options.Password);
 
                 try
                 {
-                    int read;
-                    while ((read = data.Read(buffer, 0, buffer.Length)) > 0)
+                    var buffer = ArrayPool<byte>.Shared.Rent(128 * 1024);
+                    uint crc = 0;
+                    long written = 0;
+
+                    try
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        output.Write(buffer, 0, read);
-                        crc = Crc32.Append(crc, buffer.AsSpan(0, read));
-                        written += read;
-                        throttle.Report(processedBefore + written, totalBytes, item.DecodedName);
+                        int read;
+                        while ((read = data.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            output.Write(buffer, 0, read);
+                            crc = Crc32.Append(crc, buffer.AsSpan(0, read));
+                            written += read;
+                            throttle.Report(processedBefore + written, totalBytes, item.DecodedName);
+                        }
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
+
+                    if (written != item.UncompressedSize)
+                    {
+                        throw new ArchiveException(
+                            $"항목 크기가 일치하지 않습니다: {item.DecodedName} " +
+                            $"(기대 {item.UncompressedSize:N0}바이트, 실제 {written:N0}바이트)");
+                    }
+
+                    if (!item.HasAes && crc != item.Crc)
+                    {
+                        throw new CrcMismatchException(
+                            $"CRC가 일치하지 않습니다: {item.DecodedName} " +
+                            $"(기대 {item.Crc:X8}, 실제 {crc:X8})");
+                    }
+
+                    // WinZip AES는 압축 해제가 끝나도 암문 뒤의 HMAC을 남겨 둡니다.
+                    // 남은 암문을 모두 읽어 인증 코드를 검사합니다.
+                    if (deflate is not null && item.HasAes)
+                    {
+                        byte[] drain = ArrayPool<byte>.Shared.Rent(16 * 1024);
+                        try
+                        {
+                            while (deflate.Read(drain, 0, drain.Length) > 0) { }
+                        }
+                        finally
+                        {
+                            ArrayPool<byte>.Shared.Return(drain);
+                        }
                     }
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                }
-
-                if (written != item.UncompressedSize)
-                {
-                    throw new ArchiveException(
-                        $"항목 크기가 일치하지 않습니다: {item.DecodedName} " +
-                        $"(기대 {item.UncompressedSize:N0}바이트, 실제 {written:N0}바이트)");
-                }
-
-                if (crc != item.Crc)
-                {
-                    throw new CrcMismatchException(
-                        $"CRC가 일치하지 않습니다: {item.DecodedName} " +
-                        $"(기대 {item.Crc:X8}, 실제 {crc:X8})");
+                    data.Dispose();
+                    deflate?.Dispose();   // DeflateStream(leaveOpen: true) 뒤의 비밀번호 스트림
                 }
             }
 
@@ -341,8 +383,26 @@ public sealed class ZipArchiveSource : IArchiveSource
         }
     }
 
-    private static Stream OpenEntryData(RawZipEntry item, FileStream fs)
+    /// <summary>
+    /// 항목 데이터 스트림을 만듭니다. (범위 지정 → 암호 해제 → 압축 해제 순)
+    /// 압축 해제를 사용할 때 (data, deflate) 순으로 닫아야 내부 암호 스트림이 남습니다.
+    /// </summary>
+    private static (Stream Data, Stream? Deflate) OpenEntryData(
+        RawZipEntry item, FileStream fs, string? password)
     {
+        if (item.IsEncrypted && password is null)
+        {
+            throw new EncryptedArchiveException(
+                $"암호가 설정된 항목입니다: {item.DecodedName}\n" +
+                "압축 풀기 화면에서 비밀번호를 입력한 뒤 다시 시도해 주세요.");
+        }
+
+        if (item.RealMethod is not (0 or 8))
+        {
+            throw new UnsupportedArchiveException(
+                $"지원하지 않는 압축 방식({item.RealMethod})입니다: {item.DecodedName}");
+        }
+
         fs.Position = item.LocalHeaderOffset;
 
         Span<byte> header = stackalloc byte[30];
@@ -358,10 +418,20 @@ public sealed class ZipArchiveSource : IArchiveSource
 
         fs.Position = item.LocalHeaderOffset + 30 + nameLength + extraLength;
 
-        var bounded = new BoundedReadStream(fs, item.CompressedSize);
-        return item.Method == 0
-            ? bounded
-            : new DeflateStream(bounded, CompressionMode.Decompress);
+        Stream source = new BoundedReadStream(fs, item.CompressedSize);
+
+        if (item.IsEncrypted)
+        {
+            var key = ZipEntryKey.FromRaw(item);
+            source = ZipCryptography.Decrypt(key, source, password!, item.CompressedSize);
+        }
+
+        if (item.RealMethod == 8)
+        {
+            return (new DeflateStream(source, CompressionMode.Decompress, leaveOpen: true), source);
+        }
+
+        return (source, null);
     }
 
     private List<RawZipEntry> Select(IReadOnlyCollection<int> indices)

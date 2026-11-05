@@ -33,6 +33,12 @@ public partial class MainWindow : Window
 
     private async Task OpenArchiveAsync(string path)
     {
+        if (_viewModel.IsBusy)
+        {
+            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            return;
+        }
+
         try
         {
             Mouse.OverrideCursor = Cursors.Wait;
@@ -72,6 +78,12 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_viewModel.IsBusy)
+        {
+            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            return;
+        }
+
         var dialog = new ExtractDialog(_viewModel.DefaultExtractDirectory, EntryGrid.SelectedItems.Count)
         {
             Owner = this,
@@ -89,6 +101,14 @@ public partial class MainWindow : Window
             return;
         }
 
+        string? password = null;
+        if (rows.Any(row => row.Info.IsEncrypted))
+        {
+            var passwordDialog = new PasswordDialog { Owner = this };
+            if (passwordDialog.ShowDialog() != true) return;
+            password = passwordDialog.Password;
+        }
+
         ExtractionResult? result = null;
         bool ok = await ProgressDialog.RunAsync(this, "압축을 푸는 중입니다", async (progress, token) =>
         {
@@ -98,6 +118,7 @@ public partial class MainWindow : Window
                 {
                     DestinationDirectory = dialog.DestinationDirectory,
                     Overwrite = dialog.Overwrite,
+                    Password = password,
                 },
                 progress,
                 token);
@@ -113,11 +134,17 @@ public partial class MainWindow : Window
         if (result.SkippedFiles > 0) message += $"\n건너뜀: {result.SkippedFiles:N0}개";
         if (result.Warnings.Count > 0) message += $"\n\n참고: 경고 {result.Warnings.Count}건";
 
-        MessageBox.Show(this, message, "WangZip", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(this, message, "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private async void Create_Click(object sender, RoutedEventArgs e)
     {
+        if (_viewModel.IsBusy)
+        {
+            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            return;
+        }
+
         var dialog = new CreateDialog { Owner = this };
         await RunCreateAsync(dialog);
     }
@@ -146,7 +173,7 @@ public partial class MainWindow : Window
             $"{created.EntryCount:N0}개 항목 · {Format.Bytes(created.SourceBytes)} → {Format.Bytes(created.OutputBytes)} " +
             $"({Format.CompressionRate(created.Ratio)})\n{created.OutputPath}";
 
-        MessageBox.Show(this, message, "WangZip", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(this, message, "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
 
         await OpenArchiveAsync(created.OutputPath);
     }
@@ -159,10 +186,24 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_viewModel.IsBusy)
+        {
+            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            return;
+        }
+
+        string? password = null;
+        if (_viewModel.Entries.Any(row => row.Info.IsEncrypted))
+        {
+            var passwordDialog = new PasswordDialog { Owner = this };
+            if (passwordDialog.ShowDialog() != true) return;
+            password = passwordDialog.Password;
+        }
+
         int checkedCount = 0;
         bool ok = await ProgressDialog.RunAsync(this, "무결성 검사 중입니다", async (progress, token) =>
         {
-            checkedCount = await _viewModel.VerifyAsync(progress, token);
+            checkedCount = await _viewModel.VerifyAsync(progress, token, password);
         });
 
         if (ok)
@@ -233,6 +274,12 @@ public partial class MainWindow : Window
     {
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length == 0) return;
 
+        if (_viewModel.IsBusy)
+        {
+            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            return;
+        }
+
         if (paths.Length == 1 &&
             File.Exists(paths[0]) &&
             ArchiveService.DetectFormat(paths[0]) != ArchiveFormat.Unknown)
@@ -283,8 +330,8 @@ public partial class MainWindow : Window
     }
 
     private void ShowInfo(string message) =>
-        MessageBox.Show(this, message, "WangZip", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(this, message, "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
 
     private void ShowError(Exception exception) =>
-        MessageBox.Show(this, exception.Message, "WangZip", MessageBoxButton.OK, MessageBoxImage.Warning);
+        MessageBox.Show(this, exception.Message, "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
 }

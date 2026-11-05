@@ -149,12 +149,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         IProgress<ProgressReport> progress,
         CancellationToken cancellationToken)
     {
-        IArchiveSource source = _source ?? throw new InvalidOperationException("먼저 압축 파일을 열어 주세요.");
-        int[] indices = rows.Select(row => row.Info.Index).ToArray();
+        IsBusy = true;
+        try
+        {
+            IArchiveSource source = _source ?? throw new InvalidOperationException("먼저 압축 파일을 열어 주세요.");
+            int[] indices = rows.Select(row => row.Info.Index).ToArray();
 
-        return await Task.Run(
-            () => source.Extract(indices, options, progress, cancellationToken),
-            cancellationToken);
+            return await Task.Run(
+                () => source.Extract(indices, options, progress, cancellationToken),
+                cancellationToken);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     public async Task<CreationResult> CreateAsync(
@@ -164,32 +172,61 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         IProgress<ProgressReport> progress,
         CancellationToken cancellationToken)
     {
-        return await Task.Run(
-            () => ZipWriter.Create(outputPath, sources, options, progress, cancellationToken),
-            cancellationToken);
+        IsBusy = true;
+        try
+        {
+            return await Task.Run(
+                () => ZipWriter.Create(outputPath, sources, options, progress, cancellationToken),
+                cancellationToken);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     public async Task<int> VerifyAsync(
         IProgress<ProgressReport> progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? password = null)
     {
-        if (_source is not ZipArchiveSource zip)
+        IsBusy = true;
+        try
         {
-            throw new ArchiveException("무결성 검사는 ZIP 형식에서만 지원합니다.");
-        }
+            if (_source is not ZipArchiveSource zip)
+            {
+                throw new ArchiveException("무결성 검사는 ZIP 형식에서만 지원합니다.");
+            }
 
-        return await Task.Run(() => zip.Verify(progress, cancellationToken), cancellationToken);
+            return await Task.Run(() => zip.Verify(progress, cancellationToken, password), cancellationToken);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     public async Task<string?> PreviewAsync(EntryRow row)
     {
         IArchiveSource source = _source ?? throw new InvalidOperationException("먼저 압축 파일을 열어 주세요.");
 
-        string temporary = Path.Combine(
-            Path.GetTempPath(),
-            "WangZip",
-            "preview",
-            Guid.NewGuid().ToString("N"));
+        string previewRoot = Path.Combine(Path.GetTempPath(), "왕집", "preview");
+        string temporary = Path.Combine(previewRoot, Guid.NewGuid().ToString("N"));
+
+        // 이전 미리보기 잔여물 정리
+        try
+        {
+            if (Directory.Exists(previewRoot))
+            {
+                foreach (string stale in Directory.EnumerateDirectories(previewRoot))
+                {
+                    try { Directory.Delete(stale, recursive: true); } catch (IOException) { }
+                }
+            }
+        }
+        catch (IOException)
+        {
+        }
 
         Directory.CreateDirectory(temporary);
 

@@ -122,14 +122,14 @@ public partial class CreateDialog : Window
     {
         if (Sources.Count == 0)
         {
-            MessageBox.Show(this, "압축할 파일이나 폴더를 추가해 주세요.", "WangZip", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, "압축할 파일이나 폴더를 추가해 주세요.", "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
         string output = OutputPath;
         if (string.IsNullOrWhiteSpace(output))
         {
-            MessageBox.Show(this, "저장할 파일 경로를 입력해 주세요.", "WangZip", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, "저장할 파일 경로를 입력해 주세요.", "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -143,7 +143,7 @@ public partial class CreateDialog : Window
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, "저장 경로를 만들 수 없습니다.\n" + exception.Message, "WangZip", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "저장 경로를 만들 수 없습니다.\n" + exception.Message, "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 

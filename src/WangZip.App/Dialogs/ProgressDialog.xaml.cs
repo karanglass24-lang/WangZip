@@ -49,25 +49,32 @@ public partial class ProgressDialog : Window
         catch (OperationCanceledException)
         {
             dialog.Close();
-            MessageBox.Show(owner, "작업이 취소되었습니다.", "WangZip", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(owner, "작업이 취소되었습니다.", "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
             return false;
         }
         catch (ArchiveException exception)
         {
             dialog.Close();
-            MessageBox.Show(owner, exception.Message, "WangZip", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(owner, exception.Message, "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
         catch (UnauthorizedAccessException exception)
         {
             dialog.Close();
-            MessageBox.Show(owner, "접근 권한이 없습니다.\n" + exception.Message, "WangZip", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(owner, "접근 권한이 없습니다.\n" + exception.Message, "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
         catch (IOException exception)
         {
             dialog.Close();
-            MessageBox.Show(owner, "파일을 처리하는 중 오류가 발생했습니다.\n" + exception.Message, "WangZip", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(owner, "파일을 처리하는 중 오류가 발생했습니다.\n" + exception.Message, "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+        catch (Exception exception)
+        {
+            dialog.Close();
+            MessageBox.Show(owner, "예상하지 못한 오류가 발생했습니다.\n" + exception.GetType().Name + ": " + exception.Message,
+                "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
         finally

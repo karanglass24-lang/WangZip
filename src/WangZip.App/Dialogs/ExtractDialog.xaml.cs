@@ -63,7 +63,7 @@ public partial class ExtractDialog : Window
         string destination = DestinationDirectory;
         if (string.IsNullOrWhiteSpace(destination))
         {
-            MessageBox.Show(this, "압축을 풀 폴더를 입력해 주세요.", "WangZip", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, "압축을 풀 폴더를 입력해 주세요.", "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -73,7 +73,7 @@ public partial class ExtractDialog : Window
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, "폴더를 만들 수 없습니다.\n" + exception.Message, "WangZip", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "폴더를 만들 수 없습니다.\n" + exception.Message, "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
