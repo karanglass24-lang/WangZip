@@ -18,6 +18,9 @@ public sealed class AppSettings
     /// <summary>탐색기 우클릭 메뉴 노출 여부(설치 시 기록). 실제 등록은 설치 프로그램이 합니다.</summary>
     public bool ShellMenuEnabled { get; set; } = true;
 
+    /// <summary>실행 시 새 버전을 확인하고, 발견하면 자동으로 받아 설치합니다 (설치형만).</summary>
+    public bool AutoUpdate { get; set; } = true;
+
     public static string FilePath =>
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

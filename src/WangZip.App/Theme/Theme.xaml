@@ -121,6 +121,24 @@
         </Style.Triggers>
     </Style>
 
+    <!-- 콤보박스: 지정 높이에서도 문자열이 아래로 잘리지 않게 -->
+    <Style TargetType="ComboBox">
+        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="10,2,4,2" />
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="ItemContainerStyle">
+            <Setter.Value>
+                <Style TargetType="ComboBoxItem">
+                    <Setter Property="Padding" Value="10,7" />
+                    <Setter Property="SnapsToDevicePixels" Value="True" />
+                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                </Style>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="DataGridCell">
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="10,6" />
@@ -211,7 +229,7 @@
         <Setter Property="HeaderTemplate">
             <Setter.Value>
                 <DataTemplate>
-                    <Border x:Name="ItemBorder" CornerRadius="4" Padding="4,3" MinWidth="220" HorizontalAlignment="Stretch">
+                    <Border x:Name="ItemBorder" CornerRadius="4" Padding="4,3" HorizontalAlignment="Stretch">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding Icon}"
                                        FontFamily="Segoe MDL2 Assets" FontSize="14"

@@ -10,7 +10,7 @@
     <AssemblyName>WangZip</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <Product>WangZip</Product>
     <AssemblyTitle>WangZip - 광고 없는 압축 프로그램</AssemblyTitle>
     <SatelliteResourceLanguages>ko;en</SatelliteResourceLanguages>

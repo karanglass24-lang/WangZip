@@ -27,6 +27,9 @@ public partial class MainWindow : Window
         QuickDestCombo.ItemsSource = MainViewModel.QuickDestinations;
         QuickDestCombo.SelectedIndex = Math.Clamp(_settings.QuickDestination, 0, MainViewModel.QuickDestinations.Count - 1);
         _viewModel.QuickDestinationIndex = QuickDestCombo.SelectedIndex;
+
+        AutoUpdateMenu.IsChecked = _settings.AutoUpdate;
+        Loaded += (_, _) => _ = RunUpdateCheckAsync(promptEvenWithoutUpdate: false, manual: false);
     }
 
     public void OpenFromCommandLine(string path)
@@ -93,8 +96,9 @@ public partial class MainWindow : Window
 
     private void Open_Click(object sender, RoutedEventArgs e) => _ = ChooseAndOpenAsync();
 
-    /// <summary>빠른 압축 풀기 (툴바 위치 설정 사용). 선택이 있으면 선택 항목만, 없으면 전체.</summary>
-    private async Task QuickExtractInternalAsync(bool selectionOnly)
+    /// <summary>압축 풀기 대화상자(대상 폴더 확인)를 띄우고 풉니다.
+    /// selectionOnly=true면 선택 항목만을 대상으로 미리 지정됩니다.</summary>
+    private async Task RunExtractDialogAsync(bool selectionOnly)
     {
         if (!_viewModel.HasArchive)
         {
@@ -115,11 +119,26 @@ public partial class MainWindow : Window
             return;
         }
 
-        List<EntryRow> rows = selection || selectionOnly
-            ? EntryGrid.SelectedItems.Cast<EntryRow>().ToList()
-            : _viewModel.Entries.ToList();
+        var dialog = new ExtractDialog(_viewModel.DefaultExtractDirectory, EntryGrid.SelectedItems.Count, selectionOnly)
+        {
+            Owner = this,
+        };
 
-        string destination = _viewModel.ResolveQuickDestination();
+        if (dialog.ShowDialog() != true) return;
+
+        _settings.AutoOpenAfterExtract = dialog.AutoOpenAfterExtract;
+        _settings.QuickDestination = dialog.SelectedQuickDestination;
+        _settings.Save();
+
+        List<EntryRow> rows = dialog.ExtractAll
+            ? _viewModel.Entries.ToList()
+            : EntryGrid.SelectedItems.Cast<EntryRow>().ToList();
+
+        if (rows.Count == 0)
+        {
+            ShowInfo("압축을 풀 항목을 선택해 주세요.");
+            return;
+        }
 
         string? password = null;
         if (rows.Any(row => row.Info.IsEncrypted))
@@ -136,8 +155,8 @@ public partial class MainWindow : Window
                 rows,
                 new ExtractionOptions
                 {
-                    DestinationDirectory = destination,
-                    Overwrite = OverwritePolicy.Rename,
+                    DestinationDirectory = dialog.DestinationDirectory,
+                    Overwrite = dialog.Overwrite,
                     Password = password,
                 },
                 progress,
@@ -146,23 +165,24 @@ public partial class MainWindow : Window
 
         if (!ok || result is null) return;
 
-        _viewModel.StatusText =
-            $"압축을 풀었습니다: 파일 {result.ExtractedFiles:N0}개 → {destination}";
+        string message =
+            $"압축을 풀었습니다.\n\n" +
+            $"파일 {result.ExtractedFiles:N0}개 · {Format.Bytes(result.TotalBytes)}\n" +
+            $"폴더: {dialog.DestinationDirectory}";
 
-        MessageBox.Show(
-            this,
-            $"압축을 풀었습니다.\n\n파일 {result.ExtractedFiles:N0}개 · {Format.Bytes(result.TotalBytes)}\n{destination}",
-            "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+        if (result.SkippedFiles > 0) message += $"\n건너뜀: {result.SkippedFiles:N0}개";
 
-        if (_settings.AutoOpenAfterExtract && Directory.Exists(destination))
+        MessageBox.Show(this, message, "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+
+        if (dialog.AutoOpenAfterExtract && Directory.Exists(dialog.DestinationDirectory))
         {
-            Process.Start(new ProcessStartInfo(destination) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(dialog.DestinationDirectory) { UseShellExecute = true });
         }
     }
 
-    private void QuickExtractAll_Click(object sender, RoutedEventArgs e) => _ = QuickExtractInternalAsync(selectionOnly: false);
+    private void QuickExtractAll_Click(object sender, RoutedEventArgs e) => _ = RunExtractDialogAsync(false);
 
-    private void QuickExtractSelected_Click(object sender, RoutedEventArgs e) => _ = QuickExtractInternalAsync(selectionOnly: true);
+    private void QuickExtractSelected_Click(object sender, RoutedEventArgs e) => _ = RunExtractDialogAsync(true);
 
     private async void Extract_Click(object sender, RoutedEventArgs e)
     {
@@ -541,7 +561,7 @@ public partial class MainWindow : Window
         else if (control && e.Key == Key.E)
         {
             e.Handled = true;
-            await QuickExtractInternalAsync(selectionOnly: false);
+            await RunExtractDialogAsync(selectionOnly: false);
         }
         else if (control && e.Key == Key.N)
         {
@@ -558,6 +578,108 @@ public partial class MainWindow : Window
     private void About_Click(object sender, RoutedEventArgs e)
     {
         new AboutDialog { Owner = this }.ShowDialog();
+    }
+
+    /// <summary>업데이트 확인(메뉴) — 직접 눌렀을 때.</summary>
+    private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        await RunUpdateCheckAsync(promptEvenWithoutUpdate: true, manual: true);
+    }
+
+    private void AutoUpdateMenu_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.AutoUpdate = AutoUpdateMenu.IsChecked == true;
+        _settings.Save();
+    }
+
+    /// <summary>
+    /// 최신 출시를 확인해 새 버전이면 안내하고 내려받아 설치합니다.
+    /// manual=false(구동 시 자동 확인)는 자동 업데이트 설정이 켜져 있을 때만 동작합니다.
+    /// </summary>
+    private async Task RunUpdateCheckAsync(bool promptEvenWithoutUpdate, bool manual)
+    {
+        if (!manual && !_settings.AutoUpdate) return;
+
+        UpdateInfo? info;
+        try
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
+            info = await UpdateService.CheckLatestAsync();
+        }
+        catch (Exception exception)
+        {
+            if (manual) ShowInfo("업데이트를 확인하지 못했습니다. (네트워크 상태를 확인해 주세요)\n" + exception.Message);
+            return;
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+
+        bool installed = File.Exists(Path.Combine(AppContext.BaseDirectory, "unins000.exe"));
+
+        if (info is null)
+        {
+            if (manual) ShowInfo("새 버전 정보를 찾지 못했습니다. (GitHub Releases 확인 필요)");
+            return;
+        }
+
+        if (!UpdateService.IsNewer(info))
+        {
+            if (manual) ShowInfo($"최신 버전을 사용하고 있습니다. (현재 v{UpdateService.CurrentVersion})");
+            return;
+        }
+
+        // 설치형이 아니면(포터블) 홈페이지로 안내합니다.
+        if (!installed)
+        {
+            var open = MessageBox.Show(
+                this,
+                $"새 버전 v{info.LatestVersion}이(가) 있습니다.\n" +
+                "포터블 버전은 홈페이지에서 새 ZIP을 받아 교체하시면 됩니다.\n\n" +
+                "릴리스 페이지를 열까요?",
+                "왕집 업데이트", MessageBoxButton.YesNo, MessageBoxImage.Information);
+            if (open == MessageBoxResult.Yes)
+            {
+                UpdateService.OpenReleasePage();
+            }
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            this,
+            $"새 버전 v{info.LatestVersion}이(가) 있습니다. (현재 v{UpdateService.CurrentVersion})\n\n" +
+            "다운로드 후 자동으로 설치하며,\n설치가 끝나면 왕집이 다시 실행됩니다.\n\n지금 업데이트할까요?",
+            "왕집 업데이트", MessageBoxButton.OKCancel, MessageBoxImage.Information);
+
+        if (answer != MessageBoxResult.OK) return;
+
+        string? setupPath;
+        try
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
+            var progress = new Progress<double>(percent => _viewModel.StatusText = $"업데이트 내려받는 중: {percent:0}%");
+            setupPath = await UpdateService.DownloadAsync(info, progress, System.Threading.CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(this, "업데이트 내려받기를 실패했습니다.\n" + exception.Message, "왕집",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+
+        MessageBox.Show(
+            this,
+            "다운로드가 끝났습니다. 설치 프로그램을 실행합니다.\n" +
+            "(설치되는 동안 왕집이 잠시 종료되고, 다시 실행됩니다.)",
+            "왕집 업데이트", MessageBoxButton.OK, MessageBoxImage.Information);
+
+        _viewModel.Dispose();   // 파일 잠금 해제
+        UpdateService.InstallAndRestart(setupPath);
     }
 
     private void Exit_Click(object sender, RoutedEventArgs e) => Close();

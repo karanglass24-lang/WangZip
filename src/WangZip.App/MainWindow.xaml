@@ -21,15 +21,17 @@
                 <MenuItem Header="끝내기" InputGestureText="Alt+F4" Click="Exit_Click" />
             </MenuItem>
             <MenuItem Header="도구(_T)">
-                <MenuItem Header="빠른 압축 풀기 (전체 항목)" InputGestureText="Ctrl+E" Click="QuickExtractAll_Click" />
+                <MenuItem Header="압축 풀기 (대상 폴더 선택)..." InputGestureText="Ctrl+E" Click="QuickExtractAll_Click" />
                 <MenuItem Header="선택 항목만 압축 풀기" Click="QuickExtractSelected_Click" />
-                <MenuItem Header="압축 풀기 상세..." Click="Extract_Click" />
                 <Separator />
                 <MenuItem Header="무결성 검사" Click="Verify_Click" />
                 <Separator />
-                <MenuItem Header="재구성: 선택 항목 압축 파일에서 삭제" Click="Delete_Click" />
+                <MenuItem Header="선택 항목을 ZIP에서 삭제" Click="Delete_Click" />
                 <Separator />
                 <MenuItem Header="새로 고침" InputGestureText="F5" Click="Refresh_Click" />
+                <Separator />
+                <MenuItem x:Name="AutoUpdateMenu" Header="자동 업데이트 사용" IsCheckable="True" Click="AutoUpdateMenu_Click" />
+                <MenuItem Header="업데이트 확인..." Click="CheckUpdates_Click" />
             </MenuItem>
             <MenuItem Header="도움말(_H)">
                 <MenuItem Header="왕집 정보" Click="About_Click" />
@@ -42,7 +44,7 @@
                 <StackPanel DockPanel.Dock="Right" Orientation="Vertical" VerticalAlignment="Top">
                     <TextBlock Text="압축 풀기 위치" FontSize="11"
                                Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3" />
-                    <ComboBox x:Name="QuickDestCombo" Width="240" Height="30"
+                    <ComboBox x:Name="QuickDestCombo" Width="240" MinHeight="30"
                               DisplayMemberPath="Label" SelectionChanged="QuickDest_Changed" />
                 </StackPanel>
 
@@ -51,7 +53,7 @@
                 <StackPanel DockPanel.Dock="Right" Orientation="Vertical" VerticalAlignment="Top">
                     <TextBlock Text="파일명 인코딩" FontSize="11"
                                Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3" />
-                    <ComboBox x:Name="EncodingCombo" Width="210" Height="30"
+                    <ComboBox x:Name="EncodingCombo" Width="210" MinHeight="30"
                               DisplayMemberPath="Label" SelectionChanged="Encoding_Changed" />
                 </StackPanel>
 
@@ -67,7 +69,7 @@
 
                     <!-- 빠른 압축 풀기(전체) -->
                     <Button x:Name="QuickAll" Style="{StaticResource RibbonTool}" Click="QuickExtractAll_Click"
-                            IsEnabled="{Binding HasArchive}" ToolTip="위에 선택한 위치로 전체 항목 압축 풀기 (Ctrl+E)">
+                            IsEnabled="{Binding HasArchive}" ToolTip="압축 풀기(대상 폴더를 선택해 풉니다) (Ctrl+E)">
                         <StackPanel>
                             <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#3E7BEA" />
@@ -171,12 +173,15 @@
                             BorderThickness="0,0,0,1" Padding="10,6">
                         <TextBlock Text="폴더 계층" Style="{StaticResource SectionTitle}" Margin="0" />
                     </Border>
-                    <TreeView x:Name="FolderTree"
-                              ItemsSource="{Binding TreeRoots}"
-                              SelectedItemChanged="FolderTree_SelectedItemChanged"
-                              ItemContainerStyle="{StaticResource TreeItem}"
-                              BorderThickness="0"
-                              Background="Transparent" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <TreeView x:Name="FolderTree"
+                                  ItemsSource="{Binding TreeRoots}"
+                                  SelectedItemChanged="FolderTree_SelectedItemChanged"
+                                  ItemContainerStyle="{StaticResource TreeItem}"
+                                  BorderThickness="0"
+                                  Background="Transparent"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+                    </ScrollViewer>
                 </DockPanel>
 
                 <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
@@ -242,7 +247,7 @@
                 </DockPanel>
 
                 <!-- 파일 없을 때 안내 -->
-                <TextBlock Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                <TextBlock Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                            Foreground="{StaticResource TextSecondaryBrush}" FontSize="14">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">

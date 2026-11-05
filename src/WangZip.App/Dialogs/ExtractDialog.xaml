@@ -27,14 +27,13 @@
             </Grid.ColumnDefinitions>
             <TextBox Grid.Column="0" x:Name="DestinationBox" Height="32" VerticalContentAlignment="Center" Padding="8,0"
                      BorderBrush="{StaticResource BorderBrush}" />
-            <Button Grid.Column="1" Content="찾아보기" Style="{StaticResource SecondaryButton}" Click="Browse_Click" Margin="8,0,0,0" />
+            <Button Grid.Column="1" Content="찾아보기..." Style="{StaticResource SecondaryButton}" Click="Browse_Click" Margin="8,0,0,0" MinWidth="86" />
         </Grid>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="빠른 선택:" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
-            <Button Content="바탕 화면" Style="{StaticResource SecondaryButton}" Click="QuickLocation_Click" Tag="Desktop" Margin="8,0,0,0" MinWidth="70" />
-            <Button Content="다운로드" Style="{StaticResource SecondaryButton}" Click="QuickLocation_Click" Tag="Downloads" Margin="8,0,0,0" MinWidth="70" />
-            <Button Content="문서" Style="{StaticResource SecondaryButton}" Click="QuickLocation_Click" Tag="Documents" Margin="8,0,0,0" MinWidth="60" />
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,2,0,10">
+            <TextBlock Text="빠른 위치:" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+            <ComboBox x:Name="QuickDestCombo" Width="280" MinHeight="30" DisplayMemberPath="Label"
+                      SelectionChanged="QuickDest_Changed" Margin="8,0,0,0" />
         </StackPanel>
 
         <TextBlock Grid.Row="3" Text="대상" Style="{StaticResource SectionTitle}" />
