@@ -79,7 +79,7 @@ public sealed class SharpCompressSource : IArchiveSource
                         : default,
                     IsDirectory = entry.IsDirectory,
                     IsEncrypted = IsEncrypted(entry),
-                    EncodingName = "라이브러리 자동",
+                    EncodingName = Loc.T("라이브러리 자동"),
                 });
 
                 index++;
@@ -88,20 +88,18 @@ public sealed class SharpCompressSource : IArchiveSource
         catch (Exception exception) when (exception is not ArchiveException && IsPasswordError(exception))
         {
             throw new EncryptedArchiveException(
-                $"비밀번호가 필요하거나 올바르지 않습니다: {System.IO.Path.GetFileName(archivePath)}\n" +
-                "압축 풀기 화면이나 --password 옵션에 올바른 비밀번호를 입력해 주세요.");
+                Loc.F("비밀번호가 필요하거나 올바르지 않습니다: {0}\n압축 풀기 화면이나 --password 옵션에 올바른 비밀번호를 입력해 주세요.", System.IO.Path.GetFileName(archivePath)));
         }
         catch (Exception exception) when (exception is not ArchiveException)
         {
             throw new UnsupportedArchiveException(
-                $"'{System.IO.Path.GetFileName(archivePath)}' 파일을 읽을 수 없습니다. " +
-                "손상되었거나 아직 지원하지 않는 형식일 수 있습니다.\n" + exception.Message,
+                Loc.F("'{0}' 파일을 읽을 수 없습니다. 손상되었거나 아직 지원하지 않는 형식일 수 있습니다.\n", System.IO.Path.GetFileName(archivePath)) + exception.Message,
                 exception);
         }
 
         if (entries.Count == 0)
         {
-            warnings.Add("압축 파일 안에 항목이 없습니다.");
+            warnings.Add(Loc.T("압축 파일 안에 항목이 없습니다."));
         }
 
         return new SharpCompressSource(
@@ -111,7 +109,7 @@ public sealed class SharpCompressSource : IArchiveSource
             entries,
             keys,
             warnings,
-            "라이브러리 자동 감지");
+            Loc.T("라이브러리 자동 감지"));
     }
 
     public ExtractionResult Extract(
@@ -244,12 +242,12 @@ public sealed class SharpCompressSource : IArchiveSource
         catch (Exception exception) when (exception is not ArchiveException and not OperationCanceledException && IsPasswordError(exception))
         {
             throw new EncryptedArchiveException(
-                "비밀번호가 필요하거나 올바르지 않습니다.\n압축 풀기 화면에서 올바른 비밀번호를 입력해 주세요.");
+                Loc.T("비밀번호가 필요하거나 올바르지 않습니다.\n압축 풀기 화면에서 올바른 비밀번호를 입력해 주세요."));
         }
         catch (Exception exception) when (exception is not ArchiveException and not OperationCanceledException)
         {
             throw new ArchiveException(
-                "압축을 푸는 중 오류가 발생했습니다. 분할 압축이거나 손상된 파일일 수 있습니다.\n" +
+                Loc.T("압축을 푸는 중 오류가 발생했습니다. 분할 압축이거나 손상된 파일일 수 있습니다.\n") +
                 exception.Message,
                 exception);
         }

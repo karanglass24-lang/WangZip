@@ -33,19 +33,19 @@ public sealed class PathGuard
     {
         if (string.IsNullOrWhiteSpace(entryName))
         {
-            throw new UnsafeArchiveEntryException("이름이 비어 있는 항목은 압축을 풀 수 없습니다.");
+            throw new UnsafeArchiveEntryException(Loc.T("이름이 비어 있는 항목은 압축을 풀 수 없습니다."));
         }
 
         string relative = Normalize(entryName);
         if (relative.Length == 0)
         {
-            throw new UnsafeArchiveEntryException($"안전하지 않은 경로입니다: '{entryName}'");
+            throw new UnsafeArchiveEntryException(Loc.F("안전하지 않은 경로입니다: '{0}'", entryName));
         }
 
         string combined = Path.GetFullPath(Path.Combine(_root, relative));
         if (!IsUnderRoot(combined))
         {
-            throw new UnsafeArchiveEntryException($"압축 파일 밖으로 벗어나는 경로입니다: '{entryName}'");
+            throw new UnsafeArchiveEntryException(Loc.F("압축 파일 밖으로 벗어나는 경로입니다: '{0}'", entryName));
         }
 
         string? unique = EnsureUnique(combined, collision);
@@ -72,7 +72,7 @@ public sealed class PathGuard
             }
         }
 
-        throw new ArchiveException($"사용 가능한 파일 이름을 찾지 못했습니다: '{target}'");
+        throw new ArchiveException(Loc.F("사용 가능한 파일 이름을 찾지 못했습니다: '{0}'", target));
     }
 
     private string Normalize(string raw)
@@ -89,7 +89,7 @@ public sealed class PathGuard
                 if (stack.Count == 0)
                 {
                     throw new UnsafeArchiveEntryException(
-                        $"상위 폴더로 벗어나는 항목(..)은 압축을 풀지 않습니다: '{raw}'");
+                        Loc.F("상위 폴더로 벗어나는 항목(..)은 압축을 풀지 않습니다: '{0}'", raw));
                 }
 
                 stack.RemoveAt(stack.Count - 1);
@@ -100,7 +100,7 @@ public sealed class PathGuard
             if (clean.Length >= 2 && clean[1] == ':')
             {
                 clean = clean[2..];
-                _warnings.Add($"드라이브 문자를 제거했습니다: '{part}'");
+                _warnings.Add(Loc.F("드라이브 문자를 제거했습니다: '{0}'", part));
                 if (clean.Length == 0) continue;
             }
 
@@ -143,12 +143,12 @@ public sealed class PathGuard
             string stemPart = Path.GetFileNameWithoutExtension(segment);
             int keep = Math.Max(1, 255 - ext.Length);
             segment = stemPart[..Math.Min(stemPart.Length, keep)] + ext;
-            _warnings.Add($"파일 이름이 너무 길어 줄였습니다: '{original}'");
+            _warnings.Add(Loc.F("파일 이름이 너무 길어 줄였습니다: '{0}'", original));
         }
 
         if (!string.Equals(original, segment, StringComparison.Ordinal))
         {
-            _warnings.Add($"파일 이름을 안전하게 바꿨습니다: '{original}' → '{segment}'");
+            _warnings.Add(Loc.F("파일 이름을 안전하게 바꿨습니다: '{0}' → '{1}'", original, segment));
         }
 
         return segment;
@@ -161,7 +161,7 @@ public sealed class PathGuard
         if (policy == CollisionPolicy.Skip) return null;
         if (policy == CollisionPolicy.Throw)
         {
-            throw new UnsafeArchiveEntryException($"압축 안에 같은 경로가 중복됩니다: '{fullPath}'");
+            throw new UnsafeArchiveEntryException(Loc.F("압축 안에 같은 경로가 중복됩니다: '{0}'", fullPath));
         }
 
         string dir = Path.GetDirectoryName(fullPath)!;
@@ -174,7 +174,7 @@ public sealed class PathGuard
             if (_used.Add(candidate)) return candidate;
         }
 
-        throw new UnsafeArchiveEntryException($"중복 이름을 피할 수 없습니다: '{fullPath}'");
+        throw new UnsafeArchiveEntryException(Loc.F("중복 이름을 피할 수 없습니다: '{0}'", fullPath));
     }
 
     private bool IsUnderRoot(string candidate)

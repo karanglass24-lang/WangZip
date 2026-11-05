@@ -29,7 +29,7 @@ public static class ZipRewriter
     {
         if (sources.Count == 0)
         {
-            throw new ArchiveException("추가할 파일이나 폴더를 선택해 주세요.");
+            throw new ArchiveException(Loc.T("추가할 파일이나 폴더를 선택해 주세요."));
         }
 
         string fullPath = Path.GetFullPath(zipPath);
@@ -39,7 +39,7 @@ public static class ZipRewriter
 
         if (items.Count == 0)
         {
-            throw new ArchiveException("추가할 파일이 없습니다.");
+            throw new ArchiveException(Loc.T("추가할 파일이 없습니다."));
         }
 
         return Rewrite(fullPath, items, nameEncoding, [], progress, cancellationToken, warnings);
@@ -52,7 +52,7 @@ public static class ZipRewriter
     {
         if (indices.Count == 0)
         {
-            throw new ArchiveException("삭제할 항목을 선택해 주세요.");
+            throw new ArchiveException(Loc.T("삭제할 항목을 선택해 주세요."));
         }
 
         return Rewrite(
@@ -86,18 +86,18 @@ public static class ZipRewriter
         if (fileLength >= 0xFFFFFFF0)
         {
             throw new UnsupportedArchiveException(
-                "ZIP64(대용량) ZIP은 항목 추가/삭제를 아직 지원하지 않습니다.");
+                Loc.T("ZIP64(대용량) ZIP은 항목 추가/삭제를 아직 지원하지 않습니다."));
         }
 
         if (entries.Count + newItems.Count >= ushort.MaxValue)
         {
-            throw new UnsupportedArchiveException("항목 수가 65,535개를 넘어 추가할 수 없습니다.");
+            throw new UnsupportedArchiveException(Loc.T("항목 수가 65,535개를 넘어 추가할 수 없습니다."));
         }
 
         if (entries.Any(item => (item.Flags & 0x0008) != 0))
         {
             throw new UnsupportedArchiveException(
-                "데이터 디스크립터를 사용하는 ZIP은 항목 추가/삭제를 지원하지 않습니다.");
+                Loc.T("데이터 디스크립터를 사용하는 ZIP은 항목 추가/삭제를 지원하지 않습니다."));
         }
 
         var deleteSet = new HashSet<int>(deleteIndices);
@@ -105,7 +105,7 @@ public static class ZipRewriter
 
         if (deleteSet.Contains(-1) || deleteSet.Any(index => index < 0 || index >= entries.Count))
         {
-            throw new ArchiveException("삭제할 항목 번호가 올바르지 않습니다.");
+            throw new ArchiveException(Loc.T("삭제할 항목 번호가 올바르지 않습니다."));
         }
 
         // 새 항목 이름 중복 제거 (기존 항목과, 그리고 서로 간에)
@@ -119,7 +119,7 @@ public static class ZipRewriter
             string name = item.EntryName.TrimEnd('/');
             if (existingNames.Contains(name) || !wantedNames.Add(item.EntryName))
             {
-                warnings.Add($"이름이 이미 있어 건너뜁니다: {item.EntryName}");
+                warnings.Add(Loc.F("이름이 이미 있어 건너뜁니다: {0}", item.EntryName));
                 continue;
             }
 
@@ -128,7 +128,7 @@ public static class ZipRewriter
 
         if (fresh.Count > 0 && entries.Any(entry => entry.IsEncrypted))
         {
-            warnings.Add("이 ZIP은 암호가 걸려 있지만, 새로 추가한 항목은 암호화되지 않았습니다.");
+            warnings.Add(Loc.T("이 ZIP은 암호가 걸려 있지만, 새로 추가한 항목은 암호화되지 않았습니다."));
         }
 
         // 복사 범위: 로컬 헤더 + 이름/확장 필드 + 압축 데이터 (데이터 디스크립터는 없다고 검증함)
@@ -137,7 +137,7 @@ public static class ZipRewriter
         {
             if (ordered[i].LocalHeaderOffset <= ordered[i - 1].LocalHeaderOffset)
             {
-                throw new ArchiveException("ZIP 항목 위치가 비정상입니다. 손상되었을 수 있습니다.");
+                throw new ArchiveException(Loc.T("ZIP 항목 위치가 비정상입니다. 손상되었을 수 있습니다."));
             }
         }
 
@@ -153,7 +153,7 @@ public static class ZipRewriter
                 fs.ReadExactly(head);
                 if (BinaryPrimitives.ReadUInt32LittleEndian(head) != 0x04034B50)
                 {
-                    throw new ArchiveException($"로컬 헤더가 손상되었습니다: {entry.DecodedName}");
+                    throw new ArchiveException(Loc.F("로컬 헤더가 손상되었습니다: {0}", entry.DecodedName));
                 }
 
                 localNameLength = BinaryPrimitives.ReadUInt16LittleEndian(head.Slice(26));
@@ -163,7 +163,7 @@ public static class ZipRewriter
             long length = 30 + localNameLength + localExtraLength + entry.CompressedSize;
             if (entry.LocalHeaderOffset + length > fileLength)
             {
-                throw new ArchiveException($"항목 데이터가 파일 범위를 벗어납니다: {entry.DecodedName}");
+                throw new ArchiveException(Loc.F("항목 데이터가 파일 범위를 벗어납니다: {0}", entry.DecodedName));
             }
 
             copies.Add((entry, entry.LocalHeaderOffset, length));
@@ -247,7 +247,7 @@ public static class ZipRewriter
                     if (item.Length >= 0xFFFFFFF0)
                     {
                         throw new UnsupportedArchiveException(
-                            $"4GB 이상 파일은 기존 ZIP에 추가할 수 없습니다: {item.EntryName}");
+                            Loc.F("4GB 이상 파일은 기존 ZIP에 추가할 수 없습니다: {0}", item.EntryName));
                     }
 
                     long fileOffset = output.Position;
@@ -381,7 +381,7 @@ public static class ZipRewriter
         if (position >= 0xFFFFFF00)
         {
             throw new UnsupportedArchiveException(
-                "결과 ZIP이 4GB를 넘어 항목을 추가할 수 없습니다. 원본 파일은 변경되지 않았습니다.");
+                Loc.T("결과 ZIP이 4GB를 넘어 항목을 추가할 수 없습니다. 원본 파일은 변경되지 않았습니다."));
         }
     }
 
@@ -427,7 +427,7 @@ public static class ZipRewriter
             while (remaining > 0)
             {
                 int read = payload.Read(chunk, 0, (int)Math.Min(remaining, chunk.Length));
-                if (read <= 0) throw new EndOfStreamException("추가하는 파일이 작업 중에 변경되었습니다.");
+                if (read <= 0) throw new EndOfStreamException(Loc.T("추가하는 파일이 작업 중에 변경되었습니다."));
                 output.Write(chunk, 0, read);
                 remaining -= read;
             }

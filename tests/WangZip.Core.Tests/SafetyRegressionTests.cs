@@ -106,3 +106,25 @@ public class SafetyRegressionTests
         Assert.Equal(zone, MarkOfTheWeb.Read(Path.Combine(outDir, "a.txt")));
     }
 }
+
+public class LocalizationTests
+{
+    [Fact]
+    public void English_mode_translates_known_keys_and_falls_back_to_korean()
+    {
+        try
+        {
+            Loc.Init("en");
+            Assert.Equal("Cancelling...", Loc.T("취소하는 중..."));
+            Assert.Equal("Extraction complete: 3 file(s)\nD:x", Loc.F("압축을 풀었습니다: 파일 {0:N0}개\n{1}", 3, "D:x"));
+            Assert.Equal("번역 없는 문구", Loc.T("번역 없는 문구"));
+
+            Loc.Init("ko");
+            Assert.Equal("취소하는 중...", Loc.T("취소하는 중..."));
+        }
+        finally
+        {
+            Loc.Init("ko");
+        }
+    }
+}

@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows;
+using WangZip.Core;
 
 namespace WangZip.App;
 
@@ -133,7 +134,7 @@ public static class UpdateService
             if (!string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase))
             {
                 File.Delete(target);
-                throw new InvalidDataException("다운로드한 업데이트 파일이 손상되었습니다. 잠시 후 다시 시도해 주세요.");
+                throw new InvalidDataException(Loc.T("다운로드한 업데이트 파일이 손상되었습니다. 잠시 후 다시 시도해 주세요."));
             }
         }
 

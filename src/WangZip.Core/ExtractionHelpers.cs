@@ -41,8 +41,7 @@ internal static class ExtractionHelpers
             if (drive.AvailableFreeSpace < requiredBytes + margin)
             {
                 throw new ArchiveException(
-                    $"디스크 여유 공간이 부족합니다. 필요: {Format.Bytes(requiredBytes)}, " +
-                    $"사용 가능: {Format.Bytes(drive.AvailableFreeSpace)}");
+                    Loc.F("디스크 여유 공간이 부족합니다. 필요: {0}, 사용 가능: {1}", Format.Bytes(requiredBytes), Format.Bytes(drive.AvailableFreeSpace)));
             }
         }
         catch (ArgumentException)

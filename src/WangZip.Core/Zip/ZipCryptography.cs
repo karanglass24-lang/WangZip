@@ -130,8 +130,7 @@ internal sealed class PkwareCryptoStream : Stream
         if (header[^1] != expected)
         {
             throw new EncryptedArchiveException(
-                "암호가 올바르지 않습니다. 압축 파일에 걸린 비밀번호를 확인해 주세요." +
-                $"\n항목: {_name}");
+                Loc.F("암호가 올바르지 않습니다. 압축 파일에 걸린 비밀번호를 확인해 주세요.\n항목: {0}", _name));
         }
     }
 
@@ -175,7 +174,7 @@ internal sealed class PkwareCryptoStream : Stream
         while (total < target.Length)
         {
             int read = source.Read(target[total..]);
-            if (read <= 0) throw new EndOfStreamException("암호 항목 헤더를 읽지 못했습니다.");
+            if (read <= 0) throw new EndOfStreamException(Loc.T("암호 항목 헤더를 읽지 못했습니다."));
             total += read;
         }
     }
@@ -228,7 +227,7 @@ internal sealed class WinZipAesStream : Stream
         if (!derived.AsSpan(keySize * 2).SequenceEqual(header.AsSpan(saltLength)))
         {
             throw new EncryptedArchiveException(
-                "비밀번호가 올바르지 않습니다. 압축 파일에 걸린 비밀번호를 확인해 주세요.");
+                Loc.T("비밀번호가 올바르지 않습니다. 압축 파일에 걸린 비밀번호를 확인해 주세요."));
         }
 
         // HMAC은 암문(데이터 부분)만 대상입니다 (salt/확인바이트 제외).
@@ -264,7 +263,7 @@ internal sealed class WinZipAesStream : Stream
             int chunk = _source.Read(_cipherBuffer, read, toRead - read);
             if (chunk <= 0)
             {
-                throw new ArchiveException($"암호화된 데이터가 잘렸습니다: {_name}");
+                throw new ArchiveException(Loc.F("암호화된 데이터가 잘렸습니다: {0}", _name));
             }
             read += chunk;
         }
@@ -313,7 +312,7 @@ internal sealed class WinZipAesStream : Stream
             if (hash[i] != authCode[i])
             {
                 throw new ArchiveException(
-                    $"비밀번호가 맞지만 내용이 깨진 파일처럼 보입니다: {_name}");
+                    Loc.F("비밀번호가 맞지만 내용이 깨진 파일처럼 보입니다: {0}", _name));
             }
         }
     }
@@ -324,7 +323,7 @@ internal sealed class WinZipAesStream : Stream
         while (total < target.Length)
         {
             int read = source.Read(target[total..]);
-            if (read <= 0) throw new EndOfStreamException("암호화 데이터를 읽지 못했습니다.");
+            if (read <= 0) throw new EndOfStreamException(Loc.T("암호화 데이터를 읽지 못했습니다."));
             total += read;
         }
     }

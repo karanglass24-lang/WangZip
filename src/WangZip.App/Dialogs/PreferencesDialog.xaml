@@ -10,6 +10,14 @@
         Background="{StaticResource SurfaceBrush}">
     <StackPanel Margin="20">
         <TextBlock Text="일반" FontWeight="SemiBold" />
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+            <TextBlock Text="언어 (다시 시작하면 적용)" VerticalAlignment="Center" Margin="0,0,10,0" />
+            <ComboBox x:Name="LanguageBox" MinWidth="170">
+                <ComboBoxItem Tag="auto" Content="자동 (Windows 언어)" />
+                <ComboBoxItem Tag="ko" Content="한국어" />
+                <ComboBoxItem Tag="en" Content="English" />
+            </ComboBox>
+        </StackPanel>
         <CheckBox x:Name="AutoOpenBox" Content="압축을 풀면 폴더를 자동으로 엽니다" Margin="0,8,0,0" />
         <CheckBox x:Name="AutoUpdateBox" Content="실행할 때 새 버전을 확인하고 자동으로 업데이트합니다 (설치형)" Margin="0,6,0,0" />
 

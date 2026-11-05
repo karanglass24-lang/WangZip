@@ -65,7 +65,7 @@ public sealed class ZipArchiveSource : IArchiveSource
             if (item.CompressedSize < 0 || item.UncompressedSize < 0 ||
                 item.LocalHeaderOffset < 0 || item.LocalHeaderOffset >= new FileInfo(archivePath).Length)
             {
-                warnings.Add($"항목 위치가 비정상입니다: {name}");
+                warnings.Add(Loc.F("항목 위치가 비정상입니다: {0}", name));
                 continue;
             }
 
@@ -104,8 +104,7 @@ public sealed class ZipArchiveSource : IArchiveSource
         if (encrypted is not null && options.Password is null)
         {
             throw new EncryptedArchiveException(
-                $"암호가 설정된 항목이 있습니다: {encrypted.DecodedName}\n" +
-                "압축 풀기 화면에서 비밀번호를 입력한 뒤 다시 시도해 주세요.");
+                Loc.F("암호가 설정된 항목이 있습니다: {0}\n압축 풀기 화면에서 비밀번호를 입력한 뒤 다시 시도해 주세요.", encrypted.DecodedName));
         }
 
         long totalBytes = selected
@@ -149,14 +148,14 @@ public sealed class ZipArchiveSource : IArchiveSource
 
             if (item.IsSymlink)
             {
-                warnings.Add($"심볼릭 링크는 건너뜁니다: {item.DecodedName}");
+                warnings.Add(Loc.F("심볼릭 링크는 건너뜁니다: {0}", item.DecodedName));
                 skippedFiles++;
                 continue;
             }
 
             if (item.RealMethod is not (0 or 8))
             {
-                warnings.Add($"지원하지 않는 압축 방식({item.RealMethod})이라 건너뜁니다: {item.DecodedName}");
+                warnings.Add(Loc.F("지원하지 않는 압축 방식({0})이라 건너뜁니다: {1}", item.RealMethod, item.DecodedName));
                 skippedFiles++;
                 continue;
             }
@@ -213,8 +212,7 @@ public sealed class ZipArchiveSource : IArchiveSource
         if (encrypted is not null && password is null)
         {
             throw new EncryptedArchiveException(
-                $"암호가 설정된 항목이 있습니다: {encrypted.DecodedName}\n" +
-                "비밀번호를 입력한 뒤 다시 시도해 주세요.");
+                Loc.F("암호가 설정된 항목이 있습니다: {0}\n비밀번호를 입력한 뒤 다시 시도해 주세요.", encrypted.DecodedName));
         }
 
         try
@@ -249,7 +247,7 @@ public sealed class ZipArchiveSource : IArchiveSource
                         if (written > item.UncompressedSize)
                         {
                             throw new ArchiveException(
-                                $"항목이 선언된 크기보다 큽니다(손상되었거나 악의적인 파일): {item.DecodedName}");
+                                Loc.F("항목이 선언된 크기보다 큽니다(손상되었거나 악의적인 파일): {0}", item.DecodedName));
                         }
 
                         processed += read;
@@ -271,16 +269,14 @@ public sealed class ZipArchiveSource : IArchiveSource
                 if (written != item.UncompressedSize)
                 {
                     throw new ArchiveException(
-                        $"항목 크기가 일치하지 않습니다: {item.DecodedName} " +
-                        $"(기대 {item.UncompressedSize:N0}바이트, 실제 {written:N0}바이트)");
+                        Loc.F("항목 크기가 일치하지 않습니다: {0} (기대 {1:N0}바이트, 실제 {2:N0}바이트)", item.DecodedName, item.UncompressedSize, written));
                 }
 
                 // WinZip AES는 CRC 대신 항목 뒤의 HMAC을 스트림이 직접 검증합니다.
                 if (!item.HasAes && crc != item.Crc)
                 {
                     throw new CrcMismatchException(
-                        $"CRC가 일치하지 않습니다: {item.DecodedName} " +
-                        $"(기대 {item.Crc:X8}, 실제 {crc:X8})");
+                        Loc.F("CRC가 일치하지 않습니다: {0} (기대 {1:X8}, 실제 {2:X8})", item.DecodedName, item.Crc, crc));
                 }
 
                 checkedCount++;
@@ -296,7 +292,7 @@ public sealed class ZipArchiveSource : IArchiveSource
         if (unsupported > 0)
         {
             throw new UnsupportedArchiveException(
-                $"{checkedCount:N0}개 항목은 정상이지만, {unsupported:N0}개 항목은 지원하지 않는 압축 방식이라 검사하지 못했습니다.");
+                Loc.F("{0:N0}개 항목은 정상이지만, {1:N0}개 항목은 지원하지 않는 압축 방식이라 검사하지 못했습니다.", checkedCount, unsupported));
         }
 
         return checkedCount;
@@ -342,7 +338,7 @@ public sealed class ZipArchiveSource : IArchiveSource
                             if (written > item.UncompressedSize)
                             {
                                 throw new ArchiveException(
-                                    $"항목이 선언된 크기보다 큽니다(손상되었거나 악의적인 파일): {item.DecodedName}");
+                                    Loc.F("항목이 선언된 크기보다 큽니다(손상되었거나 악의적인 파일): {0}", item.DecodedName));
                             }
 
                             output.Write(buffer, 0, read);
@@ -358,15 +354,13 @@ public sealed class ZipArchiveSource : IArchiveSource
                     if (written != item.UncompressedSize)
                     {
                         throw new ArchiveException(
-                            $"항목 크기가 일치하지 않습니다: {item.DecodedName} " +
-                            $"(기대 {item.UncompressedSize:N0}바이트, 실제 {written:N0}바이트)");
+                            Loc.F("항목 크기가 일치하지 않습니다: {0} (기대 {1:N0}바이트, 실제 {2:N0}바이트)", item.DecodedName, item.UncompressedSize, written));
                     }
 
                     if (!item.HasAes && crc != item.Crc)
                     {
                         throw new CrcMismatchException(
-                            $"CRC가 일치하지 않습니다: {item.DecodedName} " +
-                            $"(기대 {item.Crc:X8}, 실제 {crc:X8})");
+                            Loc.F("CRC가 일치하지 않습니다: {0} (기대 {1:X8}, 실제 {2:X8})", item.DecodedName, item.Crc, crc));
                     }
 
                     // WinZip AES는 압축 해제가 끝나도 암문 뒤의 HMAC을 남겨 둡니다.
@@ -416,14 +410,13 @@ public sealed class ZipArchiveSource : IArchiveSource
         if (item.IsEncrypted && password is null)
         {
             throw new EncryptedArchiveException(
-                $"암호가 설정된 항목입니다: {item.DecodedName}\n" +
-                "압축 풀기 화면에서 비밀번호를 입력한 뒤 다시 시도해 주세요.");
+                Loc.F("암호가 설정된 항목입니다: {0}\n압축 풀기 화면에서 비밀번호를 입력한 뒤 다시 시도해 주세요.", item.DecodedName));
         }
 
         if (item.RealMethod is not (0 or 8))
         {
             throw new UnsupportedArchiveException(
-                $"지원하지 않는 압축 방식({item.RealMethod})입니다: {item.DecodedName}");
+                Loc.F("지원하지 않는 압축 방식({0})입니다: {1}", item.RealMethod, item.DecodedName));
         }
 
         fs.Position = item.LocalHeaderOffset;
@@ -433,7 +426,7 @@ public sealed class ZipArchiveSource : IArchiveSource
 
         if (BinaryPrimitives.ReadUInt32LittleEndian(header) != LocalHeaderSignature)
         {
-            throw new ArchiveException($"지역 헤더가 손상되었습니다: {item.DecodedName}");
+            throw new ArchiveException(Loc.F("지역 헤더가 손상되었습니다: {0}", item.DecodedName));
         }
 
         int nameLength = BinaryPrimitives.ReadUInt16LittleEndian(header[26..]);
@@ -472,12 +465,12 @@ public sealed class ZipArchiveSource : IArchiveSource
 
     private static string DescribeEncodings(Dictionary<string, int> encodings)
     {
-        if (encodings.Count == 0) return "알 수 없음";
+        if (encodings.Count == 0) return Loc.T("알 수 없음");
         if (encodings.Count == 1) return encodings.Keys.First();
 
         return string.Join(", ", encodings
             .OrderByDescending(pair => pair.Value)
-            .Select(pair => $"{pair.Key} {pair.Value}개"));
+            .Select(pair => Loc.F("{0} {1}개", pair.Key, pair.Value)));
     }
 
     public void Dispose()

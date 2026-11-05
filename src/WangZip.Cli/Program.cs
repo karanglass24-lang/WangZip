@@ -12,6 +12,7 @@ internal static class Program
     {
         Console.OutputEncoding = Encoding.UTF8;
         Console.InputEncoding = Encoding.UTF8;
+        Loc.Init(Environment.GetEnvironmentVariable("WANGZIP_LANG"));
 
         try
         {
@@ -19,17 +20,17 @@ internal static class Program
         }
         catch (OperationCanceledException)
         {
-            Console.Error.WriteLine("작업이 취소되었습니다.");
+            Console.Error.WriteLine(Loc.T("작업이 취소되었습니다."));
             return 3;
         }
         catch (ArchiveException exception)
         {
-            Console.Error.WriteLine("오류: " + exception.Message);
+            Console.Error.WriteLine(Loc.T("오류: ") + exception.Message);
             return 2;
         }
         catch (Exception exception)
         {
-            Console.Error.WriteLine("예외: " + exception);
+            Console.Error.WriteLine(Loc.T("예외: ") + exception);
             return 2;
         }
     }
@@ -58,7 +59,7 @@ internal static class Program
 
     private static int List(string[] args)
     {
-        if (args.Length == 0) return Usage("압축 파일 경로가 필요합니다.");
+        if (args.Length == 0) return Usage(Loc.T("압축 파일 경로가 필요합니다."));
 
         string archivePath = args[0];
         NameEncodingMode encoding = ParseEncoding(Value(args, "--encoding"));
@@ -92,8 +93,8 @@ internal static class Program
             return 0;
         }
 
-        Console.WriteLine($"압축 파일: {source.ArchivePath}");
-        Console.WriteLine($"형식: {ArchiveService.FormatDisplayName(source.Format)} / 파일명 인코딩: {source.EncodingDescription}");
+        Console.WriteLine(Loc.F("압축 파일: {0}", source.ArchivePath));
+        Console.WriteLine(Loc.F("형식: {0} / 파일명 인코딩: {1}", ArchiveService.FormatDisplayName(source.Format), source.EncodingDescription));
 
         foreach (string warning in source.Warnings)
         {
@@ -101,7 +102,7 @@ internal static class Program
         }
 
         Console.WriteLine();
-        Console.WriteLine($"{"번호",6}  {"크기",12}  {"압축",12}  {"압축률",7}  {"수정일",16}  이름");
+        Console.WriteLine(Loc.F("{0}  {1}  {2}  {3}  {4}  이름", Loc.T("번호").PadLeft(6), Loc.T("크기").PadLeft(12), Loc.T("압축 크기").PadLeft(12), Loc.T("압축률").PadLeft(7), Loc.T("수정일").PadLeft(16)));
         Console.WriteLine(new string('-', 100));
 
         foreach (ArchiveEntryInfo entry in source.Entries)
@@ -117,13 +118,13 @@ internal static class Program
         double ratio = totalSize <= 0 ? 0 : 1.0 - (double)totalCompressed / totalSize;
 
         Console.WriteLine(new string('-', 100));
-        Console.WriteLine($"{source.Entries.Count}개 항목, 원본 {Format.Bytes(totalSize)}, 압축 {Format.Bytes(totalCompressed)}, {Format.CompressionRate(ratio)}");
+        Console.WriteLine(Loc.F("{0}개 항목, 원본 {1}, 압축 {2}, {3}", source.Entries.Count, Format.Bytes(totalSize), Format.Bytes(totalCompressed), Format.CompressionRate(ratio)));
         return 0;
     }
 
     private static int Extract(string[] args)
     {
-        if (args.Length == 0) return Usage("압축 파일 경로가 필요합니다.");
+        if (args.Length == 0) return Usage(Loc.T("압축 파일 경로가 필요합니다."));
 
         string archivePath = args[0];
         string? destination = null;
@@ -158,7 +159,7 @@ internal static class Program
 
             if (selected.Count == 0)
             {
-                Console.Error.WriteLine("선택한 항목을 찾지 못했습니다.");
+                Console.Error.WriteLine(Loc.T("선택한 항목을 찾지 못했습니다."));
                 return 2;
             }
         }
@@ -184,10 +185,10 @@ internal static class Program
 
         (progress as ConsoleProgress)?.Complete();
 
-        Console.WriteLine($"압축을 풀었습니다: {result.ExtractedFiles}개 파일, {Format.Bytes(result.TotalBytes)}");
-        if (result.SkippedFiles > 0) Console.WriteLine($"건너뜀: {result.SkippedFiles}개");
-        Console.WriteLine($"대상 폴더: {destination}");
-        Console.WriteLine($"소요 시간: {result.Elapsed.TotalSeconds:0.00}초");
+        Console.WriteLine(Loc.F("압축을 풀었습니다: {0}개 파일, {1}", result.ExtractedFiles, Format.Bytes(result.TotalBytes)));
+        if (result.SkippedFiles > 0) Console.WriteLine(Loc.F("건너뜀: {0}개", result.SkippedFiles));
+        Console.WriteLine(Loc.F("대상 폴더: {0}", destination));
+        Console.WriteLine(Loc.F("소요 시간: {0:0.00}초", result.Elapsed.TotalSeconds));
 
         foreach (string warning in result.Warnings)
         {
@@ -199,7 +200,7 @@ internal static class Program
 
     private static int Create(string[] args)
     {
-        if (args.Length < 2) return Usage("출력 파일과 압축할 대상이 필요합니다.");
+        if (args.Length < 2) return Usage(Loc.T("출력 파일과 압축할 대상이 필요합니다."));
 
         string outputPath = args[0];
         var sources = new List<string>();
@@ -209,7 +210,7 @@ internal static class Program
             sources.Add(arg);
         }
 
-        if (sources.Count == 0) return Usage("압축할 파일이나 폴더가 필요합니다.");
+        if (sources.Count == 0) return Usage(Loc.T("압축할 파일이나 폴더가 필요합니다."));
 
         CompressionLevel level = ParseLevel(Value(args, "--level"));
         NameEncodingMode encoding = ParseEncoding(Value(args, "--encoding"));
@@ -240,8 +241,8 @@ internal static class Program
 
         (progress as ConsoleProgress)?.Complete();
 
-        Console.WriteLine($"압축 파일을 만들었습니다: {result.OutputPath}");
-        Console.WriteLine($"{result.EntryCount}개 항목, 원본 {Format.Bytes(result.SourceBytes)} → {Format.Bytes(result.OutputBytes)} ({Format.CompressionRate(result.Ratio)})");
+        Console.WriteLine(Loc.F("압축 파일을 만들었습니다: {0}", result.OutputPath));
+        Console.WriteLine(Loc.F("{0}개 항목, 원본 {1} → {2} ({3})", result.EntryCount, Format.Bytes(result.SourceBytes), Format.Bytes(result.OutputBytes), Format.CompressionRate(result.Ratio)));
 
         foreach (string warning in result.Warnings)
         {
@@ -253,7 +254,7 @@ internal static class Program
 
     private static int Verify(string[] args)
     {
-        if (args.Length == 0) return Usage("압축 파일 경로가 필요합니다.");
+        if (args.Length == 0) return Usage(Loc.T("압축 파일 경로가 필요합니다."));
 
         string archivePath = args[0];
         NameEncodingMode encoding = ParseEncoding(Value(args, "--encoding"));
@@ -263,12 +264,12 @@ internal static class Program
         using IArchiveSource source = OpenArchiveInteractive(archivePath, encoding, password, quiet);
         if (source is not ZipArchiveSource zip)
         {
-            Console.WriteLine("검사는 ZIP 형식에서만 지원합니다. 항목 목록은 정상적으로 읽혔습니다.");
+            Console.WriteLine(Loc.T("검사는 ZIP 형식에서만 지원합니다. 항목 목록은 정상적으로 읽혔습니다."));
             return 0;
         }
 
         int checkedCount = zip.Verify(null, CancellationToken.None, password);
-        Console.WriteLine($"정상입니다. {checkedCount}개 항목의 CRC를 확인했습니다.");
+        Console.WriteLine(Loc.F("정상입니다. {0}개 항목의 CRC를 확인했습니다.", checkedCount));
         return 0;
     }
 
@@ -278,13 +279,13 @@ internal static class Program
             ? value.ToString(3)
             : "0.0.0";
         Console.WriteLine($"WangZip CLI {version} (GPL-3.0)");
-        Console.WriteLine("압축 엔진: 직접 구현 ZIP + SharpCompress");
+        Console.WriteLine(Loc.T("압축 엔진: 직접 구현 ZIP + SharpCompress"));
         return 0;
     }
 
     private static int Unknown(string command)
     {
-        Console.Error.WriteLine($"알 수 없는 명령입니다: {command}");
+        Console.Error.WriteLine(Loc.F("알 수 없는 명령입니다: {0}", command));
         PrintHelp();
         return 1;
     }
@@ -306,8 +307,8 @@ internal static class Program
                     throw;
                 }
 
-                Console.Error.WriteLine("이 압축 파일은 비밀번호가 필요합니다. (--password 옵션으로도 지정 가능)");
-                Console.Error.Write("비밀번호: ");
+                Console.Error.WriteLine(Loc.T("이 압축 파일은 비밀번호가 필요합니다. (--password 옵션으로도 지정 가능)"));
+                Console.Error.Write(Loc.T("비밀번호: "));
                 string? typed = Console.ReadLine();
                 if (string.IsNullOrEmpty(typed))
                 {
@@ -327,6 +328,27 @@ internal static class Program
 
     private static void PrintHelp()
     {
+        if (Loc.IsEnglish)
+        {
+            Console.WriteLine("""
+                WangZip - ad-free open-source archive utility (v0.6.3)
+
+                Usage:
+                  wangzip list    <archive> [--encoding auto|utf8|cp949|raw] [--json] [--password PASSWORD]
+                  wangzip extract <archive> [target-folder] [--encoding ...] [--overwrite overwrite|skip|rename] [--password PASSWORD]
+                  wangzip create  <output.zip> <file|folder>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "text"] [--password PASSWORD]
+                  wangzip verify  <archive> [--password PASSWORD]
+
+                Examples:
+                  wangzip list "photos.zip"
+                  wangzip extract "photos.zip" "C:\Temp\photos" --encoding cp949
+                  wangzip extract "secret.zip" "C:\Temp\secret" --password "1234"
+                  wangzip create "backup.zip" "C:\work" --level optimal
+                  wangzip create "secure.zip" "C:\work" --password "PASSWORD"
+                """);
+            return;
+        }
+
         Console.WriteLine("""
             WangZip - 광고 없는 오픈소스 압축 프로그램 (v0.6.3)
 
@@ -364,7 +386,7 @@ internal static class Program
         "utf8" or "utf-8" => NameEncodingMode.Utf8,
         "cp949" or "euc-kr" or "euckr" or "949" => NameEncodingMode.Cp949,
         "raw" => NameEncodingMode.Raw,
-        _ => throw new ArchiveException($"알 수 없는 인코딩입니다: {value}"),
+        _ => throw new ArchiveException(Loc.F("알 수 없는 인코딩입니다: {0}", value)),
     };
 
     private static OverwritePolicy ParseOverwrite(string? value) => (value ?? "overwrite").ToLowerInvariant() switch
@@ -372,7 +394,7 @@ internal static class Program
         "overwrite" or "o" => OverwritePolicy.Overwrite,
         "skip" or "s" => OverwritePolicy.Skip,
         "rename" or "r" => OverwritePolicy.Rename,
-        _ => throw new ArchiveException($"알 수 없는 덮어쓰기 방식입니다: {value}"),
+        _ => throw new ArchiveException(Loc.F("알 수 없는 덮어쓰기 방식입니다: {0}", value)),
     };
 
     private static CompressionLevel ParseLevel(string? value) => (value ?? "optimal").ToLowerInvariant() switch
@@ -381,7 +403,7 @@ internal static class Program
         "fastest" or "fast" or "1" => CompressionLevel.Fastest,
         "optimal" or "normal" or "5" => CompressionLevel.Optimal,
         "smallest" or "max" or "9" => CompressionLevel.SmallestSize,
-        _ => throw new ArchiveException($"알 수 없는 압축 수준입니다: {value}"),
+        _ => throw new ArchiveException(Loc.F("알 수 없는 압축 수준입니다: {0}", value)),
     };
 
     private sealed class ConsoleProgress : IProgress<ProgressReport>

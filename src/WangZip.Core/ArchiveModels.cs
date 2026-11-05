@@ -61,7 +61,7 @@ public sealed record ArchiveEntryInfo
 
     public string MethodName => Method switch
     {
-        0 => "저장",
+        0 => (Loc.IsEnglish ? "Stored" : "저장"),
         8 => "Deflate",
         9 => "Deflate64",
         12 => "BZip2",
@@ -69,14 +69,14 @@ public sealed record ArchiveEntryInfo
         93 => "Zstandard",
         95 => "XZ",
         99 => "AES",
-        _ => $"방식 {Method}",
+        _ => Loc.F("방식 {0}", Method),
     };
 
     public string SizeText => Format.Bytes(Size);
     public string CompressedText => Format.Bytes(CompressedSize);
     public string RatioText => Size <= 0 ? "-" : $"{Ratio * 100:0.0}%";
     public string ModifiedText => Modified == default ? "-" : Modified.LocalDateTime.ToString("yyyy-MM-dd HH:mm");
-    public string TypeText => IsDirectory ? "폴더" : IsSymlink ? "링크" : "파일";
+    public string TypeText => IsDirectory ? Loc.T("폴더") : IsSymlink ? Loc.T("링크") : Loc.T("파일");
 }
 
 public sealed class ExtractionOptions
@@ -178,6 +178,6 @@ public static class Format
 
     /// <summary>압축률을 사람이 읽기 좋은 문장으로 만듭니다 (음수는 "증가").</summary>
     public static string CompressionRate(double ratio) => ratio >= 0
-        ? $"{ratio * 100:0.0}% 절감"
-        : $"{-ratio * 100:0.0}% 증가";
+        ? Loc.F("{0:0.0}% 절감", ratio * 100)
+        : Loc.F("{0:0.0}% 증가", -ratio * 100);
 }

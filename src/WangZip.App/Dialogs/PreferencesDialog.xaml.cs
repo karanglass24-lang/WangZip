@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using WangZip.Core;
 
 namespace WangZip.App.Dialogs;
 
@@ -11,7 +12,15 @@ public partial class PreferencesDialog : Window
     public PreferencesDialog(AppSettings settings)
     {
         InitializeComponent();
+        Localizer.Apply(this);
         _settings = settings;
+
+        foreach (ComboBoxItem item in LanguageBox.Items)
+        {
+            if ((string)item.Tag == settings.Language) LanguageBox.SelectedItem = item;
+        }
+
+        LanguageBox.SelectedItem ??= LanguageBox.Items[0];
 
         AutoOpenBox.IsChecked = settings.AutoOpenAfterExtract;
         AutoUpdateBox.IsChecked = settings.AutoUpdate;
@@ -46,7 +55,7 @@ public partial class PreferencesDialog : Window
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, exception.Message, "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, exception.Message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -57,10 +66,10 @@ public partial class PreferencesDialog : Window
         try
         {
             string exe = Environment.ProcessPath
-                ?? throw new InvalidOperationException("실행 파일 경로를 알 수 없습니다.");
+                ?? throw new InvalidOperationException(Loc.T("실행 파일 경로를 알 수 없습니다."));
             if (string.Equals(System.IO.Path.GetFileName(exe), "dotnet.exe", StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("개발 중 실행(dotnet) 상태에서는 탐색기 등록을 변경할 수 없습니다.");
+                throw new InvalidOperationException(Loc.T("개발 중 실행(dotnet) 상태에서는 탐색기 등록을 변경할 수 없습니다."));
             }
 
             // 레지스트리를 먼저 적용하고, 성공했을 때만 설정 파일에 기록해 둘이 어긋나지 않게 합니다.
@@ -72,15 +81,24 @@ public partial class PreferencesDialog : Window
 
             _settings.AutoOpenAfterExtract = AutoOpenBox.IsChecked == true;
             _settings.AutoUpdate = AutoUpdateBox.IsChecked == true;
+            string chosenLanguage = (string)((ComboBoxItem)LanguageBox.SelectedItem).Tag;
+            bool languageChanged = chosenLanguage != _settings.Language;
+            _settings.Language = chosenLanguage;
             _settings.ShellMenuEnabled = shellMenu;
             _settings.Save();
+
+            if (languageChanged)
+            {
+                MessageBox.Show(this, Loc.T("언어는 왕집을 다시 시작하면 적용됩니다."), Loc.T("왕집"),
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
 
             DialogResult = true;
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, "설정을 저장하지 못했습니다.\n" + exception.Message,
-                "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, Loc.T("설정을 저장하지 못했습니다.\n") + exception.Message,
+                Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 }

@@ -22,7 +22,7 @@ public static class ZipWriter
     {
         if (sources.Count == 0)
         {
-            throw new ArchiveException("압축할 파일이나 폴더를 선택해 주세요.");
+            throw new ArchiveException(Loc.T("압축할 파일이나 폴더를 선택해 주세요."));
         }
 
         string fullOutput = Path.GetFullPath(outputPath);
@@ -31,7 +31,7 @@ public static class ZipWriter
 
         if (items.Count == 0)
         {
-            throw new ArchiveException("압축할 파일이 없습니다.");
+            throw new ArchiveException(Loc.T("압축할 파일이 없습니다."));
         }
 
         long totalBytes = items.Sum(item => item.Length);
@@ -180,7 +180,7 @@ public static class ZipWriter
             }
             else
             {
-                warnings.Add($"경로를 찾을 수 없어 건너뜁니다: {source}");
+                warnings.Add(Loc.F("경로를 찾을 수 없어 건너뜁니다: {0}", source));
             }
         }
 
@@ -202,7 +202,7 @@ public static class ZipWriter
 
         if (!usedNames.Add(entryName))
         {
-            warnings.Add($"이름이 중복되어 건너뜁니다: {entryName}");
+            warnings.Add(Loc.F("이름이 중복되어 건너뜁니다: {0}", entryName));
             return;
         }
 
@@ -216,7 +216,7 @@ public static class ZipWriter
         }
         catch (IOException)
         {
-            warnings.Add($"파일을 읽을 수 없어 건너뜁니다: {fullPath}");
+            warnings.Add(Loc.F("파일을 읽을 수 없어 건너뜁니다: {0}", fullPath));
             return;
         }
 
@@ -239,7 +239,7 @@ public static class ZipWriter
         string relative = Path.GetRelativePath(baseDirectory, fullPath);
         if (relative.StartsWith("..", StringComparison.Ordinal))
         {
-            throw new UnsafeArchiveEntryException($"압축 대상이 기준 폴더를 벗어납니다: {fullPath}");
+            throw new UnsafeArchiveEntryException(Loc.F("압축 대상이 기준 폴더를 벗어납니다: {0}", fullPath));
         }
 
         return relative.Replace('\\', '/');

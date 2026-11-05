@@ -24,7 +24,7 @@ public static class ArchiveService
         string fullPath = Path.GetFullPath(archivePath);
         if (!File.Exists(fullPath))
         {
-            throw new FileNotFoundException($"압축 파일을 찾을 수 없습니다: {archivePath}", fullPath);
+            throw new FileNotFoundException(Loc.F("압축 파일을 찾을 수 없습니다: {0}", archivePath), fullPath);
         }
 
         ArchiveFormat format = DetectFormat(fullPath);
@@ -37,8 +37,7 @@ public static class ArchiveService
         if (format == ArchiveFormat.Unknown)
         {
             throw new UnsupportedArchiveException(
-                $"지원하지 않는 형식입니다: {Path.GetFileName(fullPath)}\n" +
-                "지원 형식: ZIP, 7z, TAR, GZ, BZ2, XZ, RAR(읽기)");
+                Loc.F("지원하지 않는 형식입니다: {0}\n지원 형식: ZIP, 7z, TAR, GZ, BZ2, XZ, RAR(읽기)", Path.GetFileName(fullPath)));
         }
 
         if (IsCompressedTar(fullPath))
@@ -143,7 +142,7 @@ public static class ArchiveService
         ArchiveFormat.BZip2 => "BZ2",
         ArchiveFormat.Xz => "XZ",
         ArchiveFormat.Rar => "RAR",
-        _ => "알 수 없음",
+        _ => Loc.T("알 수 없음"),
     };
 
     /// <summary>이 형식을 생성(쓰기)할 수 있는지 여부.</summary>

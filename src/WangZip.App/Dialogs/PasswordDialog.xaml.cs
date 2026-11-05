@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using WangZip.Core;
 
 namespace WangZip.App.Dialogs;
 
@@ -8,6 +9,7 @@ public partial class PasswordDialog : Window
     public PasswordDialog()
     {
         InitializeComponent();
+        Localizer.Apply(this);
         Loaded += (_, _) => PasswordInput.Focus();
     }
 
@@ -33,7 +35,7 @@ public partial class PasswordDialog : Window
     {
         if (string.IsNullOrEmpty(Password))
         {
-            MessageBox.Show(this, "비밀번호를 입력해 주세요.", "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, Loc.T("비밀번호를 입력해 주세요."), Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 

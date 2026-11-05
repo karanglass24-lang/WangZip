@@ -16,20 +16,21 @@ public partial class CreateDialog : Window
     public CreateDialog(IEnumerable<string>? initialSources = null)
     {
         InitializeComponent();
+        Localizer.Apply(this);
 
         LevelCombo.ItemsSource = new[]
         {
-            new LevelOption("저장 (압축 안 함)", CompressionLevel.NoCompression),
-            new LevelOption("빠르게", CompressionLevel.Fastest),
-            new LevelOption("보통 (권장)", CompressionLevel.Optimal),
-            new LevelOption("최대 압축 (느림)", CompressionLevel.SmallestSize),
+            new LevelOption(Loc.T("저장 (압축 안 함)"), CompressionLevel.NoCompression),
+            new LevelOption(Loc.T("빠르게"), CompressionLevel.Fastest),
+            new LevelOption(Loc.T("보통 (권장)"), CompressionLevel.Optimal),
+            new LevelOption(Loc.T("최대 압축 (느림)"), CompressionLevel.SmallestSize),
         };
         LevelCombo.SelectedIndex = 2;
 
         EncodingCombo.ItemsSource = new[]
         {
-            new EncodingOption("UTF-8 (권장, 현대 도구 호환)", NameEncodingMode.Auto),
-            new EncodingOption("CP949 (구형 Windows 호환)", NameEncodingMode.Cp949),
+            new EncodingOption(Loc.T("UTF-8 (권장, 현대 도구 호환)"), NameEncodingMode.Auto),
+            new EncodingOption(Loc.T("CP949 (구형 Windows 호환)"), NameEncodingMode.Cp949),
         };
         EncodingCombo.SelectedIndex = 0;
 
@@ -63,9 +64,9 @@ public partial class CreateDialog : Window
     {
         var dialog = new OpenFileDialog
         {
-            Title = "압축할 파일 선택",
+            Title = Loc.T("압축할 파일 선택"),
             Multiselect = true,
-            Filter = "모든 파일 (*.*)|*.*",
+            Filter = Loc.T("모든 파일 (*.*)|*.*"),
         };
 
         if (dialog.ShowDialog(this) != true) return;
@@ -82,7 +83,7 @@ public partial class CreateDialog : Window
     {
         var dialog = new OpenFolderDialog
         {
-            Title = "압축할 폴더 선택",
+            Title = Loc.T("압축할 폴더 선택"),
             Multiselect = true,
         };
 
@@ -108,8 +109,8 @@ public partial class CreateDialog : Window
     {
         var dialog = new SaveFileDialog
         {
-            Title = "압축 파일 저장",
-            Filter = "ZIP 압축 파일 (*.zip)|*.zip|모든 파일 (*.*)|*.*",
+            Title = Loc.T("압축 파일 저장"),
+            Filter = Loc.T("ZIP 압축 파일 (*.zip)|*.zip|모든 파일 (*.*)|*.*"),
             DefaultExt = ".zip",
             AddExtension = true,
             FileName = Path.GetFileName(OutputBox.Text),
@@ -126,14 +127,14 @@ public partial class CreateDialog : Window
     {
         if (Sources.Count == 0)
         {
-            MessageBox.Show(this, "압축할 파일이나 폴더를 추가해 주세요.", "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, Loc.T("압축할 파일이나 폴더를 추가해 주세요."), Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
         string output = OutputPath;
         if (string.IsNullOrWhiteSpace(output))
         {
-            MessageBox.Show(this, "저장할 파일 경로를 입력해 주세요.", "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, Loc.T("저장할 파일 경로를 입력해 주세요."), Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -144,7 +145,7 @@ public partial class CreateDialog : Window
         {
             if (string.IsNullOrEmpty(PasswordBox.Password))
             {
-                MessageBox.Show(this, "비밀번호를 입력해 주세요.", "왕집",
+                MessageBox.Show(this, Loc.T("비밀번호를 입력해 주세요."), Loc.T("왕집"),
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 PasswordBox.Focus();
                 return;
@@ -152,7 +153,7 @@ public partial class CreateDialog : Window
 
             if (!string.Equals(PasswordBox.Password, PasswordConfirmBox.Password, StringComparison.Ordinal))
             {
-                MessageBox.Show(this, "비밀번호가 서로 다릅니다. 다시 확인해 주세요.", "왕집",
+                MessageBox.Show(this, Loc.T("비밀번호가 서로 다릅니다. 다시 확인해 주세요."), Loc.T("왕집"),
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 PasswordConfirmBox.Focus();
                 return;
@@ -166,12 +167,12 @@ public partial class CreateDialog : Window
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, "저장 경로를 만들 수 없습니다.\n" + exception.Message, "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, Loc.T("저장 경로를 만들 수 없습니다.\n") + exception.Message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         if (File.Exists(output) &&
-            MessageBox.Show(this, $"같은 이름의 파일이 이미 있습니다. 덮어쓸까요?\n\n{output}", "왕집",
+            MessageBox.Show(this, Loc.F("같은 이름의 파일이 이미 있습니다. 덮어쓸까요?\n\n{0}", output), Loc.T("왕집"),
                 MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
         {
             return;

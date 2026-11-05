@@ -9,6 +9,9 @@ namespace WangZip.App;
 /// </summary>
 public sealed class AppSettings
 {
+    /// <summary>표시 언어: "auto"(Windows 언어를 따름), "ko", "en". 바꾸면 다시 시작해야 적용됩니다.</summary>
+    public string Language { get; set; } = "auto";
+
     /// <summary>압축 풀기가 성공하면 폴더를 자동으로 엽니다.</summary>
     public bool AutoOpenAfterExtract { get; set; } = true;
 

@@ -45,9 +45,35 @@ CloseApplications=yes
 ArchitecturesInstallIn64BitMode=x64compatible
 
 [Tasks]
-Name: "desktopicon"; Description: "{#MyAppShortName} 바탕 화면 바로 가기 만들기(&D)"; GroupDescription: "추가 작업:"; Flags: unchecked
-Name: "fileassoc"; Description: "압축 파일 형식(zip, 7z, rar 등)의 '연결 프로그램' 목록에 왕집 등록(&A)"; GroupDescription: "추가 작업:"
-Name: "shellmenu"; Description: "탐색기 마우스 오른쪽 메뉴에 '여기에 풀기 / ZIP으로 압축' 추가(&M) (Win11은 '여러 항목 표시' 아래)"; GroupDescription: "추가 작업:"
+Name: "desktopicon"; Description: "{cm:TaskDesktop}"; GroupDescription: "{cm:TaskGroup}"; Flags: unchecked
+Name: "fileassoc"; Description: "{cm:TaskAssoc}"; GroupDescription: "{cm:TaskGroup}"
+Name: "shellmenu"; Description: "{cm:TaskMenu}"; GroupDescription: "{cm:TaskGroup}"
+
+[CustomMessages]
+korean.AppShort=왕집
+korean.AppDesc=광고 없는 오픈소스 압축 프로그램
+korean.TaskGroup=추가 작업:
+korean.TaskDesktop=왕집 바탕 화면 바로 가기 만들기(&D)
+korean.TaskAssoc=압축 파일 형식(zip, 7z, rar 등)의 '연결 프로그램' 목록에 왕집 등록(&A)
+korean.TaskMenu=탐색기 마우스 오른쪽 메뉴에 '여기에 풀기 / ZIP으로 압축' 추가(&M) (Win11은 '더 많은 옵션 표시' 아래)
+korean.MenuExtract=왕집: 여기에 풀기
+korean.MenuCompress=왕집: ZIP으로 압축
+korean.MenuFolder=왕집: 이 폴더 압축
+korean.ArchiveFile=왕집 압축 파일
+korean.UninstallName=왕집 제거
+korean.RunNow=지금 왕집 실행(&R)
+english.AppShort=WangZip
+english.AppDesc=Ad-free open-source archive utility
+english.TaskGroup=Additional tasks:
+english.TaskDesktop=Create a WangZip &desktop shortcut
+english.TaskAssoc=Register WangZip in the 'Open with' list for archive types (zip, 7z, rar, ...) (&A)
+english.TaskMenu=Add 'Extract here / Compress to ZIP' to the Explorer right-click menu (&M) (Windows 11: under 'Show more options')
+english.MenuExtract=WangZip: Extract here
+english.MenuCompress=WangZip: Compress to ZIP
+english.MenuFolder=WangZip: Compress this folder
+english.ArchiveFile=WangZip archive
+english.UninstallName=Uninstall WangZip
+english.RunNow=&Run WangZip now
 
 [Languages]
 Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
@@ -58,59 +84,59 @@ Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs 
 
 [Registry]
 ; ZIP 형식: 여기에 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "왕집: 여기에 풀기"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
 ; 7z 형식: 여기에 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "왕집: 여기에 풀기"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
 ; 폴더: 압축하기
 ; 모든 파일: 왕집으로 압축 (여러 개를 선택하면 하나의 ZIP으로 묶음)
-Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "왕집: ZIP으로 압축"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuCompress}"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate"; ValueType: string; ValueName: ""; ValueData: "왕집: 이 폴더 압축"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
 ; 폴더 배경: 바탕 화면/폴더 안에서 이 위치 압축
-Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZipCreateBackground"; ValueType: string; ValueName: ""; ValueData: "왕집: 이 폴더 압축"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZipCreateBackground"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZipCreateBackground"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZipCreateBackground\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%V"""; Tasks: shellmenu
 
 ; rar 형식: 여기에 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "왕집: 여기에 풀기"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
 ; tar 형식: 여기에 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "왕집: 여기에 풀기"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
 ; gz 형식: 여기에 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "왕집: 여기에 풀기"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
 ; tgz 형식: 여기에 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "왕집: 여기에 풀기"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
 ; bz2 형식: 여기에 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "왕집: 여기에 풀기"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
 ; xz 형식: 여기에 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "왕집: 여기에 풀기"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
 ; 연결 프로그램 등록 ("다른 앱 선택" / 기본 앱 목록에 왕집 표시)
-Root: HKCU; Subkey: "Software\Classes\WangZip.Archive"; ValueType: string; ValueName: ""; ValueData: "왕집 압축 파일"; Flags: uninsdeletekey; Tasks: fileassoc
+Root: HKCU; Subkey: "Software\Classes\WangZip.Archive"; ValueType: string; ValueName: ""; ValueData: "{cm:ArchiveFile}"; Flags: uninsdeletekey; Tasks: fileassoc
 Root: HKCU; Subkey: "Software\Classes\WangZip.Archive\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExe},0"; Tasks: fileassoc
 Root: HKCU; Subkey: "Software\Classes\WangZip.Archive\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" ""%1"""; Tasks: fileassoc
-Root: HKCU; Subkey: "Software\Classes\Applications\WangZip.exe"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "왕집"; Flags: uninsdeletekey; Tasks: fileassoc
+Root: HKCU; Subkey: "Software\Classes\Applications\WangZip.exe"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "{cm:AppShort}"; Flags: uninsdeletekey; Tasks: fileassoc
 Root: HKCU; Subkey: "Software\Classes\Applications\WangZip.exe\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExe},0"; Tasks: fileassoc
 Root: HKCU; Subkey: "Software\Classes\Applications\WangZip.exe\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" ""%1"""; Tasks: fileassoc
-Root: HKCU; Subkey: "Software\WangZip\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "왕집"; Flags: uninsdeletekey; Tasks: fileassoc
-Root: HKCU; Subkey: "Software\WangZip\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "광고 없는 오픈소스 압축 프로그램"; Tasks: fileassoc
+Root: HKCU; Subkey: "Software\WangZip\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "{cm:AppShort}"; Flags: uninsdeletekey; Tasks: fileassoc
+Root: HKCU; Subkey: "Software\WangZip\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "{cm:AppDesc}"; Tasks: fileassoc
 Root: HKCU; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueName: "WangZip"; ValueData: "Software\WangZip\Capabilities"; Flags: uninsdeletevalue; Tasks: fileassoc
 Root: HKCU; Subkey: "Software\Classes\.zip\OpenWithProgids"; ValueType: string; ValueName: "WangZip.Archive"; ValueData: ""; Flags: uninsdeletevalue; Tasks: fileassoc
 Root: HKCU; Subkey: "Software\Classes\Applications\WangZip.exe\SupportedTypes"; ValueType: string; ValueName: ".zip"; ValueData: ""; Tasks: fileassoc
@@ -169,9 +195,9 @@ Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.iso\shell\WangZipE
 Root: HKCU; Subkey: "Software\Classes\.iso\OpenWithProgids"; ValueType: none; ValueName: "WangZip.Archive"; Flags: dontcreatekey uninsdeletevalue
 
 [Icons]
-Name: "{group}\{#MyAppShortName}"; Filename: "{app}\{#MyAppExe}"; IconFilename: "{app}\{#MyAppExe}"; Comment: "광고 없는 압축 프로그램"
-Name: "{group}\{#MyAppShortName} 제거"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; IconFilename: "{app}\{#MyAppExe}"; Tasks: desktopicon; Comment: "광고 없는 압축 프로그램"
+Name: "{group}\{cm:AppShort}"; Filename: "{app}\{#MyAppExe}"; IconFilename: "{app}\{#MyAppExe}"; Comment: "{cm:AppDesc}"
+Name: "{group}\{cm:UninstallName}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; IconFilename: "{app}\{#MyAppExe}"; Tasks: desktopicon; Comment: "{cm:AppDesc}"
 
 [Run]
-Filename: "{app}\{#MyAppExe}"; Description: "지금 왕집 실행(&R)"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExe}"; Description: "{cm:RunNow}"; Flags: nowait postinstall skipifsilent

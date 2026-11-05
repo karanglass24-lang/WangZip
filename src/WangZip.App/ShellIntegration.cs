@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using WangZip.Core;
 
 namespace WangZip.App;
 
@@ -62,17 +63,17 @@ internal static class ShellIntegration
         string open = $"\"{exePath}\" \"%1\"";
         string icon = $"{exePath},0";
 
-        SetDefault($@"Software\Classes\{ProgId}", "왕집 압축 파일");
+        SetDefault($@"Software\Classes\{ProgId}", Loc.T("왕집 압축 파일"));
         SetDefault($@"Software\Classes\{ProgId}\DefaultIcon", icon);
         SetDefault($@"Software\Classes\{ProgId}\shell\open\command", open);
 
         string appRoot = $@"Software\Classes\Applications\{AppKeyName}";
-        SetValue(appRoot, "FriendlyAppName", "왕집");
+        SetValue(appRoot, "FriendlyAppName", Loc.T("왕집"));
         SetDefault($@"{appRoot}\DefaultIcon", icon);
         SetDefault($@"{appRoot}\shell\open\command", open);
 
-        SetValue(CapabilitiesPath, "ApplicationName", "왕집");
-        SetValue(CapabilitiesPath, "ApplicationDescription", "광고 없는 오픈소스 압축 프로그램");
+        SetValue(CapabilitiesPath, "ApplicationName", Loc.T("왕집"));
+        SetValue(CapabilitiesPath, "ApplicationDescription", Loc.T("광고 없는 오픈소스 압축 프로그램"));
         using (RegistryKey registered = Registry.CurrentUser.CreateSubKey(@"Software\RegisteredApplications"))
         {
             registered.SetValue("WangZip", CapabilitiesPath);
@@ -135,8 +136,8 @@ internal static class ShellIntegration
             .Select(e => $@"Software\Classes\SystemFileAssociations\{e}\shell\WangZipExtract")
             .ToList();
 
-        const string extractLabel = "왕집: 여기에 풀기";
-        const string createLabel = "왕집: 이 폴더 압축";
+        string extractLabel = Loc.T("왕집: 여기에 풀기");
+        string createLabel = Loc.T("왕집: 이 폴더 압축");
 
         foreach (string path in extractTargets)
         {
@@ -145,7 +146,7 @@ internal static class ShellIntegration
         }
 
         const string file = @"Software\Classes\*\shell\WangZipCompress";
-        if (enabled) WriteMenu(file, "왕집: ZIP으로 압축", $"\"{exePath}\" here-create \"%1\"", exePath);
+        if (enabled) WriteMenu(file, Loc.T("왕집: ZIP으로 압축"), $"\"{exePath}\" here-create \"%1\"", exePath);
         else DeleteTree(file);
 
         const string directory = @"Software\Classes\Directory\shell\WangZipCreate";

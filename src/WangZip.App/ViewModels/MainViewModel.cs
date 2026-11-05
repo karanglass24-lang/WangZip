@@ -88,7 +88,7 @@ public sealed class EntryRow
     public string CompressedText => Info.IsDirectory ? string.Empty : Info.CompressedText;
     public string RatioText => Info.IsDirectory ? string.Empty : Info.RatioText;
     public string ModifiedText => Info.ModifiedText;
-    public string MethodText => Info.IsDirectory ? "폴더" : Info.IsEncrypted ? "AES" : Info.MethodName;
+    public string MethodText => Info.IsDirectory ? Loc.T("폴더") : Info.IsEncrypted ? "AES" : Info.MethodName;
     public bool IsDirectory => Info.IsDirectory;
     public string LockText => Info.IsEncrypted ? "\uE72E" : "";
 
@@ -104,15 +104,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 {
     public static IReadOnlyList<QuickDestination> QuickDestinations { get; } =
     [
-        new("압축 파일 옆 폴더 (권장)", null, "압축 파일과 같은 이름의 폴더를 새로 만들어 풉니다."),
-        new("바탕 화면", () => Environment.GetFolderPath(Environment.SpecialFolder.Desktop), ""),
-        new("다운로드", () => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"), ""),
-        new("문서", () => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), ""),
+        new(Loc.T("압축 파일 옆 폴더 (권장)"), null, Loc.T("압축 파일과 같은 이름의 폴더를 새로 만들어 풉니다.")),
+        new(Loc.T("바탕 화면"), () => Environment.GetFolderPath(Environment.SpecialFolder.Desktop), ""),
+        new(Loc.T("다운로드"), () => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"), ""),
+        new(Loc.T("문서"), () => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), ""),
     ];
 
     private IArchiveSource? _source;
     private string? _archivePath;
-    private string _statusText = "압축 파일을 열거나, 파일을 이 창으로 끌어다 놓으세요.";
+    private string _statusText = Loc.T("압축 파일을 열거나, 파일을 이 창으로 끌어다 놓으세요.");
     private string _encodingDescription = string.Empty;
     private string _pathText = "";
     private bool _isBusy;
@@ -162,8 +162,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     }
 
     public string Title => ArchivePath is null
-        ? "왕집"
-        : $"{Path.GetFileName(ArchivePath)} — 왕집";
+        ? Loc.T("왕집")
+        : Loc.F("{0} — 왕집", Path.GetFileName(ArchivePath));
 
     public bool HasArchive => _source is not null;
 
@@ -237,7 +237,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _allRows = loaded.Rows;
 
             ArchivePath = _source.ArchivePath;
-            EncodingDescription = "파일명 인코딩: " + _source.EncodingDescription;
+            EncodingDescription = Loc.T("파일명 인코딩: ") + _source.EncodingDescription;
 
             _filterText = "";
             OnPropertyChanged(nameof(FilterText));
@@ -269,7 +269,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private void RebuildTree()
     {
         TreeRoots.Clear();
-        string rootName = ArchivePath is null ? "압축 파일" : Path.GetFileName(ArchivePath);
+        string rootName = ArchivePath is null ? Loc.T("압축 파일") : Path.GetFileName(ArchivePath);
         TreeRoots.Add(FolderTreeBuilder.Build(
             rootName, _allRows.Select(r => (r.Info.Name, r.Info.IsDirectory))));
     }
@@ -299,7 +299,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
 
             ReplaceEntries(found);
-            PathText = $"검색: {needle}";
+            PathText = Loc.F("검색: {0}", needle);
             RebuildCrumbs("");
             OnPropertyChanged(nameof(CanGoUp));
             OnPropertyChanged(nameof(EntriesCount));
@@ -413,7 +413,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     /// <summary>끌어서 내보내기용: 선택 항목을 임시 폴더로 풀고 각 항목의 실제 경로를 돌려줍니다.</summary>
     public List<string> ExtractToTemp(IReadOnlyList<EntryRow> selected)
     {
-        IArchiveSource source = _source ?? throw new InvalidOperationException("먼저 압축 파일을 열어 주세요.");
+        IArchiveSource source = _source ?? throw new InvalidOperationException(Loc.T("먼저 압축 파일을 열어 주세요."));
 
         string root = Path.Combine(Path.GetTempPath(), "WangZip", "drag");
         try
@@ -508,7 +508,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         IsBusy = true;
         try
         {
-            IArchiveSource source = _source ?? throw new InvalidOperationException("먼저 압축 파일을 열어 주세요.");
+            IArchiveSource source = _source ?? throw new InvalidOperationException(Loc.T("먼저 압축 파일을 열어 주세요."));
             int[] indices = ExpandRows(rows).Select(row => row.Info.Index).ToArray();
 
             // 빈 배열은 소스가 "전체"로 해석하므로, 풀 것이 없으면 아예 호출하지 않습니다.
@@ -554,7 +554,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             if (_source is not ZipArchiveSource zip)
             {
-                throw new ArchiveException("무결성 검사는 ZIP 형식에서만 지원합니다.");
+                throw new ArchiveException(Loc.T("무결성 검사는 ZIP 형식에서만 지원합니다."));
             }
 
             return await Task.Run(() => zip.Verify(progress, cancellationToken, password), cancellationToken);
@@ -576,7 +576,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             if (_source is not { Format: ArchiveFormat.Zip } || _archivePath is null)
             {
-                throw new ArchiveException("항목 추가는 ZIP 형식에서만 지원합니다.");
+                throw new ArchiveException(Loc.T("항목 추가는 ZIP 형식에서만 지원합니다."));
             }
 
             string path = _archivePath;
@@ -606,11 +606,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             if (_source is not { Format: ArchiveFormat.Zip } || _archivePath is null)
             {
-                throw new ArchiveException("항목 삭제는 ZIP 형식에서만 지원합니다.");
+                throw new ArchiveException(Loc.T("항목 삭제는 ZIP 형식에서만 지원합니다."));
             }
 
             int[] indices = ExpandRows(rows).Select(row => row.Info.Index).ToArray();
-            if (indices.Length == 0) throw new ArchiveException("삭제할 항목을 선택해 주세요.");
+            if (indices.Length == 0) throw new ArchiveException(Loc.T("삭제할 항목을 선택해 주세요."));
             string path = _archivePath;
             var modified = await Task.Run(
                 () => ZipRewriter.DeleteEntries(path, indices, cancellationToken),
@@ -627,7 +627,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public async Task<string?> PreviewAsync(EntryRow row)
     {
-        IArchiveSource source = _source ?? throw new InvalidOperationException("먼저 압축 파일을 열어 주세요.");
+        IArchiveSource source = _source ?? throw new InvalidOperationException(Loc.T("먼저 압축 파일을 열어 주세요."));
 
         string previewRoot = Path.Combine(Path.GetTempPath(), "WangZip", "preview");
         string temporary = Path.Combine(previewRoot, Guid.NewGuid().ToString("N"));
@@ -673,7 +673,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (_source is null)
         {
-            StatusText = "압축 파일을 열거나, 파일을 이 창으로 끌어다 놓으세요.";
+            StatusText = Loc.T("압축 파일을 열거나, 파일을 이 창으로 끌어다 놓으세요.");
             return;
         }
 
@@ -682,8 +682,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         double ratio = size <= 0 ? 0 : 1.0 - (double)compressed / size;
 
         StatusText =
-            $"전체 {_source.Entries.Count:N0}개 항목 · 원본 {Format.Bytes(size)} · " +
-            $"압축 {Format.Bytes(compressed)} · {Format.CompressionRate(ratio)}";
+            Loc.F("전체 {0:N0}개 항목 · 원본 {1} · 압축 {2} · {3}", _source.Entries.Count, Format.Bytes(size), Format.Bytes(compressed), Format.CompressionRate(ratio));
     }
 
     public void Dispose()

@@ -15,21 +15,22 @@ public partial class ExtractDialog : Window
         string defaultDestination, int selectedCount, bool preferSelection = false, AppSettings? settings = null)
     {
         InitializeComponent();
+        Localizer.Apply(this);
         settings ??= AppSettings.Load();
 
         DestinationBox.Text = defaultDestination;
 
         OverwriteCombo.ItemsSource = new[]
         {
-            new OverwriteOption("덮어쓰기", OverwritePolicy.Overwrite),
-            new OverwriteOption("건너뛰기", OverwritePolicy.Skip),
-            new OverwriteOption("이름 바꾸기", OverwritePolicy.Rename),
+            new OverwriteOption(Loc.T("덮어쓰기"), OverwritePolicy.Overwrite),
+            new OverwriteOption(Loc.T("건너뛰기"), OverwritePolicy.Skip),
+            new OverwriteOption(Loc.T("이름 바꾸기"), OverwritePolicy.Rename),
         };
         OverwriteCombo.SelectedIndex = 0;
 
         // 빠른 위치 콤보: 설정에 저장된 기본 위치를 반영합니다.
         var quickOptions = MainViewModel.QuickDestinations
-            .Concat([new QuickDestination("직접 입력 (경로 지정)", null, "")])
+            .Concat([new QuickDestination(Loc.T("직접 입력 (경로 지정)"), null, "")])
             .ToList();
         QuickDestCombo.ItemsSource = quickOptions;
         int remembered = settings.QuickDestination;
@@ -47,8 +48,8 @@ public partial class ExtractDialog : Window
         }
 
         SelectedCountText.Text = hasSelection
-            ? $"선택한 {selectedCount}개 항목만 압축 풀기"
-            : "선택한 항목이 없습니다 (전체 압축 풀기만 가능)";
+            ? Loc.F("선택한 {0}개 항목만 압축 풀기", selectedCount)
+            : Loc.T("선택한 항목이 없습니다 (전체 압축 풀기만 가능)");
 
         AutoOpenBox.IsChecked = settings.AutoOpenAfterExtract;
     }
@@ -88,7 +89,7 @@ public partial class ExtractDialog : Window
     {
         var dialog = new OpenFolderDialog
         {
-            Title = "압축을 풀 폴더 선택",
+            Title = Loc.T("압축을 풀 폴더 선택"),
         };
 
         if (dialog.ShowDialog(this) == true)
@@ -102,7 +103,7 @@ public partial class ExtractDialog : Window
         string destination = DestinationDirectory;
         if (string.IsNullOrWhiteSpace(destination))
         {
-            MessageBox.Show(this, "압축을 풀 폴더를 입력해 주세요.", "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, Loc.T("압축을 풀 폴더를 입력해 주세요."), Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -112,7 +113,7 @@ public partial class ExtractDialog : Window
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, "폴더를 만들 수 없습니다.\n" + exception.Message, "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, Loc.T("폴더를 만들 수 없습니다.\n") + exception.Message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 

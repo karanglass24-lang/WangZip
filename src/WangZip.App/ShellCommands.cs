@@ -42,7 +42,7 @@ internal static class ShellCommands
         }
         catch (Exception exception)
         {
-            Show("오류: " + exception.Message);
+            Show(Loc.T("오류: ") + exception.Message);
         }
         finally
         {
@@ -54,7 +54,7 @@ internal static class ShellCommands
     {
         if (!File.Exists(archivePath))
         {
-            throw new FileNotFoundException("압축 파일을 찾을 수 없습니다.", archivePath);
+            throw new FileNotFoundException(Loc.T("압축 파일을 찾을 수 없습니다."), archivePath);
         }
 
         string zip = Path.GetFullPath(archivePath);
@@ -78,7 +78,7 @@ internal static class ShellCommands
 
         if (source is null)
         {
-            Show("비밀번호가 올바르지 않습니다.");
+            Show(Loc.T("비밀번호가 올바르지 않습니다."));
             return;
         }
 
@@ -86,7 +86,7 @@ internal static class ShellCommands
         {
             if (source.Entries.Count == 0)
             {
-                Show("압축 파일 안에 항목이 없습니다.");
+                Show(Loc.T("압축 파일 안에 항목이 없습니다."));
                 return;
             }
 
@@ -106,7 +106,7 @@ internal static class ShellCommands
             {
                 bool wrongPassword = false;
                 string? currentPassword = password;
-                bool ok = await ProgressDialog.RunAsync(null!, "압축을 푸는 중입니다", async (progress, token) =>
+                bool ok = await ProgressDialog.RunAsync(null!, Loc.T("압축을 푸는 중입니다"), async (progress, token) =>
                 {
                     try
                     {
@@ -136,7 +136,7 @@ internal static class ShellCommands
             }
 
             if (result is null) return;
-            Show($"압축을 풀었습니다: 파일 {result.ExtractedFiles:N0}개\n{destination}");
+            Show(Loc.F("압축을 풀었습니다: 파일 {0:N0}개\n{1}", result.ExtractedFiles, destination));
         }
     }
 
@@ -145,7 +145,7 @@ internal static class ShellCommands
     {
         string name = Path.GetFileNameWithoutExtension(archivePath);
         if (name.EndsWith(".tar", StringComparison.OrdinalIgnoreCase)) name = name[..^4];
-        return string.IsNullOrWhiteSpace(name) ? "압축 풀기" : name;
+        return string.IsNullOrWhiteSpace(name) ? Loc.T("압축 풀기") : name;
     }
 
     /// <summary>모든 항목이 하나의 최상위 폴더 안에 있으면 그 폴더가 이미 래퍼 역할을 합니다.</summary>
@@ -176,7 +176,7 @@ internal static class ShellCommands
             if (!Directory.Exists(candidate) && !File.Exists(candidate)) return candidate;
         }
 
-        throw new IOException("풀 폴더 이름을 찾을 수 없습니다.");
+        throw new IOException(Loc.T("풀 폴더 이름을 찾을 수 없습니다."));
     }
 
     private static string? PromptPassword(bool wrong)
@@ -184,7 +184,7 @@ internal static class ShellCommands
         var dialog = new PasswordDialog();
         if (wrong)
         {
-            dialog.Title = "비밀번호가 올바르지 않습니다 — 다시 입력";
+            dialog.Title = Loc.T("비밀번호가 올바르지 않습니다 — 다시 입력");
         }
 
         return dialog.ShowDialog() == true ? dialog.Password : null;
@@ -249,33 +249,33 @@ internal static class ShellCommands
         {
             if (!File.Exists(item) && !Directory.Exists(item))
             {
-                throw new FileNotFoundException("파일이나 폴더를 찾을 수 없습니다.", item);
+                throw new FileNotFoundException(Loc.T("파일이나 폴더를 찾을 수 없습니다."), item);
             }
         }
 
         string full = sources[0];
         string trimmed = full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         string directory = Path.GetDirectoryName(trimmed)
-            ?? throw new IOException("이 위치(드라이브 최상위)에서는 압축 파일을 만들 수 없습니다. 하위 폴더를 선택해 주세요.");
+            ?? throw new IOException(Loc.T("이 위치(드라이브 최상위)에서는 압축 파일을 만들 수 없습니다. 하위 폴더를 선택해 주세요."));
 
         // 폴더 이름의 점(my.project)을 확장자로 오해하지 않습니다.
         // 여러 항목이면 그 항목들이 들어 있는 폴더 이름을 씁니다.
         string name = sources.Count > 1
             ? Path.GetFileName(directory.TrimEnd(Path.DirectorySeparatorChar))
             : File.Exists(full) ? Path.GetFileNameWithoutExtension(full) : Path.GetFileName(trimmed);
-        string outputName = string.IsNullOrEmpty(name) ? "압축" : name;
+        string outputName = string.IsNullOrEmpty(name) ? Loc.T("압축") : name;
         string output = Path.Combine(directory, outputName + ".zip");
 
         int attempt = 1;
         while (File.Exists(output) || Directory.Exists(output))
         {
             attempt++;
-            if (attempt > 999) throw new IOException("저장 이름을 찾을 수 없습니다.");
+            if (attempt > 999) throw new IOException(Loc.T("저장 이름을 찾을 수 없습니다."));
             output = Path.Combine(directory, $"{outputName}-{attempt}.zip");
         }
 
         CreationResult? created = null;
-        bool ok = await ProgressDialog.RunAsync(null!, "압축하는 중입니다", async (progress, token) =>
+        bool ok = await ProgressDialog.RunAsync(null!, Loc.T("압축하는 중입니다"), async (progress, token) =>
         {
             created = await Task.Run(
                 () => ZipWriter.Create(output, sources, new CreationOptions(), progress, token), token);
@@ -283,12 +283,12 @@ internal static class ShellCommands
 
         if (ok && created is not null)
         {
-            Show($"압축 파일을 만들었습니다:\n{created.OutputPath}\n({created.EntryCount:N0}개 항목)");
+            Show(Loc.F("압축 파일을 만들었습니다:\n{0}\n({1:N0}개 항목)", created.OutputPath, created.EntryCount));
         }
     }
 
     private static void Show(string message)
     {
-        MessageBox.Show(message, "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
     }
 }

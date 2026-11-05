@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Localizer.Apply(this);
 
         DataContext = _viewModel;
         _viewModel.CurrentMode = _encodingMode;
@@ -40,7 +41,7 @@ public partial class MainWindow : Window
     {
         if (_viewModel.IsBusy)
         {
-            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            ShowInfo(Loc.T("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."));
             return;
         }
 
@@ -99,8 +100,8 @@ public partial class MainWindow : Window
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "압축 파일 열기",
-            Filter = "압축 파일|*.zip;*.7z;*.rar;*.tar;*.gz;*.tgz;*.bz2;*.xz;*.jar;*.apk|모든 파일 (*.*)|*.*",
+            Title = Loc.T("압축 파일 열기"),
+            Filter = Loc.T("압축 파일|*.zip;*.7z;*.rar;*.tar;*.gz;*.tgz;*.bz2;*.xz;*.jar;*.apk|모든 파일 (*.*)|*.*"),
         };
 
         if (dialog.ShowDialog(this) == true)
@@ -117,20 +118,20 @@ public partial class MainWindow : Window
     {
         if (!_viewModel.HasArchive)
         {
-            ShowInfo("먼저 압축 파일을 열어 주세요.");
+            ShowInfo(Loc.T("먼저 압축 파일을 열어 주세요."));
             return;
         }
 
         if (_viewModel.IsBusy)
         {
-            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            ShowInfo(Loc.T("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."));
             return;
         }
 
         bool selection = EntryGrid.SelectedItems.Count > 0;
         if (selectionOnly && !selection)
         {
-            ShowInfo("목록에서 압축을 풀 항목을 선택해 주세요.");
+            ShowInfo(Loc.T("목록에서 압축을 풀 항목을 선택해 주세요."));
             return;
         }
 
@@ -151,7 +152,7 @@ public partial class MainWindow : Window
 
         if (rows.Count == 0)
         {
-            ShowInfo("압축을 풀 항목을 선택해 주세요.");
+            ShowInfo(Loc.T("압축을 풀 항목을 선택해 주세요."));
             return;
         }
 
@@ -164,7 +165,7 @@ public partial class MainWindow : Window
         }
 
         ExtractionResult? result = null;
-        bool ok = await ProgressDialog.RunAsync(this, "압축을 푸는 중입니다", async (progress, token) =>
+        bool ok = await ProgressDialog.RunAsync(this, Loc.T("압축을 푸는 중입니다"), async (progress, token) =>
         {
             result = await _viewModel.ExtractAsync(
                 rows,
@@ -181,13 +182,11 @@ public partial class MainWindow : Window
         if (!ok || result is null) return;
 
         string message =
-            $"압축을 풀었습니다.\n\n" +
-            $"파일 {result.ExtractedFiles:N0}개 · {Format.Bytes(result.TotalBytes)}\n" +
-            $"폴더: {dialog.DestinationDirectory}";
+            Loc.F("압축을 풀었습니다.\n\n파일 {0:N0}개 · {1}\n폴더: {2}", result.ExtractedFiles, Format.Bytes(result.TotalBytes), dialog.DestinationDirectory);
 
-        if (result.SkippedFiles > 0) message += $"\n건너뜀: {result.SkippedFiles:N0}개";
+        if (result.SkippedFiles > 0) message += Loc.F("\n건너뜀: {0:N0}개", result.SkippedFiles);
 
-        MessageBox.Show(this, message, "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(this, message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
 
         if (dialog.AutoOpenAfterExtract && Directory.Exists(dialog.DestinationDirectory))
         {
@@ -203,13 +202,13 @@ public partial class MainWindow : Window
     {
         if (!_viewModel.HasArchive)
         {
-            ShowInfo("먼저 압축 파일을 열어 주세요.");
+            ShowInfo(Loc.T("먼저 압축 파일을 열어 주세요."));
             return;
         }
 
         if (_viewModel.IsBusy)
         {
-            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            ShowInfo(Loc.T("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."));
             return;
         }
 
@@ -226,7 +225,7 @@ public partial class MainWindow : Window
 
         if (rows.Count == 0)
         {
-            ShowInfo("압축을 풀 항목을 선택해 주세요.");
+            ShowInfo(Loc.T("압축을 풀 항목을 선택해 주세요."));
             return;
         }
 
@@ -239,7 +238,7 @@ public partial class MainWindow : Window
         }
 
         ExtractionResult? result = null;
-        bool ok = await ProgressDialog.RunAsync(this, "압축을 푸는 중입니다", async (progress, token) =>
+        bool ok = await ProgressDialog.RunAsync(this, Loc.T("압축을 푸는 중입니다"), async (progress, token) =>
         {
             result = await _viewModel.ExtractAsync(
                 rows,
@@ -262,13 +261,11 @@ public partial class MainWindow : Window
         if (!ok || result is null) return;
 
         string message =
-            $"압축을 풀었습니다.\n\n" +
-            $"파일 {result.ExtractedFiles:N0}개 · {Format.Bytes(result.TotalBytes)}\n" +
-            $"폴더: {dialog.DestinationDirectory}";
+            Loc.F("압축을 풀었습니다.\n\n파일 {0:N0}개 · {1}\n폴더: {2}", result.ExtractedFiles, Format.Bytes(result.TotalBytes), dialog.DestinationDirectory);
 
-        if (result.SkippedFiles > 0) message += $"\n건너뜀: {result.SkippedFiles:N0}개";
+        if (result.SkippedFiles > 0) message += Loc.F("\n건너뜀: {0:N0}개", result.SkippedFiles);
 
-        MessageBox.Show(this, message, "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(this, message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
 
         if (dialog.AutoOpenAfterExtract && Directory.Exists(dialog.DestinationDirectory))
         {
@@ -280,7 +277,7 @@ public partial class MainWindow : Window
     {
         if (_viewModel.IsBusy)
         {
-            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            ShowInfo(Loc.T("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."));
             return;
         }
 
@@ -295,7 +292,7 @@ public partial class MainWindow : Window
         List<string> sources = dialog.Sources.ToList();
         CreationResult? created = null;
 
-        bool ok = await ProgressDialog.RunAsync(this, "압축하는 중입니다", async (progress, token) =>
+        bool ok = await ProgressDialog.RunAsync(this, Loc.T("압축하는 중입니다"), async (progress, token) =>
         {
             created = await _viewModel.CreateAsync(
                 dialog.OutputPath,
@@ -311,11 +308,9 @@ public partial class MainWindow : Window
 
         MessageBox.Show(
             this,
-            $"압축 파일을 만들었습니다.\n\n" +
-            $"{created.EntryCount:N0}개 항목 · {Format.Bytes(created.SourceBytes)} → {Format.Bytes(created.OutputBytes)} " +
-            $"({Format.CompressionRate(created.Ratio)})\n{created.OutputPath}" +
-            (encrypted ? "\n\n암호: AES-256으로 보호됨" : string.Empty),
-            "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+            Loc.F("압축 파일을 만들었습니다.\n\n{0:N0}개 항목 · {1} → {2} ({3})\n{4}", created.EntryCount, Format.Bytes(created.SourceBytes), Format.Bytes(created.OutputBytes), Format.CompressionRate(created.Ratio), created.OutputPath) +
+            (encrypted ? Loc.T("\n\n암호: AES-256으로 보호됨") : string.Empty),
+            Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
 
         await OpenArchiveAsync(created.OutputPath);
     }
@@ -324,13 +319,13 @@ public partial class MainWindow : Window
     {
         if (!_viewModel.HasArchive)
         {
-            ShowInfo("먼저 압축 파일을 열어 주세요.");
+            ShowInfo(Loc.T("먼저 압축 파일을 열어 주세요."));
             return;
         }
 
         if (_viewModel.IsBusy)
         {
-            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            ShowInfo(Loc.T("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."));
             return;
         }
 
@@ -343,7 +338,7 @@ public partial class MainWindow : Window
         }
 
         int checkedCount = 0;
-        bool ok = await ProgressDialog.RunAsync(this, "무결성 검사 중입니다", async (progress, token) =>
+        bool ok = await ProgressDialog.RunAsync(this, Loc.T("무결성 검사 중입니다"), async (progress, token) =>
         {
             checkedCount = await _viewModel.VerifyAsync(progress, token, password);
         });
@@ -352,8 +347,8 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(
                 this,
-                $"정상입니다. {checkedCount:N0}개 항목의 CRC를 확인했습니다.",
-                "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+                Loc.F("정상입니다. {0:N0}개 항목의 CRC를 확인했습니다.", checkedCount),
+                Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 
@@ -362,31 +357,31 @@ public partial class MainWindow : Window
     {
         if (!_viewModel.HasArchive)
         {
-            ShowInfo("먼저 압축 파일을 열어 주세요.");
+            ShowInfo(Loc.T("먼저 압축 파일을 열어 주세요."));
             return;
         }
 
         if (_viewModel.IsBusy)
         {
-            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            ShowInfo(Loc.T("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."));
             return;
         }
 
         if (_viewModel.Entries.Count is int count && count > 0 &&
             ArchiveService.DetectFormat(_viewModel.ArchivePath!) != ArchiveFormat.Zip)
         {
-            ShowInfo("항목 추가는 ZIP 형식에서만 지원합니다.");
+            ShowInfo(Loc.T("항목 추가는 ZIP 형식에서만 지원합니다."));
             return;
         }
 
         var fileDialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "추가할 파일 선택 (여러 개 선택 가능)",
+            Title = Loc.T("추가할 파일 선택 (여러 개 선택 가능)"),
             Multiselect = true,
         };
         var folderDialog = new Microsoft.Win32.OpenFolderDialog
         {
-            Title = "추가할 폴더 선택 (선택하지 않으려면 취소)",
+            Title = Loc.T("추가할 폴더 선택 (선택하지 않으려면 취소)"),
             Multiselect = false,
         };
 
@@ -396,7 +391,7 @@ public partial class MainWindow : Window
             sources.AddRange(fileDialog.FileNames);
         }
 
-        if (MessageBox.Show(this, "폴더도 추가하시겠습니까?", "왕집",
+        if (MessageBox.Show(this, Loc.T("폴더도 추가하시겠습니까?"), Loc.T("왕집"),
                 MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes &&
             folderDialog.ShowDialog(this) == true)
         {
@@ -405,19 +400,19 @@ public partial class MainWindow : Window
 
         if (sources.Count == 0) return;
 
-        bool ok = await ProgressDialog.RunAsync(this, "압축 파일에 항목 추가", async (progress, token) =>
+        bool ok = await ProgressDialog.RunAsync(this, Loc.T("압축 파일에 항목 추가"), async (progress, token) =>
         {
             var result = await _viewModel.AddToArchiveAsync(sources, progress, token);
             if (result.Warnings.Count > 0)
             {
-                MessageBox.Show(this, string.Join("\n", result.Warnings.Take(8)), "왕집",
+                MessageBox.Show(this, string.Join("\n", result.Warnings.Take(8)), Loc.T("왕집"),
                     MessageBoxButton.OK, MessageBoxImage.Information);
             }
         });
 
         if (ok)
         {
-            MessageBox.Show(this, "항목을 추가했습니다.", "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, Loc.T("항목을 추가했습니다."), Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 
@@ -426,19 +421,19 @@ public partial class MainWindow : Window
     {
         if (!_viewModel.HasArchive)
         {
-            ShowInfo("먼저 압축 파일을 열어 주세요.");
+            ShowInfo(Loc.T("먼저 압축 파일을 열어 주세요."));
             return;
         }
 
         if (_viewModel.IsBusy)
         {
-            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            ShowInfo(Loc.T("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."));
             return;
         }
 
         if (EntryGrid.SelectedItems.Count == 0)
         {
-            ShowInfo("삭제할 항목을 목록에서 선택해 주세요.");
+            ShowInfo(Loc.T("삭제할 항목을 목록에서 선택해 주세요."));
             return;
         }
 
@@ -446,25 +441,25 @@ public partial class MainWindow : Window
 
         if (ArchiveService.DetectFormat(_viewModel.ArchivePath!) != ArchiveFormat.Zip)
         {
-            ShowInfo("항목 삭제는 ZIP 형식에서만 지원합니다.");
+            ShowInfo(Loc.T("항목 삭제는 ZIP 형식에서만 지원합니다."));
             return;
         }
 
         var confirm = MessageBox.Show(
             this,
-            $"선택한 {rows.Count:N0}개 항목을 압축 파일에서 삭제할까요?\n(삭제 후에는 되돌릴 수 없습니다)",
-            "왕집", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+            Loc.F("선택한 {0:N0}개 항목을 압축 파일에서 삭제할까요?\n(삭제 후에는 되돌릴 수 없습니다)", rows.Count),
+            Loc.T("왕집"), MessageBoxButton.OKCancel, MessageBoxImage.Warning);
 
         if (confirm != MessageBoxResult.OK) return;
 
-        bool ok = await ProgressDialog.RunAsync(this, "압축 파일에서 항목 삭제", async (_, token) =>
+        bool ok = await ProgressDialog.RunAsync(this, Loc.T("압축 파일에서 항목 삭제"), async (_, token) =>
         {
             await _viewModel.DeleteFromArchiveAsync(rows, token);
         });
 
         if (ok)
         {
-            MessageBox.Show(this, "항목을 삭제했습니다.", "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, Loc.T("항목을 삭제했습니다."), Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 
@@ -616,8 +611,8 @@ public partial class MainWindow : Window
     {
         if (RiskyExtensions.Contains(Path.GetExtension(row.Info.Name.TrimEnd('/'))) &&
             MessageBox.Show(this,
-                $"'{row.Info.Name}'은(는) 실행되는 형식의 파일입니다.\n압축을 풀어 바로 실행하면 위험할 수 있습니다. 계속할까요?",
-                "왕집", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+                Loc.F("'{0}'은(는) 실행되는 형식의 파일입니다.\n압축을 풀어 바로 실행하면 위험할 수 있습니다. 계속할까요?", row.Info.Name),
+                Loc.T("왕집"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
         {
             return;
         }
@@ -661,7 +656,7 @@ public partial class MainWindow : Window
 
         if (_viewModel.IsBusy)
         {
-            ShowInfo("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            ShowInfo(Loc.T("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."));
             return;
         }
 
@@ -764,7 +759,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            if (manual) ShowInfo("업데이트를 확인하지 못했습니다. (네트워크 상태를 확인해 주세요)\n" + exception.Message);
+            if (manual) ShowInfo(Loc.T("업데이트를 확인하지 못했습니다. (네트워크 상태를 확인해 주세요)\n") + exception.Message);
             return;
         }
         finally
@@ -776,13 +771,13 @@ public partial class MainWindow : Window
 
         if (info is null)
         {
-            if (manual) ShowInfo("새 버전 정보를 찾지 못했습니다. (GitHub Releases 확인 필요)");
+            if (manual) ShowInfo(Loc.T("새 버전 정보를 찾지 못했습니다. (GitHub Releases 확인 필요)"));
             return;
         }
 
         if (!UpdateService.IsNewer(info))
         {
-            if (manual) ShowInfo($"최신 버전을 사용하고 있습니다. (현재 v{UpdateService.CurrentVersion})");
+            if (manual) ShowInfo(Loc.F("최신 버전을 사용하고 있습니다. (현재 v{0})", UpdateService.CurrentVersion));
             return;
         }
 
@@ -791,10 +786,8 @@ public partial class MainWindow : Window
         {
             var open = MessageBox.Show(
                 this,
-                $"새 버전 v{info.LatestVersion}이(가) 있습니다.\n" +
-                "포터블 버전은 홈페이지에서 새 ZIP을 받아 교체하시면 됩니다.\n\n" +
-                "릴리스 페이지를 열까요?",
-                "왕집 업데이트", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                Loc.F("새 버전 v{0}이(가) 있습니다.\n포터블 버전은 홈페이지에서 새 ZIP을 받아 교체하시면 됩니다.\n\n릴리스 페이지를 열까요?", info.LatestVersion),
+                Loc.T("왕집 업데이트"), MessageBoxButton.YesNo, MessageBoxImage.Information);
             if (open == MessageBoxResult.Yes)
             {
                 UpdateService.OpenReleasePage();
@@ -804,9 +797,8 @@ public partial class MainWindow : Window
 
         var answer = MessageBox.Show(
             this,
-            $"새 버전 v{info.LatestVersion}이(가) 있습니다. (현재 v{UpdateService.CurrentVersion})\n\n" +
-            "다운로드 후 자동으로 설치하며,\n설치가 끝나면 왕집이 다시 실행됩니다.\n\n지금 업데이트할까요?",
-            "왕집 업데이트", MessageBoxButton.OKCancel, MessageBoxImage.Information);
+            Loc.F("새 버전 v{0}이(가) 있습니다. (현재 v{1})\n\n다운로드 후 자동으로 설치하며,\n설치가 끝나면 왕집이 다시 실행됩니다.\n\n지금 업데이트할까요?", info.LatestVersion, UpdateService.CurrentVersion),
+            Loc.T("왕집 업데이트"), MessageBoxButton.OKCancel, MessageBoxImage.Information);
 
         if (answer != MessageBoxResult.OK) return;
 
@@ -814,12 +806,12 @@ public partial class MainWindow : Window
         try
         {
             Mouse.OverrideCursor = Cursors.Wait;
-            var progress = new Progress<double>(percent => _viewModel.StatusText = $"업데이트 내려받는 중: {percent:0}%");
+            var progress = new Progress<double>(percent => _viewModel.StatusText = Loc.F("업데이트 내려받는 중: {0:0}%", percent));
             setupPath = await UpdateService.DownloadAsync(info, progress, System.Threading.CancellationToken.None);
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, "업데이트 내려받기를 실패했습니다.\n" + exception.Message, "왕집",
+            MessageBox.Show(this, Loc.T("업데이트 내려받기를 실패했습니다.\n") + exception.Message, Loc.T("왕집"),
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -830,9 +822,8 @@ public partial class MainWindow : Window
 
         MessageBox.Show(
             this,
-            "다운로드가 끝났습니다. 설치 프로그램을 실행합니다.\n" +
-            "(설치되는 동안 왕집이 잠시 종료되고, 다시 실행됩니다.)",
-            "왕집 업데이트", MessageBoxButton.OK, MessageBoxImage.Information);
+            Loc.T("다운로드가 끝났습니다. 설치 프로그램을 실행합니다.\n(설치되는 동안 왕집이 잠시 종료되고, 다시 실행됩니다.)"),
+            Loc.T("왕집 업데이트"), MessageBoxButton.OK, MessageBoxImage.Information);
 
         _viewModel.Dispose();   // 파일 잠금 해제
         UpdateService.InstallAndRestart(setupPath);
@@ -845,7 +836,7 @@ public partial class MainWindow : Window
         // 작업 중에 닫으면 출력 파일이 손상되거나 임시 파일이 남으므로 막습니다.
         if (_viewModel.IsBusy)
         {
-            ShowInfo("작업이 진행 중입니다. 작업이 끝난 뒤 닫아 주세요.");
+            ShowInfo(Loc.T("작업이 진행 중입니다. 작업이 끝난 뒤 닫아 주세요."));
             e.Cancel = true;
             return;
         }
@@ -1007,14 +998,14 @@ public partial class MainWindow : Window
         List<EntryRow> expanded = _viewModel.ExpandRows(selected);
         if (expanded.Any(row => row.Info.IsEncrypted))
         {
-            ShowInfo("암호가 걸린 항목은 끌어서 내보낼 수 없습니다.\n'압축 풀기'를 사용해 주세요.");
+            ShowInfo(Loc.T("암호가 걸린 항목은 끌어서 내보낼 수 없습니다.\n'압축 풀기'를 사용해 주세요."));
             return;
         }
 
         long total = expanded.Sum(row => row.Info.Size);
         if (total > 500L * 1024 * 1024)
         {
-            ShowInfo("끌어서 내보내기는 500MB 이하만 지원합니다.\n'압축 풀기'를 사용해 주세요.");
+            ShowInfo(Loc.T("끌어서 내보내기는 500MB 이하만 지원합니다.\n'압축 풀기'를 사용해 주세요."));
             return;
         }
 
@@ -1042,8 +1033,8 @@ public partial class MainWindow : Window
 
 
     private void ShowInfo(string message) =>
-        MessageBox.Show(this, message, "왕집", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(this, message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
 
     private void ShowError(Exception exception) =>
-        MessageBox.Show(this, exception.Message, "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
+        MessageBox.Show(this, exception.Message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Warning);
 }

@@ -32,25 +32,25 @@ internal static class ZipNameDecoder
     {
         if (mode == NameEncodingMode.Raw)
         {
-            encodingName = "원본 바이트";
+            encodingName = Loc.T("원본 바이트");
             return Cp437.GetString(raw);
         }
 
         if (mode == NameEncodingMode.Utf8)
         {
-            encodingName = "UTF-8(지정)";
+            encodingName = Loc.T("UTF-8(지정)");
             return Normalize(Utf8Loose.GetString(raw));
         }
 
         if (mode == NameEncodingMode.Cp949)
         {
-            encodingName = "CP949(지정)";
+            encodingName = Loc.T("CP949(지정)");
             return Normalize(Cp949Loose.GetString(raw));
         }
 
         if (unicodePath is not null)
         {
-            encodingName = "UTF-8(유니코드 필드)";
+            encodingName = Loc.T("UTF-8(유니코드 필드)");
             return Normalize(Utf8Loose.GetString(unicodePath));
         }
 
@@ -68,29 +68,29 @@ internal static class ZipNameDecoder
 
         if (TryDecode(Utf8Strict, raw, out string strictUtf8) && ContainsHangul(strictUtf8))
         {
-            encodingName = "UTF-8(자동)";
+            encodingName = Loc.T("UTF-8(자동)");
             return Normalize(strictUtf8);
         }
 
         if (TryDecode(Cp949Strict, raw, out string strictCp949) && ContainsHangul(strictCp949))
         {
-            encodingName = "CP949(자동)";
+            encodingName = Loc.T("CP949(자동)");
             return Normalize(strictCp949);
         }
 
         if (TryDecode(Utf8Strict, raw, out strictUtf8))
         {
-            encodingName = "UTF-8(자동)";
+            encodingName = Loc.T("UTF-8(자동)");
             return Normalize(strictUtf8);
         }
 
         if (TryDecode(Cp949Strict, raw, out strictCp949))
         {
-            encodingName = "CP949(자동)";
+            encodingName = Loc.T("CP949(자동)");
             return Normalize(strictCp949);
         }
 
-        encodingName = "CP437(대체)";
+        encodingName = Loc.T("CP437(대체)");
         return Normalize(Cp437.GetString(raw));
     }
 

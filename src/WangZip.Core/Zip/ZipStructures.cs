@@ -69,14 +69,14 @@ internal static class ZipCentralDirectory
 
         if (fs.Length < 22)
         {
-            throw new ArchiveException("ZIP 파일이 너무 작거나 손상되었습니다.");
+            throw new ArchiveException(Loc.T("ZIP 파일이 너무 작거나 손상되었습니다."));
         }
 
         (long cdOffset, long cdSize, long entryCount) = ReadEndOfCentralDirectory(fs);
 
         if (cdOffset < 0 || cdSize < 0 || cdOffset + cdSize > fs.Length)
         {
-            throw new ArchiveException("ZIP 중앙 디렉터리 위치가 올바르지 않습니다. 파일이 손상되었을 수 있습니다.");
+            throw new ArchiveException(Loc.T("ZIP 중앙 디렉터리 위치가 올바르지 않습니다. 파일이 손상되었을 수 있습니다."));
         }
 
         fs.Position = cdOffset;
@@ -90,7 +90,7 @@ internal static class ZipCentralDirectory
             uint signature = BinaryPrimitives.ReadUInt32LittleEndian(header);
             if (signature != CentralHeaderSignature)
             {
-                throw new ArchiveException($"ZIP 중앙 디렉터리가 손상되었습니다 (항목 {i + 1}).");
+                throw new ArchiveException(Loc.F("ZIP 중앙 디렉터리가 손상되었습니다 (항목 {0}).", i + 1));
             }
 
             var entry = new RawZipEntry
@@ -162,7 +162,7 @@ internal static class ZipCentralDirectory
 
         if (eocd < 0)
         {
-            throw new ArchiveException("ZIP 끝 레코드(EOCD)를 찾지 못했습니다. ZIP 파일이 아니거나 손상되었습니다.");
+            throw new ArchiveException(Loc.T("ZIP 끝 레코드(EOCD)를 찾지 못했습니다. ZIP 파일이 아니거나 손상되었습니다."));
         }
 
         ushort diskNumber = BinaryPrimitives.ReadUInt16LittleEndian(tail.AsSpan(eocd + 4));
@@ -209,7 +209,7 @@ internal static class ZipCentralDirectory
         if (diskNumber != 0 || cdStartDisk != 0)
         {
             throw new UnsupportedArchiveException(
-                "분할 ZIP(.z01 / .001)은 아직 지원하지 않습니다.");
+                Loc.T("분할 ZIP(.z01 / .001)은 아직 지원하지 않습니다."));
         }
 
         return (cdOffset, cdSize, count);

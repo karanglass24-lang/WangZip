@@ -85,7 +85,7 @@ internal static class EncryptedZipWriter
                     long localOffset = file.Position;
                     if (localOffset > uint.MaxValue)
                     {
-                        throw new ArchiveException("암호 ZIP은 4GB를 넘는 압축 파일을 아직 지원하지 않습니다.");
+                        throw new ArchiveException(Loc.T("암호 ZIP은 4GB를 넘는 압축 파일을 아직 지원하지 않습니다."));
                     }
 
                     // 폴더 항목은 암호화하지 않고 빈 항목으로 기록합니다.
@@ -98,7 +98,7 @@ internal static class EncryptedZipWriter
 
                     if (item.Length >= 0xFFFFFFF0)
                     {
-                        throw new ArchiveException($"4GB를 넘는 항목은 암호 ZIP으로 만들 수 없습니다: {item.EntryName}");
+                        throw new ArchiveException(Loc.F("4GB를 넘는 항목은 암호 ZIP으로 만들 수 없습니다: {0}", item.EntryName));
                     }
 
                     ushort method = options.Level == CompressionLevel.NoCompression ? (ushort)0 : (ushort)8;
@@ -148,7 +148,7 @@ internal static class EncryptedZipWriter
                     long payloadSize = AesSaltLength + AesVerifyLength + compressedPlainBytes + AesAuthLength;
                     if (payloadSize > uint.MaxValue || uncompressedBytes > uint.MaxValue)
                     {
-                        throw new ArchiveException($"4GB를 넘는 항목은 암호 ZIP으로 만들 수 없습니다: {item.EntryName}");
+                        throw new ArchiveException(Loc.F("4GB를 넘는 항목은 암호 ZIP으로 만들 수 없습니다: {0}", item.EntryName));
                     }
 
                     long end = file.Position;
@@ -169,7 +169,7 @@ internal static class EncryptedZipWriter
 
             if (records.Count > ushort.MaxValue)
             {
-                throw new ArchiveException("항목이 65,535개를 넘는 암호 ZIP은 아직 지원하지 않습니다.");
+                throw new ArchiveException(Loc.T("항목이 65,535개를 넘는 암호 ZIP은 아직 지원하지 않습니다."));
             }
 
             long centralOffset = file.Position;
@@ -181,7 +181,7 @@ internal static class EncryptedZipWriter
             long centralSize = file.Position - centralOffset;
             if (centralOffset > uint.MaxValue || centralSize > uint.MaxValue)
             {
-                throw new ArchiveException("암호 ZIP은 4GB를 넘는 압축 파일을 아직 지원하지 않습니다.");
+                throw new ArchiveException(Loc.T("암호 ZIP은 4GB를 넘는 압축 파일을 아직 지원하지 않습니다."));
             }
 
             byte[]? comment = string.IsNullOrEmpty(options.Comment)
@@ -189,7 +189,7 @@ internal static class EncryptedZipWriter
                 : EncodeText(options.Comment!, options.NameEncoding);
             if (comment is { Length: > ushort.MaxValue })
             {
-                throw new ArchiveException("압축 파일 설명이 너무 깁니다.");
+                throw new ArchiveException(Loc.T("압축 파일 설명이 너무 깁니다."));
             }
 
             WriteEndOfCentralDirectory(
@@ -355,7 +355,7 @@ internal static class EncryptedZipWriter
 
         if (bytes.Length > ushort.MaxValue)
         {
-            throw new ArchiveException($"항목 이름이 너무 깁니다: {name}");
+            throw new ArchiveException(Loc.F("항목 이름이 너무 깁니다: {0}", name));
         }
 
         ushort flags = mode == NameEncodingMode.Cp949 ? (ushort)0 : Utf8Flag;
@@ -415,7 +415,7 @@ internal static class EncryptedZipWriter
         {
             if (_finished)
             {
-                throw new InvalidOperationException("이미 마무리된 암호화 스트림입니다.");
+                throw new InvalidOperationException(Loc.T("이미 마무리된 암호화 스트림입니다."));
             }
 
             while (!buffer.IsEmpty)
