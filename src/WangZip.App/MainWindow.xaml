@@ -5,7 +5,7 @@
         Icon="pack://application:,,,/Assets/app-icon.ico"
         Title="{Binding Title}"
         Width="1180" Height="760"
-        MinWidth="900" MinHeight="560"
+        MinWidth="720" MinHeight="420"
         WindowStartupLocation="CenterScreen"
         AllowDrop="True"
         DragOver="Window_DragOver"
@@ -166,9 +166,9 @@
 
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition x:Name="TreeColumn" Width="250" />
+                    <ColumnDefinition x:Name="TreeColumn" Width="250" MinWidth="140" MaxWidth="600" />
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" MinWidth="360" />
                 </Grid.ColumnDefinitions>
 
                 <!-- 폴더 트리 -->
