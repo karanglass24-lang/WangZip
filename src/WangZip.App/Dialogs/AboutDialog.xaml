@@ -21,7 +21,7 @@
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="왕집 (WangZip) 0.1.0" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock x:Name="VersionText" Text="왕집 (WangZip)" FontSize="20" FontWeight="SemiBold" />
                 <TextBlock Text="광고 없는 오픈소스 압축 프로그램" Foreground="{StaticResource TextSecondaryBrush}" />
             </StackPanel>
         </StackPanel>
@@ -42,9 +42,9 @@
                     <Run Text="직접 구현 — ZIP 파서, 한글 인코딩 판별, 경로 안전 계층" />
                 </TextBlock>
 
-                <TextBlock Text="v0.1 제한 사항" Style="{StaticResource SectionTitle}" />
+                <TextBlock Text="제한 사항" Style="{StaticResource SectionTitle}" />
                 <TextBlock TextWrapping="Wrap"
-                           Text="암호가 걸린 압축 파일, 분할 ZIP/RAR, 7z 쓰기, RAR 쓰기는 아직 지원하지 않습니다. RAR 생성은 공개된 오픈소스 구현이 없어 지원 계획이 없습니다." />
+                           Text="분할 ZIP/RAR, 7z 쓰기, RAR 쓰기는 아직 지원하지 않습니다. 새 ZIP은 비밀번호(AES-256)를 걸어 만들 수 있고, 기존 ZIP에 항목을 추가·삭제할 수 있습니다(4GB 미만). RAR 생성은 공개된 오픈소스 구현이 없어 지원 계획이 없습니다." />
             </StackPanel>
         </ScrollViewer>
 
