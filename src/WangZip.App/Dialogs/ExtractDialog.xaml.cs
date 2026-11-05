@@ -98,31 +98,6 @@ public partial class ExtractDialog : Window
         }
     }
 
-    private void OpenFolder_Click(object sender, RoutedEventArgs e)
-    {
-        string path = DestinationDirectory;
-        if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
-        {
-            MessageBox.Show(this, Loc.T("아직 만들어지지 않은 폴더입니다. 압축을 푼 뒤에 열 수 있습니다."),
-                Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        try
-        {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "explorer.exe",
-                Arguments = "\"" + path + "\"",
-                UseShellExecute = true,
-            });
-        }
-        catch (Exception exception)
-        {
-            MessageBox.Show(this, exception.Message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-    }
-
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
         string destination = DestinationDirectory;

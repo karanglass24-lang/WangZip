@@ -104,7 +104,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 {
     public static IReadOnlyList<QuickDestination> QuickDestinations { get; } =
     [
-        new(Loc.T("압축 파일 옆 폴더 (권장)"), null, Loc.T("압축 파일과 같은 이름의 폴더를 새로 만들어 풉니다.")),
+        new(Loc.T("압축 파일 연 폴더 (권장)"), null, Loc.T("압축 파일과 같은 이름의 폴더를 새로 만들어 풉니다.")),
         new(Loc.T("바탕 화면"), () => Environment.GetFolderPath(Environment.SpecialFolder.Desktop), ""),
         new(Loc.T("다운로드"), () => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"), ""),
         new(Loc.T("문서"), () => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), ""),

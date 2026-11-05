@@ -24,15 +24,11 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBox Grid.Column="0" x:Name="DestinationBox" Height="32" VerticalContentAlignment="Center" Padding="8,0"
                          BorderBrush="{StaticResource BorderBrush}" />
                 <Button Grid.Column="1" Content="찾아보기..." Style="{StaticResource SecondaryButton}" Click="Browse_Click"
                         Margin="8,0,0,0" MinWidth="86" />
-                <Button Grid.Column="2" x:Name="OpenFolderButton" Content="폴더 열기" Style="{StaticResource SecondaryButton}"
-                        Click="OpenFolder_Click" Margin="6,0,0,0" MinWidth="86"
-                        ToolTip="압축을 푼 폴더(또는 지정한 폴더)를 탐색기로 엽니다." />
             </Grid>
             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                 <TextBlock Text="빠른 위치:" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />

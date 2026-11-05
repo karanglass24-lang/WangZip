@@ -62,10 +62,10 @@ korean.MenuFolder=왕집: 이 폴더 압축
 korean.ArchiveFile=왕집 압축 파일
 korean.UninstallName=왕집 제거
 korean.RunNow=지금 왕집 실행(&R)
-english.AppShort=WangZip
+english.AppShort=WZIP
 english.AppDesc=Ad-free open-source archive utility
 english.TaskGroup=Additional tasks:
-english.TaskDesktop=Create a WangZip &desktop shortcut
+english.TaskDesktop=Create a WZIP &desktop shortcut
 english.TaskAssoc=Register WangZip in the 'Open with' list for archive types (zip, 7z, rar, ...) (&A)
 english.TaskMenu=Add 'Extract here / Compress to ZIP' to the Explorer right-click menu (&M) (Windows 11: under 'Show more options')
 english.MenuExtract=WangZip: Extract here
@@ -197,7 +197,7 @@ Root: HKCU; Subkey: "Software\Classes\.iso\OpenWithProgids"; ValueType: none; Va
 [Icons]
 Name: "{group}\{cm:AppShort}"; Filename: "{app}\{#MyAppExe}"; IconFilename: "{app}\{#MyAppExe}"; Comment: "{cm:AppDesc}"
 Name: "{group}\{cm:UninstallName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; IconFilename: "{app}\{#MyAppExe}"; Tasks: desktopicon; Comment: "{cm:AppDesc}"
+Name: "{autodesktop}\{cm:AppShort}"; Filename: "{app}\{#MyAppExe}"; IconFilename: "{app}\{#MyAppExe}"; Tasks: desktopicon; Comment: "{cm:AppDesc}"
 
 [Run]
 Filename: "{app}\{#MyAppExe}"; Description: "{cm:RunNow}"; Flags: nowait postinstall skipifsilent
