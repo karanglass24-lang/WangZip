@@ -186,12 +186,26 @@ public partial class MainWindow : Window
 
         if (result.SkippedFiles > 0) message += Loc.F("\n건너뜀: {0:N0}개", result.SkippedFiles);
 
-        MessageBox.Show(this, message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
+        ShowExtractDone(message, dialog.DestinationDirectory, dialog.AutoOpenAfterExtract);
+    }
 
-        if (dialog.AutoOpenAfterExtract && Directory.Exists(dialog.DestinationDirectory))
+    /// <summary>완료 안내. 자동 열기가 꺼져 있으면 '폴더 열기'를 물어봅니다.</summary>
+    private void ShowExtractDone(string message, string folder, bool autoOpen)
+    {
+        bool exists = Directory.Exists(folder);
+        bool open = false;
+        if (exists && !autoOpen)
         {
-            Process.Start(new ProcessStartInfo(dialog.DestinationDirectory) { UseShellExecute = true });
+            open = MessageBox.Show(this, message + "\n\n" + Loc.T("압축을 푼 폴더를 열까요?"), Loc.T("왕집"),
+                MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes;
         }
+        else
+        {
+            MessageBox.Show(this, message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
+            open = exists && autoOpen;
+        }
+
+        if (open) Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
     }
 
     private void QuickExtractAll_Click(object sender, RoutedEventArgs e) => _ = RunExtractDialogAsync(false);
@@ -265,12 +279,7 @@ public partial class MainWindow : Window
 
         if (result.SkippedFiles > 0) message += Loc.F("\n건너뜀: {0:N0}개", result.SkippedFiles);
 
-        MessageBox.Show(this, message, Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
-
-        if (dialog.AutoOpenAfterExtract && Directory.Exists(dialog.DestinationDirectory))
-        {
-            Process.Start(new ProcessStartInfo(dialog.DestinationDirectory) { UseShellExecute = true });
-        }
+        ShowExtractDone(message, dialog.DestinationDirectory, dialog.AutoOpenAfterExtract);
     }
 
     private async void Create_Click(object sender, RoutedEventArgs e)
