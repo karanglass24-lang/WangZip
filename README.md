@@ -4,6 +4,8 @@
 한국 사용자가 알집/반디집에서 기대하는 사용감(한글 파일명, `여기에 풀기`, 탐색기형 목록)을
 오픈소스만으로 구현하는 것을 목표로 합니다.
 
+만든 곳: [두목넷](https://dumok.net)
+
 - 라이선스: **GPL-3.0** (광고를 넣은 폐쇄소스 포크를 막기 위해)
 - 플랫폼: Windows 11 우선 (Windows 10은 최선 노력 지원)
 - 런타임: .NET 10 / WPF
@@ -317,3 +319,12 @@ docs/
 
 GPL-3.0. 전문은 [LICENSE](LICENSE)를 참고하세요.
 제3자 구성요소 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다.
+
+---
+
+## 만든 사람
+
+왕두목 · [두목넷 dumok.net](https://dumok.net) — 정보처리·사무자동화·컴활 자격증 온라인 강의
+
+- 학습 블로그: https://dumok.net/blog
+- 유튜브: https://www.youtube.com/@extudy
