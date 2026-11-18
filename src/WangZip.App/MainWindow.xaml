@@ -284,7 +284,8 @@
                               PreviewMouseLeftButtonDown="EntryGrid_PreviewMouseLeftButtonDown"
                               PreviewMouseMove="EntryGrid_PreviewMouseMove"
                               PreviewMouseRightButtonDown="EntryGrid_PreviewMouseRightButtonDown"
-                              MouseDoubleClick="EntryGrid_MouseDoubleClick">
+                              MouseDoubleClick="EntryGrid_MouseDoubleClick"
+                              SelectionChanged="EntryGrid_SelectionChanged">
                         <DataGrid.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="열기 (미리보기)" Click="ContextOpen_Click" />

@@ -4,7 +4,7 @@
 ; - 자체 포함 배포본(artifacts\WangZip-<버전>-win-x64)을 통째로 담아 .NET 설치가 필요 없게 합니다.
 ; - 사용자 단위 설치(권한 상승 없음, {autopf} → LocalAppData\Programs)를 씁니다.
 
-#define MyAppVersion "0.8.0"
+#define MyAppVersion "0.8.1"
 #define MyAppName "왕집 (WangZip)"
 #define MyAppShortName "왕집"
 #define MyAppExe "WangZip.exe"
@@ -55,11 +55,11 @@ korean.AppDesc=광고 없는 오픈소스 압축 프로그램
 korean.TaskGroup=추가 작업:
 korean.TaskDesktop=왕집 바탕 화면 바로 가기 만들기(&D)
 korean.TaskAssoc=압축 파일 형식(zip, 7z, rar 등)의 '연결 프로그램' 목록에 왕집 등록(&A)
-korean.TaskMenu=탐색기 마우스 오른쪽 메뉴에 '여기에 풀기 / 모두 풀기 / ZIP으로 압축' 추가(&M) (Win11은 '더 많은 옵션 표시' 아래)
-korean.MenuExtract=왕집: 여기에 풀기
-korean.MenuExtractAll=왕집: 모두 풀기
-korean.MenuCompress=왕집: ZIP으로 압축
-korean.MenuFolder=왕집: 이 폴더 압축
+korean.TaskMenu=탐색기 마우스 오른쪽 메뉴에 '왕집' 서브메뉴 추가(&M) (Win11은 '더 많은 옵션 표시' 아래)
+korean.MenuExtract=여기에 풀기
+korean.MenuExtractAll=모두 풀기
+korean.MenuCompress=ZIP으로 압축
+korean.MenuFolder=이 폴더 압축
 korean.ArchiveFile=왕집 압축 파일
 korean.UninstallName=왕집 제거
 korean.RunNow=지금 왕집 실행(&R)
@@ -68,11 +68,11 @@ english.AppDesc=Ad-free open-source archive utility
 english.TaskGroup=Additional tasks:
 english.TaskDesktop=Create a WZIP &desktop shortcut
 english.TaskAssoc=Register WangZip in the 'Open with' list for archive types (zip, 7z, rar, ...) (&A)
-english.TaskMenu=Add 'Extract here / Extract all / Compress to ZIP' to the Explorer right-click menu (&M) (Windows 11: under 'Show more options')
-english.MenuExtract=WangZip: Extract here
-english.MenuExtractAll=WangZip: Extract All
-english.MenuCompress=WangZip: Compress to ZIP
-english.MenuFolder=WangZip: Compress this folder
+english.TaskMenu=Add 'WangZip' submenu to Explorer right-click menu (&M) (Windows 11: under 'Show more options')
+english.MenuExtract=Extract here
+english.MenuExtractAll=Extract all
+english.MenuCompress=Compress to ZIP
+english.MenuFolder=Compress this folder
 english.ArchiveFile=WangZip archive
 english.UninstallName=Uninstall WangZip
 english.RunNow=&Run WangZip now
@@ -85,83 +85,166 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Registry]
-; ZIP 형식: 여기에 풀기 / 모두 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
-; 7z 형식: 여기에 풀기 / 모두 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
-; 폴더: 압축하기
-; 모든 파일: 왕집으로 압축 (여러 개를 선택하면 하나의 ZIP으로 묶음)
-Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuCompress}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
-; 폴더 배경: 바탕 화면/폴더 안에서 이 위치 압축
-Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZipCreateBackground"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZipCreateBackground"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZipCreateBackground\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%V"""; Tasks: shellmenu
+; ──────────────────────────────────────────────────────────────
+; 탐색기 우클릭: "왕집" 서브메뉴 → 여기에 풀기 / 모두 풀기 / ZIP으로 압축
+; ──────────────────────────────────────────────────────────────
+; 각 확장자마다 SystemFileAssociations\{ext}\shell\WangZip 아래에 서브메뉴 생성
+; .zip .7z .rar .tar .gz .tgz .bz2 .xz (총 8개)
 
-; rar 형식: 여기에 풀기 / 모두 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
-; tar 형식: 여기에 풀기 / 모두 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
-; gz 형식: 여기에 풀기 / 모두 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
-; tgz 형식: 여기에 풀기 / 모두 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
-; bz2 형식: 여기에 풀기 / 모두 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
-; xz 형식: 여기에 풀기 / 모두 풀기
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
-Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
+; --- .zip ---
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip"; ValueType: string; ValueName: "SubCommands"; ValueData: ""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip"; ValueType: string; ValueName: "ExtendedSubCommandsKey"; ValueData: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip\shell"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuCompress}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
+
+; --- .7z ---
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip"; ValueType: string; ValueName: "SubCommands"; ValueData: ""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip"; ValueType: string; ValueName: "ExtendedSubCommandsKey"; ValueData: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip\shell"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuCompress}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
+
+; --- .rar ---
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip"; ValueType: string; ValueName: "SubCommands"; ValueData: ""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip"; ValueType: string; ValueName: "ExtendedSubCommandsKey"; ValueData: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip\shell"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuCompress}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
+
+; --- .tar ---
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip"; ValueType: string; ValueName: "SubCommands"; ValueData: ""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip"; ValueType: string; ValueName: "ExtendedSubCommandsKey"; ValueData: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip\shell"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuCompress}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
+
+; --- .gz ---
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip"; ValueType: string; ValueName: "SubCommands"; ValueData: ""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip"; ValueType: string; ValueName: "ExtendedSubCommandsKey"; ValueData: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip\shell"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuCompress}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
+
+; --- .tgz ---
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip"; ValueType: string; ValueName: "SubCommands"; ValueData: ""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip"; ValueType: string; ValueName: "ExtendedSubCommandsKey"; ValueData: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip\shell"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuCompress}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
+
+; --- .bz2 ---
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip"; ValueType: string; ValueName: "SubCommands"; ValueData: ""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip"; ValueType: string; ValueName: "ExtendedSubCommandsKey"; ValueData: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip\shell"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuCompress}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
+
+; --- .xz ---
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip"; ValueType: string; ValueName: "SubCommands"; ValueData: ""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip"; ValueType: string; ValueName: "ExtendedSubCommandsKey"; ValueData: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip\shell"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtract}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip\shell\WangZipExtract"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip\shell\WangZipExtract\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuExtractAll}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip\shell\WangZipExtractAll"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip\shell\WangZipExtractAll\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-extract-all ""%1"""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuCompress}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
+
+; --- 폴더: "왕집" 서브메뉴 → "이 폴더 압축" ---
+Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZip"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZip"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZip"; ValueType: string; ValueName: "SubCommands"; ValueData: ""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZip"; ValueType: string; ValueName: "ExtendedSubCommandsKey"; ValueData: "Software\Classes\Directory\shell\WangZip\shell"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZip\shell\WangZipCreate"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZip\shell\WangZipCreate"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZip\shell\WangZipCreate\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
+
+; --- 폴더 배경: "왕집" 서브메뉴 → "이 폴더 압축" ---
+Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZip"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZip"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZip"; ValueType: string; ValueName: "SubCommands"; ValueData: ""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZip"; ValueType: string; ValueName: "ExtendedSubCommandsKey"; ValueData: "Software\Classes\Directory\Background\shell\WangZip\shell"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZip\shell\WangZipCreateBackground"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZip\shell\WangZipCreateBackground"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZip\shell\WangZipCreateBackground\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%V"""; Tasks: shellmenu
+
+; --- 모든 파일: "왕집" 서브메뉴 → "ZIP으로 압축" ---
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZip"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuFolder}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZip"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZip"; ValueType: string; ValueName: "SubCommands"; ValueData: ""; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZip"; ValueType: string; ValueName: "ExtendedSubCommandsKey"; ValueData: "Software\Classes\*\shell\WangZip\shell"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: ""; ValueData: "{cm:MenuCompress}"; Flags: uninsdeletekey; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZip\shell\WangZipCompress"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExe}"; Tasks: shellmenu
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZip\shell\WangZipCompress\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExe}"" here-create ""%1"""; Tasks: shellmenu
 ; 연결 프로그램 등록 ("다른 앱 선택" / 기본 앱 목록에 왕집 표시)
 Root: HKCU; Subkey: "Software\Classes\WangZip.Archive"; ValueType: string; ValueName: ""; ValueData: "{cm:ArchiveFile}"; Flags: uninsdeletekey; Tasks: fileassoc
 Root: HKCU; Subkey: "Software\Classes\WangZip.Archive\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExe},0"; Tasks: fileassoc
@@ -203,10 +286,24 @@ Root: HKCU; Subkey: "Software\Classes\WangZip.Archive"; ValueType: none; Flags: 
 Root: HKCU; Subkey: "Software\Classes\Applications\WangZip.exe"; ValueType: none; Flags: dontcreatekey uninsdeletekey
 Root: HKCU; Subkey: "Software\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
 Root: HKCU; Subkey: "Software\RegisteredApplications"; ValueType: none; ValueName: "WangZip"; Flags: dontcreatekey uninsdeletevalue
-Root: HKCU; Subkey: "Software\Classes\*\shell\WangZipCompress"; ValueType: none; Flags: dontcreatekey uninsdeletekey
-Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZipCreate"; ValueType: none; Flags: dontcreatekey uninsdeletekey
-Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZipCreateBackground"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+
+; 새 서브메뉴 구조 (WangZip 키 전체 삭제)
+Root: HKCU; Subkey: "Software\Classes\*\shell\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\Directory\shell\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\zipfile\shell\WangZipExtract"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+
+; 8개 확장자 각각의 WangZip 서브메뉴 키 삭제
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\WangZip"; ValueType: none; Flags: dontcreatekey uninsdeletekey
+
+; 기존 평면 메뉴 키들도 정리
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtract"; ValueType: none; Flags: dontcreatekey uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtractAll"; ValueType: none; Flags: dontcreatekey uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\.zip\OpenWithProgids"; ValueType: none; ValueName: "WangZip.Archive"; Flags: dontcreatekey uninsdeletevalue

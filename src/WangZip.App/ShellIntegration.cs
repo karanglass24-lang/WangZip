@@ -29,12 +29,32 @@ internal static class ShellIntegration
     /// <summary>여러 압축 파일을 선택했을 때 나타나는 "모두 풀기" 동사. 항목마다 프로세스가 띄워집니다.</summary>
     private const string ExtractAllVerb = "WangZipExtractAll";
 
+    /// <summary>왕집 서브메뉴 키 이름 (SystemFileAssociations 아래에 생성).</summary>
+    private const string SubMenuKey = "WangZip";
+
     /// <summary>예전 버전이 만든 키·지원하지 않는 형식의 키. 항상 정리합니다.</summary>
     private static readonly string[] LegacyMenuKeys =
     [
         @"Software\Classes\zipfile\shell\WangZipExtract",
         @"Software\Classes\SystemFileAssociations\.cab\shell\WangZipExtract",
         @"Software\Classes\SystemFileAssociations\.iso\shell\WangZipExtract",
+        // 기존 평면 메뉴 키들도 정리
+        @"Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtract",
+        @"Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtract",
+        @"Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtract",
+        @"Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtract",
+        @"Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtract",
+        @"Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtract",
+        @"Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtract",
+        @"Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtract",
+        @"Software\Classes\SystemFileAssociations\.zip\shell\WangZipExtractAll",
+        @"Software\Classes\SystemFileAssociations\.7z\shell\WangZipExtractAll",
+        @"Software\Classes\SystemFileAssociations\.rar\shell\WangZipExtractAll",
+        @"Software\Classes\SystemFileAssociations\.tar\shell\WangZipExtractAll",
+        @"Software\Classes\SystemFileAssociations\.gz\shell\WangZipExtractAll",
+        @"Software\Classes\SystemFileAssociations\.tgz\shell\WangZipExtractAll",
+        @"Software\Classes\SystemFileAssociations\.bz2\shell\WangZipExtractAll",
+        @"Software\Classes\SystemFileAssociations\.xz\shell\WangZipExtractAll",
     ];
 
     // ───────── 연결 프로그램 ─────────
@@ -135,39 +155,40 @@ internal static class ShellIntegration
     {
         foreach (string legacy in LegacyMenuKeys) DeleteTree(legacy);
 
-        var extractTargets = ExtractMenuExtensions
-            .Select(e => $@"Software\Classes\SystemFileAssociations\{e}\shell\WangZipExtract")
-            .ToList();
-        var extractAllTargets = ExtractMenuExtensions
-            .Select(e => $@"Software\Classes\SystemFileAssociations\{e}\shell\{ExtractAllVerb}")
-            .ToList();
-
-        string extractLabel = Loc.T("왕집: 여기에 풀기");
-        string extractAllLabel = Loc.T("왕집: 모두 풀기");
-        string createLabel = Loc.T("왕집: 이 폴더 압축");
-
-        foreach (string path in extractTargets)
+        // 압축 파일 확장자별 서브메뉴 등록
+        foreach (string ext in ExtractMenuExtensions)
         {
-            if (enabled) WriteMenu(path, extractLabel, $"\"{exePath}\" here-extract \"%1\"", exePath);
-            else DeleteTree(path);
+            string basePath = $@"Software\Classes\SystemFileAssociations\{ext}\shell\{SubMenuKey}";
+            if (enabled)
+            {
+                // 부모 메뉴: "왕집"
+                WriteSubMenuParent(basePath, exePath);
+
+                // 하위 메뉴: 여기에 풀기
+                WriteMenu($@"{basePath}\shell\WangZipExtract", Loc.T("여기에 풀기"), $"\"{exePath}\" here-extract \"%1\"", exePath);
+
+                // 하위 메뉴: 모두 풀기 (다중 선택 지원)
+                WriteMenu($@"{basePath}\shell\WangZipExtractAll", Loc.T("모두 풀기"), $"\"{exePath}\" here-extract-all \"%1\"", exePath, multiSelect: true);
+
+                // 하위 메뉴: ZIP으로 압축
+                WriteMenu($@"{basePath}\shell\WangZipCompress", Loc.T("ZIP으로 압축"), $"\"{exePath}\" here-create \"%1\"", exePath);
+            }
+            else
+            {
+                DeleteTree(basePath);
+            }
         }
 
-        foreach (string path in extractAllTargets)
-        {
-            if (enabled) WriteMenu(path, extractAllLabel, $"\"{exePath}\" here-extract-all \"%1\"", exePath, multiSelect: true);
-            else DeleteTree(path);
-        }
-
-        const string file = @"Software\Classes\*\shell\WangZipCompress";
-        if (enabled) WriteMenu(file, Loc.T("왕집: ZIP으로 압축"), $"\"{exePath}\" here-create \"%1\"", exePath);
-        else DeleteTree(file);
-
+        // 폴더/배경: "왕집" 서브메뉴 → "이 폴더 압축"
         const string directory = @"Software\Classes\Directory\shell\WangZipCreate";
         const string background = @"Software\Classes\Directory\Background\shell\WangZipCreateBackground";
         if (enabled)
         {
-            WriteMenu(directory, createLabel, $"\"{exePath}\" here-create \"%1\"", exePath);
-            WriteMenu(background, createLabel, $"\"{exePath}\" here-create \"%V\"", exePath);
+            WriteSubMenuParent(directory, exePath);
+            WriteMenu($@"{directory}\shell\WangZipCreate", Loc.T("이 폴더 압축"), $"\"{exePath}\" here-create \"%1\"", exePath);
+
+            WriteSubMenuParent(background, exePath);
+            WriteMenu($@"{background}\shell\WangZipCreateBackground", Loc.T("이 폴더 압축"), $"\"{exePath}\" here-create \"%V\"", exePath);
         }
         else
         {
@@ -176,6 +197,15 @@ internal static class ShellIntegration
         }
 
         NotifyChanged();
+    }
+
+    /// <summary>캐스케이드(서브메뉴) 부모 키를 생성합니다.</summary>
+    private static void WriteSubMenuParent(string path, string exePath)
+    {
+        SetDefault(path, Loc.T("왕집"));
+        SetValue(path, "Icon", exePath);
+        SetValue(path, "SubCommands", "");
+        SetValue(path, "ExtendedSubCommandsKey", $@"{path}\shell");
     }
 
     private static void WriteMenu(string path, string label, string command, string exePath, bool multiSelect = false)

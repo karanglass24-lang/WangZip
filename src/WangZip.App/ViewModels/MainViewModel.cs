@@ -410,8 +410,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>끌어서 내보내기용: 선택 항목을 임시 폴더로 풀고 각 항목의 실제 경로를 돌려줍니다.</summary>
-    public List<string> ExtractToTemp(IReadOnlyList<EntryRow> selected)
+    /// <summary>끌어서 내보내기용: 선택 항목(폴더 포함)을 임시 폴더로 풀고, **실제 파일 경로들**을 돌려줍니다.
+    /// 폴더가 선택되면 그 안의 모든 파일이 개별 경로로 포함됩니다.</summary>
+    public List<string> ExtractToTemp(IReadOnlyList<EntryRow> selected, IProgress<ProgressReport>? progress = null, CancellationToken token = default)
     {
         IArchiveSource source = _source ?? throw new InvalidOperationException(Loc.T("먼저 압축 파일을 열어 주세요."));
 
@@ -433,7 +434,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         string temporary = Path.Combine(root, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temporary);
 
-        int[] indices = ExpandRows(selected).Select(row => row.Info.Index).ToArray();
+        // 폴더를 펼쳐서 모든 파일 인덱스를 얻음
+        List<EntryRow> expanded = ExpandRows(selected);
+        int[] indices = expanded.Select(row => row.Info.Index).ToArray();
         if (indices.Length == 0) return [];
 
         source.Extract(
@@ -444,14 +447,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 Overwrite = OverwritePolicy.Overwrite,
                 CheckFreeSpace = false,
             },
-            null,
-            CancellationToken.None);
+            progress,
+            token);
 
+        // **확장된 행 중 실제 파일만** 경로로 반환 (폴더는 제외, Explorer가 개별 파일을 받도록)
         var paths = new List<string>();
-        foreach (EntryRow row in selected)
+        foreach (EntryRow row in expanded)
         {
+            if (row.IsDirectory) continue; // 디렉터리 항목은 건너뜀
             string path = Path.Combine(temporary, row.Info.Name.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(path) || Directory.Exists(path)) paths.Add(path);
+            if (File.Exists(path)) paths.Add(path);
         }
 
         return paths;

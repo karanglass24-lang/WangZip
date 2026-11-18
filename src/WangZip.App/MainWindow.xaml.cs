@@ -977,7 +977,8 @@ public partial class MainWindow : Window
     private void EntryGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         DataGridRow? row = RowAt(e.OriginalSource as DependencyObject);
-        _dragCandidate = row is not null && row.IsSelected && e.ClickCount == 1;
+        // 선택된 행 위에서 마우스 다운 시 드래그 후보로 등록 (클릭 횟수 무관)
+        _dragCandidate = row is not null && row.IsSelected;
         _dragStart = e.GetPosition(null);
     }
 
@@ -996,8 +997,14 @@ public partial class MainWindow : Window
         StartDragOut();
     }
 
+    // 선택이 바뀔 때 드래그 후보 취소
+    private void EntryGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _dragCandidate = false;
+    }
+
     /// <summary>선택 항목을 임시 폴더로 풀어 탐색기 등으로 끌어 놓을 수 있게 합니다.</summary>
-    private void StartDragOut()
+    private async void StartDragOut()
     {
         if (!_viewModel.HasArchive || _viewModel.IsBusy) return;
 
@@ -1012,20 +1019,41 @@ public partial class MainWindow : Window
         }
 
         long total = expanded.Sum(row => row.Info.Size);
-        if (total > 500L * 1024 * 1024)
+        // 2GB 제한 (임시 폴더 공간 확인은 Extract에서 수행)
+        const long MaxDragBytes = 2L * 1024 * 1024 * 1024;
+        if (total > MaxDragBytes)
         {
-            ShowInfo(Loc.T("끌어서 내보내기는 500MB 이하만 지원합니다.\n'압축 풀기'를 사용해 주세요."));
+            ShowInfo(Loc.F("끌어서 내보내기는 {0} 이하만 지원합니다.\n'압축 풀기'를 사용해 주세요.", Format.Bytes(MaxDragBytes)));
             return;
         }
 
         try
         {
             Mouse.OverrideCursor = Cursors.Wait;
-            List<string> paths = _viewModel.ExtractToTemp(selected);
-            Mouse.OverrideCursor = null;
-            if (paths.Count == 0) return;
 
-            var data = new DataObject(DataFormats.FileDrop, paths.ToArray());
+            // 진행 창과 함께 임시 폴더로 추출
+            List<string> paths = null!;
+            bool ok = await ProgressDialog.RunAsync(this, Loc.T("드래그할 파일 준비 중..."), async (progress, token) =>
+            {
+                paths = await Task.Run(() => _viewModel.ExtractToTemp(selected, progress, token), token);
+            });
+
+            Mouse.OverrideCursor = null;
+
+            if (!ok || paths is null) return;
+
+            // 실제 존재하는 파일만 필터링
+            var validPaths = paths.Where(p => File.Exists(p)).ToArray();
+            if (validPaths.Length == 0)
+            {
+                ShowInfo(Loc.T("끌어갈 파일이 없습니다."));
+                return;
+            }
+
+            // DataObject에 SetData로 설정 (생성자보다 안정적)
+            var data = new DataObject();
+            data.SetData(DataFormats.FileDrop, validPaths, true);
+
             _draggingOut = true;
             try { DragDrop.DoDragDrop(EntryGrid, data, DragDropEffects.Copy); }
             finally { _draggingOut = false; }

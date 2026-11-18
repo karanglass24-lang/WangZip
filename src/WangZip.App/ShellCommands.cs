@@ -72,7 +72,7 @@ internal static class ShellCommands
 
     /// <summary>한 압축 파일의 전체 항목을 풉니다. 암호가 필요하면 사용자에게 묻습니다.</summary>
     private static async Task<ArchiveExtraction?> ExtractOneAsync(
-        string archivePath, IProgress<ProgressReport> progress, CancellationToken token)
+        string archivePath, IProgress<ProgressReport> progress, CancellationToken token, bool quiet = false)
     {
         if (!File.Exists(archivePath))
         {
@@ -100,7 +100,7 @@ internal static class ShellCommands
 
         if (source is null)
         {
-            Show(Loc.T("비밀번호가 올바르지 않습니다."));
+            if (!quiet) Show(Loc.T("비밀번호가 올바르지 않습니다."));
             return null;
         }
 
@@ -108,7 +108,7 @@ internal static class ShellCommands
         {
             if (source.Entries.Count == 0)
             {
-                Show(Loc.T("압축 파일 안에 항목이 없습니다."));
+                if (!quiet) Show(Loc.T("압축 파일 안에 항목이 없습니다."));
                 return null;
             }
 
@@ -146,6 +146,11 @@ internal static class ShellCommands
                     password = PromptPassword(true);
                     if (password is null) return null;
                 }
+            }
+
+            if (!quiet && result is not null)
+            {
+                Show(Loc.F("압축을 풀었습니다: 파일 {0:N0}개\n{1}", result.ExtractedFiles, destination));
             }
 
             return result is null ? null : new ArchiveExtraction(result, destination);
@@ -291,7 +296,8 @@ internal static class ShellCommands
                 batch.Begin(i, name);
                 try
                 {
-                    ArchiveExtraction? done = await ExtractOneAsync(archives[i], batch, token);
+                    // quiet=true: 개별 완료 메시지상자 표시 안 함 (최종 요약만 표시)
+                    ArchiveExtraction? done = await ExtractOneAsync(archives[i], batch, token, quiet: true);
                     if (done is null)
                     {
                         // 암호 입력을 취소했거나 열지 못한 경우

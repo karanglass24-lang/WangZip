@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using WangZip.Core;
 
@@ -5,11 +6,16 @@ namespace WangZip.App;
 
 public partial class App : Application
 {
+    private const string DragTempRoot = @"WangZip\drag";
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         // WANGZIP_LANG 환경 변수(ko/en)는 설정보다 우선합니다 (테스트용).
         Loc.Init(Environment.GetEnvironmentVariable("WANGZIP_LANG") ?? AppSettings.Load().Language);
+
+        // 종료 시 드래그용 임시 폴더 정리
+        Exit += (_, _) => CleanupDragTemp();
 
         // 예기치 않은 예외가 프로그램을 바로 죽이지 않게 합니다.
         DispatcherUnhandledException += (_, args) =>
@@ -41,5 +47,21 @@ public partial class App : Application
         {
             window.OpenFromCommandLine(e.Args[0]);
         }
+    }
+
+    private static void CleanupDragTemp()
+    {
+        try
+        {
+            string root = Path.Combine(Path.GetTempPath(), DragTempRoot);
+            if (Directory.Exists(root))
+            {
+                foreach (string dir in Directory.EnumerateDirectories(root))
+                {
+                    try { Directory.Delete(dir, recursive: true); } catch (IOException) { }
+                }
+            }
+        }
+        catch (IOException) { }
     }
 }
