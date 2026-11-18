@@ -1,0 +1,64 @@
+<Window x:Class="WangZip.App.Dialogs.PreviewDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WangZip.App.Dialogs"
+        mc:Ignorable="d"
+        Title="미리보기" Height="500" Width="700"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        ResizeMode="CanResizeWithGrip">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 헤더: 파일명, 인코딩 선택 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock x:Name="FileNameText" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
+            <TextBlock Text="  인코딩:" VerticalAlignment="Center" Margin="16,0,4,0"/>
+            <ComboBox x:Name="EncodingCombo" Width="120" VerticalAlignment="Center" SelectionChanged="EncodingCombo_SelectionChanged">
+                <ComboBoxItem Content="자동 감지" Tag="auto"/>
+                <ComboBoxItem Content="UTF-8" Tag="utf-8"/>
+                <ComboBoxItem Content="UTF-16" Tag="utf-16"/>
+                <ComboBoxItem Content="CP949 (한글)" Tag="cp949"/>
+                <ComboBoxItem Content="EUC-KR" Tag="euc-kr"/>
+                <ComboBoxItem Content="ISO-8859-1" Tag="iso-8859-1"/>
+            </ComboBox>
+            <CheckBox x:Name="WordWrapCheck" Content="자동 줄바꿈" Margin="16,0,0,0" VerticalAlignment="Center" Checked="WordWrapCheck_Changed" Unchecked="WordWrapCheck_Changed"/>
+            <Button x:Name="OpenExternalBtn" Content="외부 프로그램으로 열기" Margin="16,0,0,0" Padding="12,4" Click="OpenExternalBtn_Click"/>
+        </StackPanel>
+
+        <!-- 텍스트 영역 -->
+        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <TextBox x:Name="TextBox"
+                         IsReadOnly="True"
+                         FontFamily="Consolas, 'Cascadia Code', 'D2Coding', monospace"
+                         FontSize="13"
+                         TextWrapping="NoWrap"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto"
+                         Padding="8"
+                         Background="{DynamicResource EditorBackground}"
+                         Foreground="{DynamicResource EditorForeground}"
+                         BorderThickness="0"
+                         TextOptions.TextFormattingMode="Display"/>
+            </ScrollViewer>
+        </Border>
+
+        <!-- 하단 상태바 -->
+        <StatusBar Grid.Row="2" Margin="0,8,0,0">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusText" Text="로딩 중..."/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock x:Name="LineColText" Text="Ln 1, Col 1"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

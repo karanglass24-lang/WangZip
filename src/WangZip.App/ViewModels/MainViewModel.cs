@@ -462,6 +462,43 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return paths;
     }
 
+    /// <summary>단일 파일(텍스트 미리보기용)을 임시 폴더로 추출하고 파일 경로를 반환합니다.</summary>
+    public string? ExtractSingleToTemp(EntryRow row)
+    {
+        if (_source is null) return null;
+
+        string root = Path.Combine(Path.GetTempPath(), "WangZip", "preview");
+        try
+        {
+            if (Directory.Exists(root))
+            {
+                foreach (string stale in Directory.EnumerateDirectories(root))
+                {
+                    try { Directory.Delete(stale, recursive: true); } catch (IOException) { }
+                }
+            }
+        }
+        catch (IOException) { }
+
+        string temporary = Path.Combine(root, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(temporary);
+
+        var options = new ExtractionOptions
+        {
+            DestinationDirectory = temporary,
+            Overwrite = OverwritePolicy.Overwrite,
+            CheckFreeSpace = false,
+            PreserveTimestamps = false,
+        };
+
+        _source.Extract([row.Info.Index], options, null, CancellationToken.None);
+
+        string relPath = row.Info.Name.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar);
+        string fullPath = Path.Combine(temporary, relPath);
+
+        return File.Exists(fullPath) ? fullPath : null;
+    }
+
     private static void TrackImplicit(Dictionary<string, DateTimeOffset> map, string name, DateTimeOffset modified)
     {
         if (!map.TryGetValue(name, out DateTimeOffset existing) || modified > existing) map[name] = modified;

@@ -15,7 +15,7 @@ $root = $PSScriptRoot
 $localDotnet = Join-Path $root '.dotnet\dotnet.exe'
 $dotnet = if (Test-Path $localDotnet) { $localDotnet } else { 'dotnet' }
 
-$version = '0.8.1'
+$version = '0.8.2'
 $outRoot = Join-Path $root 'artifacts'
 $appOut = Join-Path $outRoot "WangZip-$version-$Runtime"
 $cliOut = Join-Path $appOut 'cli'
