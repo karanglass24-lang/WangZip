@@ -22,9 +22,9 @@ public partial class App : Application
             args.Handled = true;
         };
 
-        // 탐색기 우클릭 메뉴 명령 모드 (here-extract / here-create)
+        // 탐색기 우클릭 메뉴 명령 모드 (here-extract / here-extract-all / here-create)
         if (e.Args.Length >= 2 &&
-            e.Args[0].ToLowerInvariant() is "here-extract" or "here-create")
+            e.Args[0].ToLowerInvariant() is "here-extract" or "here-extract-all" or "here-create")
         {
             if (!ShellCommands.TryRun(e.Args))
             {

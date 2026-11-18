@@ -26,6 +26,9 @@ internal static class ShellIntegration
     private static readonly string[] ExtractMenuExtensions =
         [".zip", ".7z", ".rar", ".tar", ".gz", ".tgz", ".bz2", ".xz"];
 
+    /// <summary>여러 압축 파일을 선택했을 때 나타나는 "모두 풀기" 동사. 항목마다 프로세스가 띄워집니다.</summary>
+    private const string ExtractAllVerb = "WangZipExtractAll";
+
     /// <summary>예전 버전이 만든 키·지원하지 않는 형식의 키. 항상 정리합니다.</summary>
     private static readonly string[] LegacyMenuKeys =
     [
@@ -135,13 +138,23 @@ internal static class ShellIntegration
         var extractTargets = ExtractMenuExtensions
             .Select(e => $@"Software\Classes\SystemFileAssociations\{e}\shell\WangZipExtract")
             .ToList();
+        var extractAllTargets = ExtractMenuExtensions
+            .Select(e => $@"Software\Classes\SystemFileAssociations\{e}\shell\{ExtractAllVerb}")
+            .ToList();
 
         string extractLabel = Loc.T("왕집: 여기에 풀기");
+        string extractAllLabel = Loc.T("왕집: 모두 풀기");
         string createLabel = Loc.T("왕집: 이 폴더 압축");
 
         foreach (string path in extractTargets)
         {
             if (enabled) WriteMenu(path, extractLabel, $"\"{exePath}\" here-extract \"%1\"", exePath);
+            else DeleteTree(path);
+        }
+
+        foreach (string path in extractAllTargets)
+        {
+            if (enabled) WriteMenu(path, extractAllLabel, $"\"{exePath}\" here-extract-all \"%1\"", exePath, multiSelect: true);
             else DeleteTree(path);
         }
 
@@ -165,10 +178,12 @@ internal static class ShellIntegration
         NotifyChanged();
     }
 
-    private static void WriteMenu(string path, string label, string command, string exePath)
+    private static void WriteMenu(string path, string label, string command, string exePath, bool multiSelect = false)
     {
         SetDefault(path, label);
         SetValue(path, "Icon", exePath);
+        // Player: 여러 파일을 선택해도 메뉴가 보이고, 선택한 항목마다 프로세스가 실행됩니다.
+        if (multiSelect) SetValue(path, "MultiSelectModel", "Player");
         SetDefault(path + @"\command", command);
     }
 
