@@ -1077,6 +1077,10 @@ public partial class MainWindow : Window
 
     private Point _dragStart;
     private bool _dragCandidate;
+    private EntryRow? _pendingSingleSelection;
+    private EntryRow? _sweepAnchor;
+    private bool _sweeping;
+    private CancellationTokenSource? _dragPreparation;
 
     private static DataGridRow? RowAt(DependencyObject? source)
     {
@@ -1117,10 +1121,54 @@ public partial class MainWindow : Window
 
     private void EntryGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (_dragPreparation is not null)
+        {
+            _dragPreparation.Cancel();
+            e.Handled = true;
+            return;
+        }
         DataGridRow? row = RowAt(e.OriginalSource as DependencyObject);
-        // 선택된 행 위에서 마우스 다운 시 드래그 후보로 등록 (클릭 횟수 무관)
-        _dragCandidate = row is not null && row.IsSelected;
+        _pendingSingleSelection = null;
+        _dragCandidate = e.ClickCount == 1 && row?.Item is EntryRow &&
+                         Keyboard.Modifiers == ModifierKeys.None;
         _dragStart = e.GetPosition(null);
+        _sweeping = false;
+        _sweepAnchor = _dragCandidate ? row!.Item as EntryRow : null;
+        // 이미 선택된 행을 누를 때는 마우스를 놓을 때까지 선택 축소를 미룹니다.
+        if (_dragCandidate && row!.IsSelected && EntryGrid.SelectedItems.Count > 1 && row.Item is EntryRow selected)
+        {
+            _pendingSingleSelection = selected;
+            e.Handled = true;
+        }
+        if (_dragCandidate && !EntryGrid.CaptureMouse())
+        {
+            _dragCandidate = false;
+            _pendingSingleSelection = null;
+        }
+    }
+
+    private void EntryGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        _dragPreparation?.Cancel();
+        if (!_sweeping && _pendingSingleSelection is EntryRow row && EntryGrid.Items.Contains(row))
+        {
+            EntryGrid.SelectedItems.Clear();
+            EntryGrid.SelectedItems.Add(row);
+        }
+        _pendingSingleSelection = null;
+        _dragCandidate = false;
+        _sweepAnchor = null;
+        if (Mouse.Captured == EntryGrid) EntryGrid.ReleaseMouseCapture();
+    }
+
+    private void EntryGrid_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (Mouse.Captured == EntryGrid) return;
+        _dragPreparation?.Cancel();
+        _dragCandidate = false;
+        _pendingSingleSelection = null;
+        _sweepAnchor = null;
+        _sweeping = false;
     }
 
     private void EntryGrid_PreviewMouseMove(object sender, MouseEventArgs e)
@@ -1134,14 +1182,27 @@ public partial class MainWindow : Window
             return;
         }
 
-        _dragCandidate = false;
-        StartDragOut();
-    }
-
-    // 선택이 바뀔 때 드래그 후보 취소
-    private void EntryGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        _dragCandidate = false;
+        Point position = e.GetPosition(EntryGrid);
+        bool inside = position.X >= 0 && position.Y >= 0 &&
+                      position.X < EntryGrid.ActualWidth && position.Y < EntryGrid.ActualHeight;
+        if (!inside && !_sweeping)
+        {
+            _dragCandidate = false;
+            _pendingSingleSelection = null;
+            StartDragOut();
+            return;
+        }
+        if (!inside || _sweepAnchor is null) return;
+        var hit = EntryGrid.InputHitTest(position) as DependencyObject;
+        if (RowAt(hit)?.Item is not EntryRow end) return;
+        int startIndex = EntryGrid.Items.IndexOf(_sweepAnchor);
+        int endIndex = EntryGrid.Items.IndexOf(end);
+        if (startIndex < 0 || endIndex < 0) return;
+        _sweeping = true;
+        _pendingSingleSelection = null;
+        EntryGrid.SelectedItems.Clear();
+        for (int i = Math.Min(startIndex, endIndex); i <= Math.Max(startIndex, endIndex); i++)
+            EntryGrid.SelectedItems.Add(EntryGrid.Items[i]);
     }
 
     /// <summary>선택 항목을 임시 폴더로 풀어 탐색기 등으로 끌어 놓을 수 있게 합니다.</summary>
@@ -1172,19 +1233,22 @@ public partial class MainWindow : Window
         {
             Mouse.OverrideCursor = Cursors.Wait;
 
-            // 진행 창과 함께 임시 폴더로 추출
-            List<string> paths = null!;
-            bool ok = await ProgressDialog.RunAsync(this, Loc.T("드래그할 파일 준비 중..."), async (progress, token) =>
-            {
-                paths = await Task.Run(() => _viewModel.ExtractToTemp(selected, progress, token), token);
-            });
+            using var cancellation = new CancellationTokenSource();
+            _dragPreparation = cancellation;
+            var result = await Task.Run(() => _viewModel.ExtractToTemp(selected, expanded, token: cancellation.Token));
+            using DragTempCache.Lease? lease = result.Lease;
+            List<string> paths = result.Paths;
 
             Mouse.OverrideCursor = null;
 
-            if (!ok || paths is null) return;
+            if (cancellation.IsCancellationRequested || Mouse.LeftButton != MouseButtonState.Pressed ||
+                Mouse.Captured != EntryGrid)
+            {
+                return;
+            }
 
-            // 실제 존재하는 파일만 필터링
-            var validPaths = paths.Where(p => File.Exists(p)).ToArray();
+            // 파일과 폴더 모두 Explorer의 FileDrop에 전달합니다.
+            var validPaths = paths.Where(p => File.Exists(p) || Directory.Exists(p)).ToArray();
             if (validPaths.Length == 0)
             {
                 ShowInfo(Loc.T("끌어갈 파일이 없습니다."));
@@ -1196,8 +1260,21 @@ public partial class MainWindow : Window
             data.SetData(DataFormats.FileDrop, validPaths, true);
 
             _draggingOut = true;
+            lease?.Retain();
+            EntryGrid.ReleaseMouseCapture();
             try { DragDrop.DoDragDrop(EntryGrid, data, DragDropEffects.Copy); }
-            finally { _draggingOut = false; }
+            finally
+            {
+                lease?.Retain();
+                _draggingOut = false;
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (DragCacheFullException)
+        {
+            ShowInfo(Loc.IsEnglish
+                ? "The drag-out temporary cache is full. Wait for older exports to expire, or use Extract instead."
+                : "끌어서 내보내기 임시 저장 공간이 가득 찼습니다. 이전 내보내기가 만료될 때까지 기다리거나 '압축 풀기'를 사용해 주세요.");
         }
         catch (Exception exception)
         {
@@ -1206,6 +1283,7 @@ public partial class MainWindow : Window
         finally
         {
             Mouse.OverrideCursor = null;
+            _dragPreparation = null;
         }
     }
 

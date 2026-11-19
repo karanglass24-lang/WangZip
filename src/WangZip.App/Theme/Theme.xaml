@@ -54,6 +54,57 @@
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     </Style>
 
+    <!-- WPF 기본 하위 메뉴 팝업은 밝은 배경이므로 창의 다크 글자색을 상속하지 않습니다. -->
+    <Style TargetType="MenuItem">
+        <Setter Property="Foreground" Value="#1E2430" />
+        <Style.Triggers>
+            <Trigger Property="Role" Value="TopLevelHeader">
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            </Trigger>
+            <Trigger Property="Role" Value="TopLevelItem">
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            </Trigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Role" Value="TopLevelHeader" />
+                    <Condition Property="IsSubmenuOpen" Value="True" />
+                </MultiTrigger.Conditions>
+                <Setter Property="Foreground" Value="#1E2430" />
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Role" Value="TopLevelHeader" />
+                    <Condition Property="IsHighlighted" Value="True" />
+                </MultiTrigger.Conditions>
+                <Setter Property="Foreground" Value="#1E2430" />
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Role" Value="TopLevelItem" />
+                    <Condition Property="IsHighlighted" Value="True" />
+                </MultiTrigger.Conditions>
+                <Setter Property="Foreground" Value="#1E2430" />
+            </MultiTrigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="#808080" />
+            </Trigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Role" Value="TopLevelHeader" />
+                    <Condition Property="IsEnabled" Value="False" />
+                </MultiTrigger.Conditions>
+                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Role" Value="TopLevelItem" />
+                    <Condition Property="IsEnabled" Value="False" />
+                </MultiTrigger.Conditions>
+                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            </MultiTrigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="ToolButton" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />

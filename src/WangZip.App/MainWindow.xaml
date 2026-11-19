@@ -292,10 +292,11 @@
                               CanUserSortColumns="True"
                               Sorting="EntryGrid_Sorting"
                               PreviewMouseLeftButtonDown="EntryGrid_PreviewMouseLeftButtonDown"
+                              PreviewMouseLeftButtonUp="EntryGrid_PreviewMouseLeftButtonUp"
                               PreviewMouseMove="EntryGrid_PreviewMouseMove"
+                              LostMouseCapture="EntryGrid_LostMouseCapture"
                               PreviewMouseRightButtonDown="EntryGrid_PreviewMouseRightButtonDown"
-                              MouseDoubleClick="EntryGrid_MouseDoubleClick"
-                              SelectionChanged="EntryGrid_SelectionChanged">
+                              MouseDoubleClick="EntryGrid_MouseDoubleClick">
                         <DataGrid.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="열기 (미리보기)" Click="ContextOpen_Click" />

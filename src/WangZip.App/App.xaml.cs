@@ -6,7 +6,6 @@ namespace WangZip.App;
 
 public partial class App : Application
 {
-    private const string DragTempRoot = @"WangZip\drag";
     private static readonly Dictionary<string, object> LightThemeResources = new();
 
     protected override void OnStartup(StartupEventArgs e)
@@ -17,9 +16,6 @@ public partial class App : Application
 
         // 테마 적용
         ApplyTheme(AppSettings.Load().Theme);
-
-        // 종료 시 드래그용 임시 폴더 정리
-        Exit += (_, _) => CleanupDragTemp();
 
         // 예기치 않은 예외가 프로그램을 바로 죽이지 않게 합니다.
         DispatcherUnhandledException += (_, args) =>
@@ -119,19 +115,4 @@ public partial class App : Application
         }
     }
 
-    private static void CleanupDragTemp()
-    {
-        try
-        {
-            string root = Path.Combine(Path.GetTempPath(), DragTempRoot);
-            if (Directory.Exists(root))
-            {
-                foreach (string dir in Directory.EnumerateDirectories(root))
-                {
-                    try { Directory.Delete(dir, recursive: true); } catch (IOException) { }
-                }
-            }
-        }
-        catch (IOException) { }
-    }
 }
