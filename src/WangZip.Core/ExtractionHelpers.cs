@@ -15,6 +15,9 @@ internal sealed class ProgressThrottle
 
     public void Report(long processed, long total, string? currentName, bool force = false)
     {
+        // 일시정지 요청이 있으면 여기서 멈춥니다. 모든 작업이 청크마다 이 메서드를 지납니다.
+        PauseGate.CheckCurrent();
+
         if (_progress is null) return;
 
         long now = _watch.ElapsedMilliseconds;

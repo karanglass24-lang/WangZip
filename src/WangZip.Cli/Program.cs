@@ -237,6 +237,7 @@ internal static class Program
             sources,
             new CreationOptions
             {
+                Format = CreateFormats.FromPath(outputPath),
                 Level = level,
                 NameEncoding = encoding,
                 Comment = comment,
@@ -343,7 +344,7 @@ internal static class Program
                 Usage:
                   wangzip list    <archive> [--encoding auto|utf8|cp949|raw] [--json] [--password PASSWORD]
                   wangzip extract <archive> [target-folder] [--encoding ...] [--overwrite overwrite|skip|rename] [--password PASSWORD]
-                  wangzip create  <output.zip> <file|folder>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "text"] [--password PASSWORD] [--split 100M]
+                  wangzip create  <output.zip|.7z|.tar|.tar.gz|.tar.bz2> <file|folder>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "text"] [--password PASSWORD] [--split 100M]
                   wangzip verify  <archive> [--password PASSWORD]
 
                 Examples:
@@ -362,7 +363,7 @@ internal static class Program
             사용법:
               wangzip list    <압축파일> [--encoding auto|utf8|cp949|raw] [--json] [--password 비밀번호]
               wangzip extract <압축파일> [대상폴더] [--encoding ...] [--overwrite overwrite|skip|rename] [--password 비밀번호]
-              wangzip create  <출력.zip> <파일|폴더>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "설명"] [--password 비밀번호] [--split 100M]
+              wangzip create  <출력.zip|.7z|.tar|.tar.gz|.tar.bz2> <파일|폴더>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "설명"] [--password 비밀번호] [--split 100M]
               wangzip verify  <압축파일> [--password 비밀번호]
 
             예시:

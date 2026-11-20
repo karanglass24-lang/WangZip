@@ -13,6 +13,16 @@ public partial class CreateDialog : Window
     internal sealed record LevelOption(string Label, CompressionLevel Level);
     internal sealed record EncodingOption(string Label, NameEncodingMode Mode);
     internal sealed record SplitOption(string Label, long Bytes);
+    internal sealed record FormatOption(string Label, CreateFormat Format);
+
+    internal static FormatOption[] FormatOptions() =>
+    [
+        new FormatOption(Loc.T("ZIP (권장, 암호·분할 지원)"), CreateFormat.Zip),
+        new FormatOption(Loc.T("7z (높은 압축률)"), CreateFormat.SevenZip),
+        new FormatOption("TAR", CreateFormat.Tar),
+        new FormatOption("TAR.GZ", CreateFormat.TarGz),
+        new FormatOption("TAR.BZ2", CreateFormat.TarBz2),
+    ];
 
     // 환경설정 창의 기본값 선택에서도 같은 목록(같은 순서·문구)을 씁니다.
     internal static LevelOption[] LevelOptions() =>
@@ -58,6 +68,9 @@ public partial class CreateDialog : Window
         SplitCombo.ItemsSource = splits;
         SplitCombo.SelectedIndex = Math.Clamp(settings.DefaultSplitSizeIndex, 0, splits.Length - 1);
 
+        FormatCombo.ItemsSource = FormatOptions();
+        FormatCombo.SelectedIndex = 0;
+
         if (initialSources is not null)
         {
             foreach (string source in initialSources)
@@ -90,13 +103,16 @@ public partial class CreateDialog : Window
     /// <summary>"암호 걸기"가 켜져 있을 때만 값이 있습니다.</summary>
     public string? Password => UsePasswordCheck.IsChecked == true ? PasswordBox.Password : null;
 
+    public CreateFormat SelectedFormat => (FormatCombo.SelectedItem as FormatOption)?.Format ?? CreateFormat.Zip;
+
     public CreationOptions Options => new()
     {
+        Format = SelectedFormat,
         Level = (LevelCombo.SelectedItem as LevelOption)?.Level ?? CompressionLevel.Optimal,
         NameEncoding = (EncodingCombo.SelectedItem as EncodingOption)?.Mode ?? NameEncodingMode.Auto,
         IncludeEmptyDirectories = true,
-        Password = Password,
-        SplitSizeBytes = (SplitCombo.SelectedItem as SplitOption)?.Bytes ?? 0,
+        Password = SelectedFormat == CreateFormat.Zip ? Password : null,
+        SplitSizeBytes = SelectedFormat == CreateFormat.Zip ? (SplitCombo.SelectedItem as SplitOption)?.Bytes ?? 0 : 0,
     };
 
     private void AddFiles_Click(object sender, RoutedEventArgs e)
@@ -149,8 +165,9 @@ public partial class CreateDialog : Window
         var dialog = new SaveFileDialog
         {
             Title = Loc.T("압축 파일 저장"),
-            Filter = Loc.T("ZIP 압축 파일 (*.zip)|*.zip|모든 파일 (*.*)|*.*"),
-            DefaultExt = ".zip",
+            Filter = Loc.T("ZIP 압축 파일 (*.zip)|*.zip|7z 압축 파일 (*.7z)|*.7z|TAR (*.tar)|*.tar|TAR.GZ (*.tar.gz)|*.tar.gz|TAR.BZ2 (*.tar.bz2)|*.tar.bz2|모든 파일 (*.*)|*.*"),
+            FilterIndex = FormatCombo.SelectedIndex + 1,
+            DefaultExt = CreateFormats.Extension(SelectedFormat),
             AddExtension = true,
             FileName = Path.GetFileName(OutputBox.Text),
             InitialDirectory = SafeDirectory(Path.GetDirectoryName(OutputBox.Text)),
@@ -159,6 +176,9 @@ public partial class CreateDialog : Window
         if (dialog.ShowDialog(this) == true)
         {
             OutputBox.Text = dialog.FileName;
+            CreateFormat picked = CreateFormats.FromPath(dialog.FileName);
+            int index = Array.FindIndex(FormatOptions(), option => option.Format == picked);
+            if (index >= 0) FormatCombo.SelectedIndex = index;
         }
     }
 
@@ -177,10 +197,14 @@ public partial class CreateDialog : Window
             return;
         }
 
-        if (!Path.HasExtension(output)) output += ".zip";
+        if (!Path.HasExtension(output) || CreateFormats.FromPath(output) != SelectedFormat)
+        {
+            output = CreateFormats.ChangeExtension(output, SelectedFormat);
+        }
+
         OutputBox.Text = output;
 
-        if (UsePasswordCheck.IsChecked == true)
+        if (SelectedFormat == CreateFormat.Zip && UsePasswordCheck.IsChecked == true)
         {
             if (string.IsNullOrEmpty(PasswordBox.Password))
             {
@@ -233,6 +257,23 @@ public partial class CreateDialog : Window
         }
     }
 
+    private void Format_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (SplitCombo is null || SecurityPanel is null || OutputBox is null) return;
+
+        bool zip = SelectedFormat == CreateFormat.Zip;
+        SplitCombo.IsEnabled = zip;
+        EncodingCombo.IsEnabled = zip;
+        SecurityPanel.IsEnabled = zip;
+        SecurityPanel.Opacity = zip ? 1 : 0.5;
+        if (!zip) UsePasswordCheck.IsChecked = false;
+
+        if (!string.IsNullOrWhiteSpace(OutputBox.Text))
+        {
+            OutputBox.Text = CreateFormats.ChangeExtension(OutputBox.Text.Trim(), SelectedFormat);
+        }
+    }
+
     private void UpdateSuggestedOutput()
     {
         if (!string.IsNullOrWhiteSpace(OutputBox.Text)) return;
@@ -245,7 +286,7 @@ public partial class CreateDialog : Window
             ? Path.GetFileNameWithoutExtension(first)
             : Path.GetFileName(first.TrimEnd('\\'));
 
-        OutputBox.Text = Path.Combine(directory, name + ".zip");
+        OutputBox.Text = Path.Combine(directory, name + CreateFormats.Extension(SelectedFormat));
     }
 
     private static string SafeDirectory(string? path) =>

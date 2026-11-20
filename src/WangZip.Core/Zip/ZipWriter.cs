@@ -20,6 +20,11 @@ public static class ZipWriter
         IProgress<ProgressReport>? progress,
         CancellationToken cancellationToken)
     {
+        if (options.Format != CreateFormat.Zip)
+        {
+            return SharpCompressSupport.SharpCompressWriter.Create(outputPath, sources, options, progress, cancellationToken);
+        }
+
         if (options.SplitSizeBytes is > 0 and < ZipSplitter.MinimumVolumeSize)
         {
             throw new ArchiveException(Loc.F("분할 크기는 최소 {0}KB 이상이어야 합니다.", ZipSplitter.MinimumVolumeSize / 1024));

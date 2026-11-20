@@ -31,8 +31,12 @@
                 <TextBlock x:Name="PercentText" DockPanel.Dock="Left" Foreground="{DynamicResource TextSecondaryBrush}" Text="0%" />
                 <TextBlock x:Name="TimeText" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" />
             </DockPanel>
-            <Button x:Name="CancelButton" Grid.Row="4" Content="취소" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right"
-                    MinWidth="80" Click="Cancel_Click" IsCancel="True" />
+            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="PauseButton" Content="일시정지" Style="{StaticResource SecondaryButton}"
+                        MinWidth="80" Margin="0,0,8,0" Click="Pause_Click" IsEnabled="False" />
+                <Button x:Name="CancelButton" Content="취소" Style="{StaticResource SecondaryButton}"
+                        MinWidth="80" Click="Cancel_Click" IsCancel="True" />
+            </StackPanel>
         </Grid>
     </Border>
 </Window>

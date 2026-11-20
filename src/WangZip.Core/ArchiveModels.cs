@@ -25,6 +25,16 @@ public enum NameEncodingMode
     Raw,
 }
 
+/// <summary>새로 만들 수 있는 압축 형식.</summary>
+public enum CreateFormat
+{
+    Zip,
+    SevenZip,
+    Tar,
+    TarGz,
+    TarBz2,
+}
+
 public enum OverwritePolicy
 {
     Overwrite,
@@ -103,6 +113,9 @@ public sealed class ExtractionResult
 
 public sealed class CreationOptions
 {
+    /// <summary>만들 압축 형식. ZIP 외 형식은 암호·분할을 지원하지 않습니다.</summary>
+    public CreateFormat Format { get; set; } = CreateFormat.Zip;
+
     public CompressionLevel Level { get; set; } = CompressionLevel.Optimal;
     /// <summary>Auto는 UTF-8로 기록합니다(현대 표준). CP949는 구형 Windows 호환용입니다.</summary>
     public NameEncodingMode NameEncoding { get; set; } = NameEncodingMode.Auto;
