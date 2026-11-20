@@ -10,10 +10,11 @@
 - 플랫폼: Windows 11 우선 (Windows 10은 최선 노력 지원)
 - 런타임: .NET 10 / WPF
 
-> **현재 상태: v0.8.1 개발판.** ZIP 읽기/쓰기와 한글 파일명 복원, 암호 걸린 압축 해제,
-> **AES-256 암호 걸어 압축 만들기**, CLI, WPF UI가 동작합니다.
+> **현재 상태: v0.9.0.** ZIP 읽기/쓰기와 한글 파일명 복원, 암호 걸린 압축 해제,
+> **AES-256 암호 걸어 압축 만들기**, **분할 ZIP 읽기/만들기**, **7z/TAR 만들기**,
+> 작업 일시정지·대기열, CLI, WPF UI가 동작합니다.
 > 설치형·포터블 배포본은 [Releases](https://github.com/karanglass24-lang/WangZip/releases)에 있습니다.
-> 분할 압축·Win11 새 우클릭 메뉴는 아직 없습니다. 아래 [제한 사항](#제한-사항)을 참고하세요.
+> Win11 새 우클릭 메뉴는 아직 없습니다. 아래 [제한 사항](#제한-사항)을 참고하세요.
 
 ---
 
@@ -39,10 +40,10 @@ WangZip은 다음 원칙으로 그 문제를 없앱니다.
 소스 빌드 없이 쓰려면 [Releases](https://github.com/karanglass24-lang/WangZip/releases)에서 받습니다.
 둘 다 자체 포함 빌드라 별도 .NET 설치가 필요 없습니다.
 
-- **설치형(권장)**: `WangZip-0.8.1-setup.exe` 실행. 폴더 선택, 시작 메뉴 바로 가기,
+- **설치형(권장)**: `WangZip-0.9.0-setup.exe` 실행. 폴더 선택, 시작 메뉴 바로 가기,
   바탕 화면 바로 가기(선택 사항), 프로그램 제거 등록까지 해 줍니다.
   관리자 권한 없이 사용자 단위(`LocalAppData\Programs\WangZip`)에 설치됩니다.
-- **포터블**: `WangZip-0.8.1-win-x64.zip`을 풀고 `WangZip.exe`를 실행.
+- **포터블**: `WangZip-0.9.0-win-x64.zip`을 풀고 `WangZip.exe`를 실행.
 
 > **"Windows의 PC 보호" (SmartScreen) 경고가 뜨면:** 왕집은 아직 코드 서명이 없는 개인 배포본이라
 > 처음 실행할 때 파란 경고창이 나올 수 있습니다. **추가 정보 → 실행**을 누르면 됩니다.
@@ -90,7 +91,7 @@ powershell -ExecutionPolicy Bypass -File .\dotnet-install.ps1 -Channel 10.0 -Ins
 .\publish.ps1 -Zip       # ZIP까지 생성
 ```
 
-결과는 `artifacts/WangZip-0.8.1-win-x64/`에 생성됩니다.
+결과는 `artifacts/WangZip-0.9.0-win-x64/`에 생성됩니다.
 
 - `WangZip.exe` — GUI
 - `cli/wangzip.exe` — CLI (Windows는 대소문자를 구분하지 않아 `WangZip.exe`와 같은 폴더에 둘 수 없습니다)
@@ -103,7 +104,7 @@ powershell -ExecutionPolicy Bypass -File .\dotnet-install.ps1 -Channel 10.0 -Ins
 .\installer\build-installer.ps1
 ```
 
-`artifacts/WangZip-0.8.1-setup.exe`가 만들어집니다 (약 70MB, 한국어/영어 설치 마법사).
+`artifacts/WangZip-0.9.0-setup.exe`가 만들어집니다 (약 70MB, 한국어/영어 설치 마법사).
 배포본 폴더가 있으면 그대로 쓰고(`-SkipPublish`로 재사용), 없으면 자동으로 `publish.ps1`을 먼저 실행합니다.
 
 사전 준비 — Inno Setup 7을 `.tools\inno`에 사용자 단위로 설치:
@@ -199,12 +200,12 @@ ZIP은 파일명 인코딩이 통일되어 있지 않아 한국에서 특히 문
 
 | 형식 | 읽기 | 쓰기 | 비고 |
 |---|---|---|---|
-| ZIP | ✅ | ✅ | ZIP64, UTF-8/CP949 파일명, CRC 검증 |
-| 7z | ✅ | ❌ | SharpCompress로 읽기 |
-| TAR | ✅ | ❌ | |
-| GZ / TGZ | ✅ | ❌ | 압축 스트림 안의 TAR도 읽기 (`.tar.gz`/`.tar.bz2`/`.tar.xz`) |
-| BZ2 | ✅ | ❌ | |
-| XZ | ✅ | ❌ | |
+| ZIP | ✅ | ✅ | ZIP64, UTF-8/CP949 파일명, CRC 검증, 분할 ZIP(`.z01`/`.001`) 읽기·만들기 |
+| 7z | ✅ | ✅ | 읽기 + LZMA2 쓰기 |
+| TAR | ✅ | ✅ | 읽기 + 쓰기 |
+| GZ / TGZ | ✅ | ✅ | `.tar.gz` 쓰기, 압축 스트림 안의 TAR 읽기 (`.tar.gz`/`.tar.bz2`/`.tar.xz`) |
+| BZ2 | ✅ | ✅ | `.tar.bz2` 쓰기 |
+| XZ | ✅ | ❌ | 읽기 전용 |
 | RAR | ✅ | ❌ | SharpCompress 읽기 (분할 RAR은 미지원) |
 | ISO / CAB / LHA | ✅ | ❌ | SharpCompress 지원 범위 |
 
@@ -214,21 +215,22 @@ ZIP은 파일명 인코딩이 통일되어 있지 않아 한국에서 특히 문
 
 ## 제한 사항
 
-현재 버전에서 **의도적으로 구현하지 않은** 것들입니다. README에 먼저 적어 두는 편이
-사용자 기대를 맞추는 데 낫다고 판단했습니다.
+현재 버전에서 **의도적으로 구현하지 않았거나 검증이 부족한** 것들입니다.
 
-| 암호가 걸린 압축 파일 풀기 — **지원** (ZIP ZipCrypto/WinZip AES, 7z/다른 형식은 라이브러리 경로로)
-  - 압축 파일 **생성 시 암호 걸기 — 지원** (WinZip AES-256 / AE-2, `wangzip create --password`)
-- 분할 ZIP(`.z01`, `.001`), 분할 7z, 분할 RAR 읽기
-- 7z/TAR 쓰기
-- 탐색기 우클릭 메뉴 — **고전 메뉴 지원** ("여기에 풀기", **"모두 풀기"**(여러 압축 파일 일괄 해제), "이 폴더 압축" / Win11은 "여러 항목 표시" 아래) (Win11 새 메뉴는 다음 과제)
-- 압축 파일에서 파일을 직접 드래그해 꺼내기 (셸 네임스페이스 확장)
-- ZIP 항목 추가/삭제의 데이터 디스크립터·ZIP64 형식 지원
-- ALZ/EGG 등 알집 고유 포맷 (연구 과제)
+- **분할 ZIP 수정** — `.z01`/`.001` 세트는 읽기·풀기·검사만 됩니다. 항목 추가/삭제는 지원하지 않습니다.
+- **암호 걸린 분할 ZIP** — 미지원입니다.
+- **분할 7z / 분할 RAR** — 읽기 미지원입니다.
+- **7z/TAR 암호화** — 만들기 암호는 ZIP에서만 지원합니다.
+- **Win11 새 콘텍스트 메뉴** — 아직 없습니다. 고전 메뉴("더 많은 옵션 표시")를 사용합니다.
+- **셸 네임스페이스 드래그 아웃** — 압축 파일을 탐색기 폴더처럼 여는 방식은 아직 없습니다.
+- **ZIP 항목 추가/삭제의 데이터 디스크립터·ZIP64** — 지원 범위가 제한적입니다.
+- **ALZ/EGG 등 알집 고유 포맷** — 미지원입니다.
 
 알려진 제약:
 
 - 4GB 이상 ZIP64는 코드상 지원하지만 대용량 실측 테스트가 아직 부족합니다.
+- 4GB 이상 분할 ZIP과 유니코드 파일명 분할 세트는 미검증입니다.
+- 드래그 앤 드롭은 2GB까지이며, 임시 캐시는 8GiB 한도와 최근 2일 보호 정책을 씁니다.
 - 암호 ZIP 생성은 4GB 이상 항목·압축 파일과 65,535개 초과 항목을 아직 지원하지 않습니다.
 - Windows 10은 Microsoft 지원 종료(2025-10) 이후이므로 Windows 11을 기준으로 검증합니다.
 
@@ -244,7 +246,8 @@ src/
 installer/
   wangzip.iss            Inno Setup 설치 프로그램 정의
 tests/
-  WangZip.Core.Tests/    xUnit 테스트 52개
+  WangZip.Core.Tests/    xUnit 테스트 92개
+  WangZip.App.Tests/     WPF UI 스모크 테스트 12개
 docs/
   DESIGN.md             설계 결정과 로드맵
 ```
@@ -266,7 +269,10 @@ docs/
 
 ```powershell
 .\.dotnet\dotnet.exe test .\tests\WangZip.Core.Tests\WangZip.Core.Tests.csproj
+.\.dotnet\dotnet.exe test .\tests\WangZip.App.Tests\WangZip.App.Tests.csproj
 ```
+
+`build.ps1 -Test`는 Core 테스트만 실행합니다. WPF UI 테스트는 따로 실행하거나 CI(`build.yml`)를 사용하세요.
 
 포함된 테스트:
 
@@ -293,14 +299,17 @@ docs/
 | v0.4 | 압축 풀기 대상 콤보(대화상자 이동), 레이아웃/콤보 정렬 수정, 자동 업데이트 |
 | v0.5 | 암호 걸어 ZIP 만들기(AES-256), CLI `--password` |
 | v0.6 | 폴더 더블클릭 탐색·트리 수정, 폴더 항목 기록, 도구 메뉴 정리, 새 아이콘 |
-| v0.8.1 (현재) | 드래그 앤 드롭 개선(2GB/진행표시/자동정리), 우클릭 "왕집" 서브메뉴, "모두 풀기" 메시지 억제 |
+| v0.9.0 (현재) | 분할 ZIP 읽기/만들기, 7z/TAR 만들기, 일시정지·대기열, 메뉴/환경설정 개편 |
+| v0.8.3 | 드래그 선택·드롭 안정화, 탐색기 메뉴 정리, 다크 메뉴 글자색 |
+| v0.8.2 | 텍스트 미리보기, 최근 파일/폴더, 시스템/라이트/다크 테마 |
+| v0.8.1 | 드래그 앤 드롭 개선(2GB/진행표시/자동정리), 우클릭 "왕집" 서브메뉴, "모두 풀기" 메시지 억제 |
 | v0.8.0 | 탐색기 우클릭 "왕집: 모두 풀기" — 여러 압축 파일 일괄 압축 해제 |
 | v0.7.1 | 새 앱 아이콘, 압축 풀기 대화상자 정리, 영어 앱 이름 WZIP |
 | v0.7.0 | 한국어/영어 지원, 압축 풀기 대화상자 폴더 열기, 창 크기·경계 제한 조정 |
 | v0.6.3 | 도구 아이콘 확대, 모든 파일 우클릭 ZIP 압축(다중 선택 묶음), 정보 창 버전 표시 |
 | v0.6.2 | 데이터 손실 방지·환경설정·연결 프로그램·탐색기 통합 개선 |
 | v0.6.1 | 정렬·검색·끌어서 내보내기·우클릭 메뉴·형식별 아이콘, 폴더 선택 풀기 버그 수정 |
-| 다음 | Win11 새 콘텍스트 메뉴, 7z/TAR 쓰기, 분할 ZIP, 드래그 아웃 |
+| 다음 | Win11 새 콘텍스트 메뉴, 셸 네임스페이스 드래그 아웃, 분할 7z/RAR |
 
 자세한 설계 배경과 검토 결과는 [docs/DESIGN.md](docs/DESIGN.md)를 참고하세요.
 버전별 변경 내용은 [CHANGELOG.md](CHANGELOG.md)에 정리되어 있습니다.

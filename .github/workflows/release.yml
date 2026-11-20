@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '버전 (예: 0.8.4)'
+        description: '버전 (예: 0.9.0)'
         required: true
 
 permissions:

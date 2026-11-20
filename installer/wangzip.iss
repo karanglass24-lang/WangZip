@@ -6,7 +6,7 @@
 
 #ifndef MyAppVersion
   ; 릴리스 자동화는 ISCC /DMyAppVersion=x.y.z 로 덮어씁니다.
-  #define MyAppVersion "0.8.1"
+  #define MyAppVersion "0.9.0"
 #endif
 #define MyAppName "왕집 (WangZip)"
 #define MyAppShortName "왕집"
