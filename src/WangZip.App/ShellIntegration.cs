@@ -147,8 +147,9 @@ internal static class ShellIntegration
 
     public static bool IsShellMenuEnabled()
     {
-        using RegistryKey? key = Registry.CurrentUser.OpenSubKey(@"Software\Classes\Directory\shell\WangZipCreate");
-        return key is not null;
+        using RegistryKey? key = Registry.CurrentUser.OpenSubKey(@"Software\Classes\Directory\shell\WangZip");
+        using RegistryKey? oldKey = Registry.CurrentUser.OpenSubKey(@"Software\Classes\Directory\shell\WangZipCreate");
+        return key is not null || oldKey is not null;
     }
 
     public static void SetShellMenu(bool enabled, string exePath)
@@ -179,9 +180,26 @@ internal static class ShellIntegration
             }
         }
 
-        // 폴더/배경: "왕집" 서브메뉴 → "이 폴더 압축"
-        const string directory = @"Software\Classes\Directory\shell\WangZipCreate";
-        const string background = @"Software\Classes\Directory\Background\shell\WangZipCreateBackground";
+        // 일반 파일에서도 압축할 수 있게 하되 압축 파일 메뉴와 중복되지 않게 합니다.
+        const string files = @"Software\Classes\*\shell\WangZip";
+        DeleteTree(@"Software\Classes\*\shell\WangZipCompress");
+        if (enabled)
+        {
+            WriteSubMenuParent(files, exePath);
+            SetValue(files, "AppliesTo", "NOT (" + string.Join(" OR ",
+                ExtractMenuExtensions.Select(ext => $"System.FileExtension:=\"{ext}\"")) + ")");
+            WriteMenu($@"{files}\shell\WangZipCompress", Loc.T("ZIP으로 압축"), $"\"{exePath}\" here-create \"%1\"", exePath);
+        }
+        else
+        {
+            DeleteTree(files);
+        }
+
+        // 이전 버전의 독립 메뉴를 제거하고 설치 프로그램과 같은 키를 사용합니다.
+        DeleteTree(@"Software\Classes\Directory\shell\WangZipCreate");
+        DeleteTree(@"Software\Classes\Directory\Background\shell\WangZipCreateBackground");
+        const string directory = @"Software\Classes\Directory\shell\WangZip";
+        const string background = @"Software\Classes\Directory\Background\shell\WangZip";
         if (enabled)
         {
             WriteSubMenuParent(directory, exePath);
@@ -202,10 +220,13 @@ internal static class ShellIntegration
     /// <summary>캐스케이드(서브메뉴) 부모 키를 생성합니다.</summary>
     private static void WriteSubMenuParent(string path, string exePath)
     {
-        SetDefault(path, Loc.T("왕집"));
+        using RegistryKey key = Registry.CurrentUser.CreateSubKey(path);
+        key.DeleteValue("", false);
+        key.DeleteValue("SubCommands", false);
+        key.SetValue("MUIVerb", Loc.T("왕집"));
         SetValue(path, "Icon", exePath);
-        SetValue(path, "SubCommands", "");
-        SetValue(path, "ExtendedSubCommandsKey", $@"{path}\shell");
+        // ExtendedSubCommandsKey는 HKCR 기준이며 그 키의 shell 하위에서 명령을 찾습니다.
+        SetValue(path, "ExtendedSubCommandsKey", path[@"Software\Classes\".Length..]);
     }
 
     private static void WriteMenu(string path, string label, string command, string exePath, bool multiSelect = false)

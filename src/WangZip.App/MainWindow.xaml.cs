@@ -23,6 +23,7 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
         _viewModel.CurrentMode = _encodingMode;
         UpdateEncodingMenuChecks();
+        UpdateThemeMenuChecks();
 
         RestoreWindowState();
         AutoUpdateMenu.IsChecked = _settings.AutoUpdate;
@@ -55,6 +56,9 @@ public partial class MainWindow : Window
                 try
                 {
                     await _viewModel.OpenAsync(path, _encodingMode, password);
+                    _settings.AddRecentPath(path);
+                    _settings.Save();
+                    UpdateRecentFilesMenu();
                     break;
                 }
                 catch (EncryptedArchiveException) when (ArchiveService.DetectFormat(path) is ArchiveFormat.SevenZip or ArchiveFormat.Rar)
@@ -101,7 +105,7 @@ public partial class MainWindow : Window
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Title = Loc.T("압축 파일 열기"),
-            Filter = Loc.T("압축 파일|*.zip;*.7z;*.rar;*.tar;*.gz;*.tgz;*.bz2;*.xz;*.jar;*.apk|모든 파일 (*.*)|*.*"),
+            Filter = Loc.T("압축 파일|*.zip;*.7z;*.rar;*.tar;*.gz;*.tgz;*.bz2;*.xz;*.jar;*.apk;*.z01;*.001|모든 파일 (*.*)|*.*"),
         };
 
         if (dialog.ShowDialog(this) == true)
@@ -313,6 +317,14 @@ public partial class MainWindow : Window
 
         if (!ok || created is null) return;
 
+        // 소스 폴더를 최근 경로에 추가
+        if (sources.Count > 0 && Directory.Exists(sources[0]))
+        {
+            _settings.AddRecentPath(sources[0]);
+            _settings.Save();
+            UpdateRecentFilesMenu();
+        }
+
         bool encrypted = !string.IsNullOrEmpty(dialog.Options.Password);
 
         MessageBox.Show(
@@ -504,6 +516,24 @@ public partial class MainWindow : Window
         EncodingRawMenu.IsChecked = _encodingMode == NameEncodingMode.Raw;
     }
 
+    private void ThemeMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem item || item.Tag is not string tag) return;
+        if (!int.TryParse(tag, out int theme)) return;
+
+        _settings.Theme = theme;
+        _settings.Save();
+        App.ApplyTheme(theme);
+        UpdateThemeMenuChecks();
+    }
+
+    private void UpdateThemeMenuChecks()
+    {
+        ThemeSystemMenu.IsChecked = _settings.Theme == 0;
+        ThemeLightMenu.IsChecked = _settings.Theme == 1;
+        ThemeDarkMenu.IsChecked = _settings.Theme == 2;
+    }
+
     private void FolderTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
         if (e.NewValue is FolderNode node)
@@ -616,9 +646,22 @@ public partial class MainWindow : Window
         ".msi", ".msp", ".lnk", ".jar", ".reg", ".cpl", ".docm", ".xlsm", ".pptm",
     };
 
+    private static readonly HashSet<string> TextExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".txt", ".log", ".ini", ".cfg", ".conf", ".config", ".json", ".xml", ".yaml", ".yml",
+        ".csv", ".tsv", ".md", ".markdown", ".html", ".htm", ".css", ".js", ".ts", ".jsx", ".tsx",
+        ".py", ".cs", ".vb", ".java", ".cpp", ".c", ".h", ".hpp", ".go", ".rs", ".php", ".rb",
+        ".pl", ".sh", ".bat", ".cmd", ".ps1", ".sql", ".ini", ".properties", ".toml",
+        ".dockerfile", ".gitignore", ".gitattributes", ".editorconfig", ".license", ".readme",
+        ".changelog", ".authors", ".contributors", ".todo", ".note", ".nfo", ".diz"
+    };
+
     private async Task PreviewSelectedAsync(EntryRow row)
     {
-        if (RiskyExtensions.Contains(Path.GetExtension(row.Info.Name.TrimEnd('/'))) &&
+        string ext = Path.GetExtension(row.Info.Name.TrimEnd('/'));
+
+        // 위험한 확장자 경고
+        if (RiskyExtensions.Contains(ext) &&
             MessageBox.Show(this,
                 Loc.F("'{0}'은(는) 실행되는 형식의 파일입니다.\n압축을 풀어 바로 실행하면 위험할 수 있습니다. 계속할까요?", row.Info.Name),
                 Loc.T("왕집"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
@@ -626,10 +669,50 @@ public partial class MainWindow : Window
             return;
         }
 
+        // 텍스트 파일은 내부 뷰어로 바로 미리보기
+        if (TextExtensions.Contains(ext))
+        {
+            await PreviewTextFileAsync(row);
+            return;
+        }
+
+        // 그 외는 기존 방식(임시 추출 후 외부 프로그램으로 열기)
         try
         {
             Mouse.OverrideCursor = Cursors.Wait;
             await _viewModel.PreviewAsync(row);
+        }
+        catch (Exception exception)
+        {
+            ShowError(exception);
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+    }
+
+    /// <summary>텍스트 파일을 임시 추출하여 PreviewDialog로 미리보기합니다.</summary>
+    private async Task PreviewTextFileAsync(EntryRow row)
+    {
+        try
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
+
+            // 임시 파일에 추출
+            string? tempFile = await Task.Run(() => _viewModel.ExtractSingleToTemp(row));
+
+            if (string.IsNullOrEmpty(tempFile) || !File.Exists(tempFile))
+            {
+                ShowInfo(Loc.T("파일을 추출할 수 없습니다."));
+                return;
+            }
+
+            Mouse.OverrideCursor = null;
+
+            // PreviewDialog 표시 (모달리스)
+            var dialog = new PreviewDialog(tempFile, row.Info.Name) { Owner = this };
+            dialog.Show();
         }
         catch (Exception exception)
         {
@@ -889,6 +972,64 @@ public partial class MainWindow : Window
         }
 
         if (_settings.WindowMaximized) WindowState = WindowState.Maximized;
+
+        UpdateRecentFilesMenu();
+    }
+
+    private void UpdateRecentFilesMenu()
+    {
+        RecentFilesMenu.Items.Clear();
+
+        if (_settings.RecentPaths is { Count: > 0 })
+        {
+            RecentFilesMenu.IsEnabled = true;
+            foreach (string path in _settings.RecentPaths)
+            {
+                if (File.Exists(path) || Directory.Exists(path))
+                {
+                    var item = new MenuItem
+                    {
+                        Header = TruncatePath(path, 60),
+                        ToolTip = path,
+                        Tag = path
+                    };
+                    item.Click += (_, _) => OpenRecentPath(path);
+                    RecentFilesMenu.Items.Add(item);
+                }
+            }
+        }
+        else
+        {
+            RecentFilesMenu.IsEnabled = false;
+            RecentFilesMenu.Items.Add(new MenuItem { Header = "(최근 파일 없음)", IsEnabled = false });
+        }
+    }
+
+    private static string TruncatePath(string path, int maxLen)
+    {
+        if (path.Length <= maxLen) return path;
+        return "..." + path[^maxLen..];
+    }
+
+    private void OpenRecentPath(string path)
+    {
+        if (File.Exists(path))
+        {
+            _ = OpenArchiveAsync(path);
+        }
+        else if (Directory.Exists(path))
+        {
+            // 폴더인 경우 압축 생성 대화상자로 열기
+            _ = RunCreateAsync(new CreateDialog([path]) { Owner = this });
+        }
+        else
+        {
+            ShowInfo(Loc.F("'{0}' 경로를 찾을 수 없습니다.", path));
+            // 존재하지 않는 경로는 최근 목록에서 제거
+            _settings.RecentPaths.Remove(path);
+            _settings.Save();
+            UpdateRecentFilesMenu();
+        }
     }
 
     private void SaveWindowState()
@@ -936,6 +1077,10 @@ public partial class MainWindow : Window
 
     private Point _dragStart;
     private bool _dragCandidate;
+    private EntryRow? _pendingSingleSelection;
+    private EntryRow? _sweepAnchor;
+    private bool _sweeping;
+    private CancellationTokenSource? _dragPreparation;
 
     private static DataGridRow? RowAt(DependencyObject? source)
     {
@@ -976,10 +1121,54 @@ public partial class MainWindow : Window
 
     private void EntryGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (_dragPreparation is not null)
+        {
+            _dragPreparation.Cancel();
+            e.Handled = true;
+            return;
+        }
         DataGridRow? row = RowAt(e.OriginalSource as DependencyObject);
-        // 선택된 행 위에서 마우스 다운 시 드래그 후보로 등록 (클릭 횟수 무관)
-        _dragCandidate = row is not null && row.IsSelected;
+        _pendingSingleSelection = null;
+        _dragCandidate = e.ClickCount == 1 && row?.Item is EntryRow &&
+                         Keyboard.Modifiers == ModifierKeys.None;
         _dragStart = e.GetPosition(null);
+        _sweeping = false;
+        _sweepAnchor = _dragCandidate ? row!.Item as EntryRow : null;
+        // 이미 선택된 행을 누를 때는 마우스를 놓을 때까지 선택 축소를 미룹니다.
+        if (_dragCandidate && row!.IsSelected && EntryGrid.SelectedItems.Count > 1 && row.Item is EntryRow selected)
+        {
+            _pendingSingleSelection = selected;
+            e.Handled = true;
+        }
+        if (_dragCandidate && !EntryGrid.CaptureMouse())
+        {
+            _dragCandidate = false;
+            _pendingSingleSelection = null;
+        }
+    }
+
+    private void EntryGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        _dragPreparation?.Cancel();
+        if (!_sweeping && _pendingSingleSelection is EntryRow row && EntryGrid.Items.Contains(row))
+        {
+            EntryGrid.SelectedItems.Clear();
+            EntryGrid.SelectedItems.Add(row);
+        }
+        _pendingSingleSelection = null;
+        _dragCandidate = false;
+        _sweepAnchor = null;
+        if (Mouse.Captured == EntryGrid) EntryGrid.ReleaseMouseCapture();
+    }
+
+    private void EntryGrid_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (Mouse.Captured == EntryGrid) return;
+        _dragPreparation?.Cancel();
+        _dragCandidate = false;
+        _pendingSingleSelection = null;
+        _sweepAnchor = null;
+        _sweeping = false;
     }
 
     private void EntryGrid_PreviewMouseMove(object sender, MouseEventArgs e)
@@ -993,14 +1182,27 @@ public partial class MainWindow : Window
             return;
         }
 
-        _dragCandidate = false;
-        StartDragOut();
-    }
-
-    // 선택이 바뀔 때 드래그 후보 취소
-    private void EntryGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        _dragCandidate = false;
+        Point position = e.GetPosition(EntryGrid);
+        bool inside = position.X >= 0 && position.Y >= 0 &&
+                      position.X < EntryGrid.ActualWidth && position.Y < EntryGrid.ActualHeight;
+        if (!inside && !_sweeping)
+        {
+            _dragCandidate = false;
+            _pendingSingleSelection = null;
+            StartDragOut();
+            return;
+        }
+        if (!inside || _sweepAnchor is null) return;
+        var hit = EntryGrid.InputHitTest(position) as DependencyObject;
+        if (RowAt(hit)?.Item is not EntryRow end) return;
+        int startIndex = EntryGrid.Items.IndexOf(_sweepAnchor);
+        int endIndex = EntryGrid.Items.IndexOf(end);
+        if (startIndex < 0 || endIndex < 0) return;
+        _sweeping = true;
+        _pendingSingleSelection = null;
+        EntryGrid.SelectedItems.Clear();
+        for (int i = Math.Min(startIndex, endIndex); i <= Math.Max(startIndex, endIndex); i++)
+            EntryGrid.SelectedItems.Add(EntryGrid.Items[i]);
     }
 
     /// <summary>선택 항목을 임시 폴더로 풀어 탐색기 등으로 끌어 놓을 수 있게 합니다.</summary>
@@ -1031,19 +1233,22 @@ public partial class MainWindow : Window
         {
             Mouse.OverrideCursor = Cursors.Wait;
 
-            // 진행 창과 함께 임시 폴더로 추출
-            List<string> paths = null!;
-            bool ok = await ProgressDialog.RunAsync(this, Loc.T("드래그할 파일 준비 중..."), async (progress, token) =>
-            {
-                paths = await Task.Run(() => _viewModel.ExtractToTemp(selected, progress, token), token);
-            });
+            using var cancellation = new CancellationTokenSource();
+            _dragPreparation = cancellation;
+            var result = await Task.Run(() => _viewModel.ExtractToTemp(selected, expanded, token: cancellation.Token));
+            using DragTempCache.Lease? lease = result.Lease;
+            List<string> paths = result.Paths;
 
             Mouse.OverrideCursor = null;
 
-            if (!ok || paths is null) return;
+            if (cancellation.IsCancellationRequested || Mouse.LeftButton != MouseButtonState.Pressed ||
+                Mouse.Captured != EntryGrid)
+            {
+                return;
+            }
 
-            // 실제 존재하는 파일만 필터링
-            var validPaths = paths.Where(p => File.Exists(p)).ToArray();
+            // 파일과 폴더 모두 Explorer의 FileDrop에 전달합니다.
+            var validPaths = paths.Where(p => File.Exists(p) || Directory.Exists(p)).ToArray();
             if (validPaths.Length == 0)
             {
                 ShowInfo(Loc.T("끌어갈 파일이 없습니다."));
@@ -1055,8 +1260,21 @@ public partial class MainWindow : Window
             data.SetData(DataFormats.FileDrop, validPaths, true);
 
             _draggingOut = true;
+            lease?.Retain();
+            EntryGrid.ReleaseMouseCapture();
             try { DragDrop.DoDragDrop(EntryGrid, data, DragDropEffects.Copy); }
-            finally { _draggingOut = false; }
+            finally
+            {
+                lease?.Retain();
+                _draggingOut = false;
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (DragCacheFullException)
+        {
+            ShowInfo(Loc.IsEnglish
+                ? "The drag-out temporary cache is full. Wait for older exports to expire, or use Extract instead."
+                : "끌어서 내보내기 임시 저장 공간이 가득 찼습니다. 이전 내보내기가 만료될 때까지 기다리거나 '압축 풀기'를 사용해 주세요.");
         }
         catch (Exception exception)
         {
@@ -1065,6 +1283,7 @@ public partial class MainWindow : Window
         finally
         {
             Mouse.OverrideCursor = null;
+            _dragPreparation = null;
         }
     }
 

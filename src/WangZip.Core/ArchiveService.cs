@@ -123,6 +123,12 @@ public static class ArchiveService
         string extension = Path.GetExtension(archivePath).ToLowerInvariant();
 
         if (ZipExtensions.Contains(extension)) return ArchiveFormat.Zip;
+
+        // 분할 ZIP 볼륨(.z01, .001 …): 가운데 볼륨은 시그니처가 없으므로 확장자로 판단합니다.
+        if (System.Text.RegularExpressions.Regex.IsMatch(extension, @"^\.(z\d{2,}|\d{3,})$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+        {
+            return ArchiveFormat.Zip;
+        }
         if (extension is ".7z") return ArchiveFormat.SevenZip;
         if (extension is ".rar") return ArchiveFormat.Rar;
         if (extension is ".tar") return ArchiveFormat.Tar;

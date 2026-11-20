@@ -61,19 +61,63 @@ internal static class ZipCentralDirectory
     private const uint Zip64LocatorSignature = 0x07064B50;
     private const uint CentralHeaderSignature = 0x02014B50;
 
+    /// <summary>단일 볼륨 ZIP의 항목을 읽습니다. 분할 ZIP은 수정할 수 없으므로 거부합니다.</summary>
     public static List<RawZipEntry> Read(string path)
     {
-        using var fs = new FileStream(
-            path, FileMode.Open, FileAccess.Read, FileShare.Read,
-            bufferSize: 64 * 1024, FileOptions.RandomAccess);
-
-        if (fs.Length < 22)
+        (List<RawZipEntry> entries, ZipVolumeSet volumes) = ReadSet(path);
+        if (volumes.IsSplit)
         {
-            throw new ArchiveException(Loc.T("ZIP 파일이 너무 작거나 손상되었습니다."));
+            throw new UnsupportedArchiveException(Loc.T("분할 ZIP은 읽기만 지원하며 수정할 수 없습니다."));
         }
 
-        (long cdOffset, long cdSize, long entryCount) = ReadEndOfCentralDirectory(fs);
+        return entries;
+    }
 
+    public static (List<RawZipEntry> Entries, ZipVolumeSet Volumes) ReadSet(string path)
+    {
+        ZipVolumeSet volumes = ZipVolumeSet.DiscoverFromName(path) ?? ZipVolumeSet.Single(path);
+        Stream fs = volumes.Open();
+        try
+        {
+            if (fs.Length < 22)
+            {
+                throw new ArchiveException(Loc.T("ZIP 파일이 너무 작거나 손상되었습니다."));
+            }
+
+            (long cdOffset, long cdSize, long entryCount, long diskNumber, long cdStartDisk) =
+                ReadEndOfCentralDirectory(fs, volumes);
+
+            // 단일 .zip 으로 열었지만 마지막 볼륨인 경우: 앞 볼륨(.z01…)을 찾아 다시 구성합니다.
+            if (!volumes.IsSplit && diskNumber > 0)
+            {
+                fs.Dispose();
+                volumes = ZipVolumeSet.DiscoverForLastVolume(path, (int)diskNumber);
+                fs = volumes.Open();
+                (cdOffset, cdSize, entryCount, diskNumber, cdStartDisk) = ReadEndOfCentralDirectory(fs, volumes);
+            }
+
+            if (volumes.IsSplit && diskNumber > 0 && diskNumber != volumes.Paths.Length - 1)
+            {
+                throw new ArchiveException(Loc.F(
+                    "분할 ZIP 볼륨 수가 맞지 않습니다. 필요한 볼륨: {0}개, 찾은 볼륨: {1}개",
+                    diskNumber + 1, volumes.Paths.Length));
+            }
+
+            if (volumes.IsSplit)
+            {
+                cdOffset = volumes.ToAbsolute(cdStartDisk, cdOffset);
+            }
+
+            return (ReadEntries(fs, volumes, cdOffset, cdSize, entryCount), volumes);
+        }
+        finally
+        {
+            fs.Dispose();
+        }
+    }
+
+    private static List<RawZipEntry> ReadEntries(Stream fs, ZipVolumeSet volumes, long cdOffset, long cdSize, long entryCount)
+    {
         if (cdOffset < 0 || cdSize < 0 || cdOffset + cdSize > fs.Length)
         {
             throw new ArchiveException(Loc.T("ZIP 중앙 디렉터리 위치가 올바르지 않습니다. 파일이 손상되었을 수 있습니다."));
@@ -124,7 +168,12 @@ internal static class ZipCentralDirectory
                 ? Encoding.UTF8.GetString(commentBytes)
                 : ZipNameDecoder.DecodeLegacy(commentBytes);
 
-            ApplyZip64Extra(entry, diskStart);
+            int entryDisk = ApplyZip64Extra(entry, diskStart);
+            if (volumes.IsSplit)
+            {
+                entry.LocalHeaderOffset = volumes.ToAbsolute(entryDisk, entry.LocalHeaderOffset);
+            }
+
             TryReadUnicodePath(entry);
 
             entry.IsEncrypted = (entry.Flags & 0x0001) != 0;
@@ -140,7 +189,7 @@ internal static class ZipCentralDirectory
         return entries;
     }
 
-    private static (long Offset, long Size, long Count) ReadEndOfCentralDirectory(FileStream fs)
+    private static (long Offset, long Size, long Count, long DiskNumber, long CdStartDisk) ReadEndOfCentralDirectory(Stream fs, ZipVolumeSet volumes)
     {
         long tailLength = Math.Min(fs.Length, 65_557 + 22);
         fs.Position = fs.Length - tailLength;
@@ -165,8 +214,8 @@ internal static class ZipCentralDirectory
             throw new ArchiveException(Loc.T("ZIP 끝 레코드(EOCD)를 찾지 못했습니다. ZIP 파일이 아니거나 손상되었습니다."));
         }
 
-        ushort diskNumber = BinaryPrimitives.ReadUInt16LittleEndian(tail.AsSpan(eocd + 4));
-        ushort cdStartDisk = BinaryPrimitives.ReadUInt16LittleEndian(tail.AsSpan(eocd + 6));
+        long diskNumber = BinaryPrimitives.ReadUInt16LittleEndian(tail.AsSpan(eocd + 4));
+        long cdStartDisk = BinaryPrimitives.ReadUInt16LittleEndian(tail.AsSpan(eocd + 6));
         long count = BinaryPrimitives.ReadUInt16LittleEndian(tail.AsSpan(eocd + 10));
         long cdSize = BinaryPrimitives.ReadUInt32LittleEndian(tail.AsSpan(eocd + 12));
         long cdOffset = BinaryPrimitives.ReadUInt32LittleEndian(tail.AsSpan(eocd + 16));
@@ -184,7 +233,13 @@ internal static class ZipCentralDirectory
 
                 if (BinaryPrimitives.ReadUInt32LittleEndian(locator) == Zip64LocatorSignature)
                 {
+                    uint zip64Disk = BinaryPrimitives.ReadUInt32LittleEndian(locator.AsSpan(4));
                     long zip64Offset = BinaryPrimitives.ReadInt64LittleEndian(locator.AsSpan(8));
+                    if (volumes.IsSplit && zip64Disk < volumes.Paths.Length)
+                    {
+                        zip64Offset = volumes.ToAbsolute(zip64Disk, zip64Offset);
+                    }
+
                     if (zip64Offset >= 0 && zip64Offset + 56 <= fs.Length)
                     {
                         fs.Position = zip64Offset;
@@ -193,10 +248,8 @@ internal static class ZipCentralDirectory
 
                         if (BinaryPrimitives.ReadUInt32LittleEndian(record) == Zip64EocdSignature)
                         {
-                            diskNumber = (ushort)Math.Min(
-                                BinaryPrimitives.ReadUInt32LittleEndian(record.AsSpan(16)), ushort.MaxValue);
-                            cdStartDisk = (ushort)Math.Min(
-                                BinaryPrimitives.ReadUInt32LittleEndian(record.AsSpan(20)), ushort.MaxValue);
+                            diskNumber = BinaryPrimitives.ReadUInt32LittleEndian(record.AsSpan(16));
+                            cdStartDisk = BinaryPrimitives.ReadUInt32LittleEndian(record.AsSpan(20));
                             count = BinaryPrimitives.ReadInt64LittleEndian(record.AsSpan(32));
                             cdSize = BinaryPrimitives.ReadInt64LittleEndian(record.AsSpan(40));
                             cdOffset = BinaryPrimitives.ReadInt64LittleEndian(record.AsSpan(48));
@@ -206,23 +259,18 @@ internal static class ZipCentralDirectory
             }
         }
 
-        if (diskNumber != 0 || cdStartDisk != 0)
-        {
-            throw new UnsupportedArchiveException(
-                Loc.T("분할 ZIP(.z01 / .001)은 아직 지원하지 않습니다."));
-        }
-
-        return (cdOffset, cdSize, count);
+        return (cdOffset, cdSize, count, diskNumber, cdStartDisk);
     }
 
-    private static void ApplyZip64Extra(RawZipEntry entry, int diskStart)
+    private static int ApplyZip64Extra(RawZipEntry entry, int diskStart)
     {
+        int resultDisk = diskStart;
         bool needUncompressed = entry.UncompressedSize == 0xFFFFFFFF;
         bool needCompressed = entry.CompressedSize == 0xFFFFFFFF;
         bool needOffset = entry.LocalHeaderOffset == 0xFFFFFFFF;
         bool needDisk = diskStart == 0xFFFF;
 
-        if (!needUncompressed && !needCompressed && !needOffset && !needDisk) return;
+        if (!needUncompressed && !needCompressed && !needOffset && !needDisk) return resultDisk;
 
         ReadOnlySpan<byte> extra = entry.Extra;
         int position = 0;
@@ -255,10 +303,17 @@ internal static class ZipCentralDirectory
                     entry.LocalHeaderOffset = BinaryPrimitives.ReadInt64LittleEndian(data[cursor..]);
                     cursor += 8;
                 }
+
+                if (needDisk && cursor + 4 <= data.Length)
+                {
+                    resultDisk = (int)Math.Min(BinaryPrimitives.ReadUInt32LittleEndian(data[cursor..]), int.MaxValue);
+                }
             }
 
             position += size;
         }
+
+        return resultDisk;
     }
 
     private static void TryReadUnicodePath(RawZipEntry entry)

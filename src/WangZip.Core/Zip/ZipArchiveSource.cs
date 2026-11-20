@@ -17,15 +17,18 @@ public sealed class ZipArchiveSource : IArchiveSource
 
     private readonly string _archivePath;
     private readonly List<RawZipEntry> _raw;
+    private readonly ZipVolumeSet _volumes;
 
     private ZipArchiveSource(
         string archivePath,
+        ZipVolumeSet volumes,
         List<RawZipEntry> raw,
         IReadOnlyList<ArchiveEntryInfo> entries,
         IReadOnlyList<string> warnings,
         string encodingDescription)
     {
         _archivePath = archivePath;
+        _volumes = volumes;
         _raw = raw;
         Entries = entries;
         Warnings = warnings;
@@ -38,9 +41,14 @@ public sealed class ZipArchiveSource : IArchiveSource
     public IReadOnlyList<string> Warnings { get; }
     public string EncodingDescription { get; }
 
+    /// <summary>분할 ZIP(.z01… / .001…)이면 true. 분할 ZIP은 읽기 전용입니다.</summary>
+    public bool IsSplit => _volumes.IsSplit;
+
+    public int VolumeCount => _volumes.Paths.Length;
+
     public static ZipArchiveSource Open(string archivePath, NameEncodingMode mode = NameEncodingMode.Auto)
     {
-        List<RawZipEntry> raw = ZipCentralDirectory.Read(archivePath);
+        (List<RawZipEntry> raw, ZipVolumeSet volumes) = ZipCentralDirectory.ReadSet(archivePath);
         var entries = new List<ArchiveEntryInfo>(raw.Count);
         var encodings = new Dictionary<string, int>(StringComparer.Ordinal);
         var warnings = new List<string>();
@@ -63,7 +71,7 @@ public sealed class ZipArchiveSource : IArchiveSource
             item.IsSymlink = (unixMode & 0xF000) == 0xA000;
 
             if (item.CompressedSize < 0 || item.UncompressedSize < 0 ||
-                item.LocalHeaderOffset < 0 || item.LocalHeaderOffset >= new FileInfo(archivePath).Length)
+                item.LocalHeaderOffset < 0 || item.LocalHeaderOffset >= volumes.TotalLength)
             {
                 warnings.Add(Loc.F("항목 위치가 비정상입니다: {0}", name));
                 continue;
@@ -89,7 +97,7 @@ public sealed class ZipArchiveSource : IArchiveSource
             });
         }
 
-        return new ZipArchiveSource(archivePath, raw, entries, warnings, DescribeEncodings(encodings));
+        return new ZipArchiveSource(archivePath, volumes, raw, entries, warnings, DescribeEncodings(encodings));
     }
 
     public ExtractionResult Extract(
@@ -217,9 +225,7 @@ public sealed class ZipArchiveSource : IArchiveSource
 
         try
         {
-            using var fs = new FileStream(
-                _archivePath, FileMode.Open, FileAccess.Read, FileShare.Read,
-                bufferSize: 128 * 1024, FileOptions.SequentialScan);
+            using Stream fs = _volumes.Open();
 
             foreach (RawZipEntry item in _raw)
             {
@@ -312,9 +318,7 @@ public sealed class ZipArchiveSource : IArchiveSource
 
         try
         {
-            using (var fs = new FileStream(
-                       _archivePath, FileMode.Open, FileAccess.Read, FileShare.Read,
-                       bufferSize: 128 * 1024, FileOptions.SequentialScan))
+            using (Stream fs = _volumes.Open())
             using (var output = new FileStream(
                        PathGuard.ToExtended(temporary), FileMode.CreateNew, FileAccess.Write,
                        FileShare.None, bufferSize: 128 * 1024, FileOptions.SequentialScan))
@@ -405,7 +409,7 @@ public sealed class ZipArchiveSource : IArchiveSource
     /// 압축 해제를 사용할 때 (data, deflate) 순으로 닫아야 내부 암호 스트림이 남습니다.
     /// </summary>
     private static (Stream Data, Stream? Deflate) OpenEntryData(
-        RawZipEntry item, FileStream fs, string? password)
+        RawZipEntry item, Stream fs, string? password)
     {
         if (item.IsEncrypted && password is null)
         {

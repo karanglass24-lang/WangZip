@@ -14,10 +14,14 @@
         Closing="Window_Closing">
 
     <DockPanel>
-        <Menu DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}" Padding="4,1">
+        <Menu DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}" Padding="4,1">
             <MenuItem Header="파일(_F)">
                 <MenuItem Header="압축 파일 열기..." InputGestureText="Ctrl+O" Click="Open_Click" />
                 <MenuItem Header="압축하기..." InputGestureText="Ctrl+N" Click="Create_Click" />
+                <Separator />
+                <MenuItem x:Name="RecentFilesMenu" Header="최근 파일(_R)" IsEnabled="False">
+                    <MenuItem Header="(최근 파일 없음)" IsEnabled="False" />
+                </MenuItem>
                 <Separator />
                 <MenuItem Header="끝내기" InputGestureText="Alt+F4" Click="Exit_Click" />
             </MenuItem>
@@ -42,6 +46,12 @@
                 <Separator />
                 <MenuItem Header="새로 고침" InputGestureText="F5" Click="Refresh_Click" />
                 <Separator />
+                <MenuItem Header="테마">
+                    <MenuItem x:Name="ThemeSystemMenu" Header="시스템 설정 따라가기" IsCheckable="True" Tag="0" Click="ThemeMenu_Click" />
+                    <MenuItem x:Name="ThemeLightMenu" Header="라이트" IsCheckable="True" Tag="1" Click="ThemeMenu_Click" />
+                    <MenuItem x:Name="ThemeDarkMenu" Header="다크" IsCheckable="True" Tag="2" Click="ThemeMenu_Click" />
+                </MenuItem>
+                <Separator />
                 <MenuItem Header="환경설정..." Click="Preferences_Click" />
                 <Separator />
                 <MenuItem x:Name="AutoUpdateMenu" Header="자동 업데이트 사용" IsCheckable="True" Click="AutoUpdateMenu_Click" />
@@ -52,8 +62,8 @@
             </MenuItem>
         </Menu>
 
-        <Border DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}"
-                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10,7,10,9">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10,7,10,9">
             <DockPanel>
                 <StackPanel Orientation="Horizontal">
                     <!-- 열기 -->
@@ -88,7 +98,7 @@
                         </StackPanel>
                     </Button>
 
-                    <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="6,4" />
+                    <Rectangle Width="1" Fill="{DynamicResource BorderBrush}" Margin="6,4" />
 
                     <!-- 압축하기 -->
                     <Button x:Name="CreateButton" Style="{StaticResource RibbonTool}" Click="Create_Click" ToolTip="새 압축 파일 만들기 (Ctrl+N)">
@@ -122,7 +132,7 @@
                         </StackPanel>
                     </Button>
 
-                    <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="6,4" />
+                    <Rectangle Width="1" Fill="{DynamicResource BorderBrush}" Margin="6,4" />
 
                     <!-- 검사 -->
                     <Button x:Name="VerifyButton" Style="{StaticResource RibbonTool}" Click="Verify_Click"
@@ -139,7 +149,7 @@
                             ToolTip="새로 고침 (F5)">
                         <StackPanel>
                             <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="29"
-                                       HorizontalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                                       HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
                             <TextBlock Text="새로 고침" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -147,13 +157,13 @@
             </DockPanel>
         </Border>
 
-        <StatusBar DockPanel.Dock="Bottom" Background="{StaticResource SurfaceBrush}"
-                   BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
+        <StatusBar DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}"
+                   BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
             <StatusBarItem>
-                <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource TextSecondaryBrush}" />
             </StatusBarItem>
             <StatusBarItem DockPanel.Dock="Right" HorizontalAlignment="Right">
-                <TextBlock Foreground="{StaticResource TextSecondaryBrush}">
+                <TextBlock Foreground="{DynamicResource TextSecondaryBrush}">
                     <Run Text="{Binding TotalCount, Mode=OneWay}" /><Run Text="개 (현재 폴더 " /><Run Text="{Binding EntriesCount, Mode=OneWay}" /><Run Text="개)" />
                 </TextBlock>
             </StatusBarItem>
@@ -172,8 +182,8 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- 폴더 트리 -->
-                <DockPanel Grid.Column="0" Background="{StaticResource SurfaceBrush}">
-                    <Border DockPanel.Dock="Top" BorderBrush="{StaticResource BorderBrush}"
+                <DockPanel Grid.Column="0" Background="{DynamicResource SurfaceBrush}">
+                    <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="0,0,0,1" Padding="10,6">
                         <TextBlock Text="폴더 계층" Style="{StaticResource SectionTitle}" Margin="0" />
                     </Border>
@@ -196,11 +206,11 @@
                 </DockPanel>
 
                 <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
-                              Background="{StaticResource BorderBrush}" ResizeBehavior="PreviousAndNext" />
+                              Background="{DynamicResource BorderBrush}" ResizeBehavior="PreviousAndNext" />
 
-                <DockPanel Grid.Column="2" Background="{StaticResource SurfaceBrush}">
+                <DockPanel Grid.Column="2" Background="{DynamicResource SurfaceBrush}">
                     <!-- 경로 / 전체 보기 -->
-                    <Border DockPanel.Dock="Top" BorderBrush="{StaticResource BorderBrush}"
+                    <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="0,0,0,1" Padding="10,6">
                         <DockPanel>
                             <Button DockPanel.Dock="Left" Style="{StaticResource SecondaryButton}"
@@ -221,7 +231,7 @@
                                          Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
                                          ToolTip="압축 파일 전체에서 이름 검색 (Ctrl+F, Esc로 지우기)" />
                                 <TextBlock Text="이름 검색" IsHitTestVisible="False" Margin="8,0,0,0"
-                                           VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}">
+                                           VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Visibility" Value="Collapsed" />
@@ -243,7 +253,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="›" Foreground="{StaticResource TextSecondaryBrush}"
+                                            <TextBlock Text="›" Foreground="{DynamicResource TextSecondaryBrush}"
                                                        VerticalAlignment="Center" Margin="2,0">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
@@ -273,8 +283,8 @@
                               CanUserResizeRows="False"
                               HeadersVisibility="Column"
                               GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="{StaticResource BorderBrush}"
-                              Background="{StaticResource SurfaceBrush}"
+                              HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                              Background="{DynamicResource SurfaceBrush}"
                               BorderThickness="0"
                               RowHeight="32"
                               SelectionMode="Extended"
@@ -282,10 +292,11 @@
                               CanUserSortColumns="True"
                               Sorting="EntryGrid_Sorting"
                               PreviewMouseLeftButtonDown="EntryGrid_PreviewMouseLeftButtonDown"
+                              PreviewMouseLeftButtonUp="EntryGrid_PreviewMouseLeftButtonUp"
                               PreviewMouseMove="EntryGrid_PreviewMouseMove"
+                              LostMouseCapture="EntryGrid_LostMouseCapture"
                               PreviewMouseRightButtonDown="EntryGrid_PreviewMouseRightButtonDown"
-                              MouseDoubleClick="EntryGrid_MouseDoubleClick"
-                              SelectionChanged="EntryGrid_SelectionChanged">
+                              MouseDoubleClick="EntryGrid_MouseDoubleClick">
                         <DataGrid.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="열기 (미리보기)" Click="ContextOpen_Click" />
@@ -349,7 +360,7 @@
 
                 <!-- 파일 없을 때 안내 -->
                 <TextBlock Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
-                           Foreground="{StaticResource TextSecondaryBrush}" FontSize="14">
+                           Foreground="{DynamicResource TextSecondaryBrush}" FontSize="14">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Setter Property="Visibility" Value="Collapsed" />

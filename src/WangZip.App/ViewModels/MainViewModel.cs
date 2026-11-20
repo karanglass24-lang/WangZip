@@ -410,13 +410,60 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>끌어서 내보내기용: 선택 항목(폴더 포함)을 임시 폴더로 풀고, **실제 파일 경로들**을 돌려줍니다.
-    /// 폴더가 선택되면 그 안의 모든 파일이 개별 경로로 포함됩니다.</summary>
-    public List<string> ExtractToTemp(IReadOnlyList<EntryRow> selected, IProgress<ProgressReport>? progress = null, CancellationToken token = default)
+    /// <summary>선택 항목을 임시 폴더에 풀고 Explorer에 전달할 최상위 선택 경로를 반환합니다.</summary>
+    internal (DragTempCache.Lease? Lease, List<string> Paths) ExtractToTemp(
+        IReadOnlyList<EntryRow> selected, IReadOnlyList<EntryRow> expanded,
+        IProgress<ProgressReport>? progress = null, CancellationToken token = default)
     {
         IArchiveSource source = _source ?? throw new InvalidOperationException(Loc.T("먼저 압축 파일을 열어 주세요."));
+        int[] indices = expanded.Select(row => row.Info.Index).ToArray();
+        if (indices.Length == 0) return (null, []);
+        token.ThrowIfCancellationRequested();
+        long size = expanded.Where(row => !row.IsDirectory).Sum(row => Math.Max(0, row.Info.Size));
+        var cache = new DragTempCache(Path.Combine(Path.GetTempPath(), "WangZip", "drag"));
+        DragTempCache.Lease lease = cache.Reserve(size);
+        try
+        {
+            source.Extract(indices, new ExtractionOptions
+            {
+                DestinationDirectory = lease.Payload,
+                Overwrite = OverwritePolicy.Overwrite,
+                CheckFreeSpace = true,
+            }, progress, token);
+            token.ThrowIfCancellationRequested();
+            lease.ValidateSize();
 
-        string root = Path.Combine(Path.GetTempPath(), "WangZip", "drag");
+            var paths = new List<string>();
+            foreach (EntryRow row in selected)
+            {
+                string name = row.Info.Name.TrimEnd('/');
+                if (selected.Any(parent => parent != row && parent.IsDirectory &&
+                    name.StartsWith(parent.Info.Name.TrimEnd('/') + "/", StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                string fullPath = Path.Combine(lease.Payload, name.Replace('/', Path.DirectorySeparatorChar));
+                if (File.Exists(fullPath) || Directory.Exists(fullPath)) paths.Add(fullPath);
+            }
+            if (paths.Count == 0)
+            {
+                lease.Dispose();
+                return (null, paths);
+            }
+            token.ThrowIfCancellationRequested();
+            return (lease, paths);
+        }
+        catch
+        {
+            lease.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>단일 파일(텍스트 미리보기용)을 임시 폴더로 추출하고 파일 경로를 반환합니다.</summary>
+    public string? ExtractSingleToTemp(EntryRow row)
+    {
+        if (_source is null) return null;
+
+        string root = Path.Combine(Path.GetTempPath(), "WangZip", "preview");
         try
         {
             if (Directory.Exists(root))
@@ -427,39 +474,25 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 }
             }
         }
-        catch (IOException)
-        {
-        }
+        catch (IOException) { }
 
         string temporary = Path.Combine(root, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temporary);
 
-        // 폴더를 펼쳐서 모든 파일 인덱스를 얻음
-        List<EntryRow> expanded = ExpandRows(selected);
-        int[] indices = expanded.Select(row => row.Info.Index).ToArray();
-        if (indices.Length == 0) return [];
-
-        source.Extract(
-            indices,
-            new ExtractionOptions
-            {
-                DestinationDirectory = temporary,
-                Overwrite = OverwritePolicy.Overwrite,
-                CheckFreeSpace = false,
-            },
-            progress,
-            token);
-
-        // **확장된 행 중 실제 파일만** 경로로 반환 (폴더는 제외, Explorer가 개별 파일을 받도록)
-        var paths = new List<string>();
-        foreach (EntryRow row in expanded)
+        var options = new ExtractionOptions
         {
-            if (row.IsDirectory) continue; // 디렉터리 항목은 건너뜀
-            string path = Path.Combine(temporary, row.Info.Name.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(path)) paths.Add(path);
-        }
+            DestinationDirectory = temporary,
+            Overwrite = OverwritePolicy.Overwrite,
+            CheckFreeSpace = false,
+            PreserveTimestamps = false,
+        };
 
-        return paths;
+        _source.Extract([row.Info.Index], options, null, CancellationToken.None);
+
+        string relPath = row.Info.Name.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar);
+        string fullPath = Path.Combine(temporary, relPath);
+
+        return File.Exists(fullPath) ? fullPath : null;
     }
 
     private static void TrackImplicit(Dictionary<string, DateTimeOffset> map, string name, DateTimeOffset modified)

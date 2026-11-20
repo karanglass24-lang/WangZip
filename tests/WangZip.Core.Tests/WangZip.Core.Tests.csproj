@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\WangZip.Core\WangZip.Core.csproj" />
+    <Compile Include="..\..\src\WangZip.App\DragTempCache.cs" Link="DragTempCache.cs" />
   </ItemGroup>
 
   <ItemGroup>
