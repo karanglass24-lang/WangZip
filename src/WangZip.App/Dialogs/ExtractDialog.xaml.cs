@@ -10,6 +10,7 @@ namespace WangZip.App.Dialogs;
 public partial class ExtractDialog : Window
 {
     private sealed record OverwriteOption(string Label, OverwritePolicy Policy);
+    private sealed record SubfolderOption(string Label, SubfolderMode Mode);
 
     public ExtractDialog(
         string defaultDestination, int selectedCount, bool preferSelection = false, AppSettings? settings = null)
@@ -27,6 +28,14 @@ public partial class ExtractDialog : Window
             new OverwriteOption(Loc.T("이름 바꾸기"), OverwritePolicy.Rename),
         };
         OverwriteCombo.SelectedIndex = 0;
+
+        SubfolderCombo.ItemsSource = new[]
+        {
+            new SubfolderOption(Loc.T("만들지 않음 (선택한 위치에 바로 풀기)"), SubfolderMode.Never),
+            new SubfolderOption(Loc.T("자동 (최상위 폴더가 여러 개일 때만 만들기)"), SubfolderMode.Auto),
+            new SubfolderOption(Loc.T("항상 만들기"), SubfolderMode.Always),
+        };
+        SubfolderCombo.SelectedIndex = Math.Clamp(settings.SubfolderMode, 0, 2);
 
         // 빠른 위치 콤보: 설정에 저장된 기본 위치를 반영합니다.
         var quickOptions = MainViewModel.QuickDestinations
@@ -52,6 +61,7 @@ public partial class ExtractDialog : Window
             : Loc.T("선택한 항목이 없습니다 (전체 압축 풀기만 가능)");
 
         AutoOpenBox.IsChecked = settings.AutoOpenAfterExtract;
+        DeleteSourceBox.IsChecked = settings.DeleteSourceAfterExtract;
     }
 
     private int _selectedQuick;
@@ -60,6 +70,12 @@ public partial class ExtractDialog : Window
 
     public OverwritePolicy Overwrite =>
         (OverwriteCombo.SelectedItem as OverwriteOption)?.Policy ?? OverwritePolicy.Overwrite;
+
+    public SubfolderMode Subfolder =>
+        (SubfolderCombo.SelectedItem as SubfolderOption)?.Mode ?? SubfolderMode.Never;
+
+    /// <summary>성공 후 원본 압축 파일을 휴지통으로 보낼지 여부 (설정에 저장됩니다).</summary>
+    public bool DeleteSourceAfterExtract => DeleteSourceBox.IsChecked == true;
 
     public bool ExtractAll => AllRadio.IsChecked == true;
 

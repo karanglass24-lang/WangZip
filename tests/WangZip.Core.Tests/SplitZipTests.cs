@@ -149,3 +149,46 @@ public class SplitZipTests
             ZipRewriter.DeleteEntries(stem + ".zip", [0], CancellationToken.None));
     }
 }
+
+public class SplitZipCreationTests
+{
+    [Fact]
+    public void Create_with_split_size_makes_numbered_volumes_that_round_trip()
+    {
+        using var dir = new TempDir();
+        byte[] payload = new byte[300_000];
+        new Random(5).NextBytes(payload);
+        dir.WriteBytes("src/big.bin", payload);
+
+        string zip = dir.File("out.zip");
+        CreationResult result = ZipWriter.Create(
+            zip,
+            [dir.File("src/big.bin")],
+            new CreationOptions { Level = System.IO.Compression.CompressionLevel.NoCompression, SplitSizeBytes = 100_000 },
+            progress: null,
+            CancellationToken.None);
+
+        Assert.Equal(zip + ".001", result.OutputPath);
+        Assert.False(File.Exists(zip));
+        Assert.True(File.Exists(zip + ".002"));
+        Assert.True(File.Exists(zip + ".003"));
+
+        using var output = new TempDir();
+        using IArchiveSource source = ArchiveService.Open(result.OutputPath);
+        source.Extract([], new ExtractionOptions { DestinationDirectory = output.Path }, null, CancellationToken.None);
+        Assert.True(payload.SequenceEqual(File.ReadAllBytes(Path.Combine(output.Path, "big.bin"))));
+    }
+
+    [Fact]
+    public void Too_small_split_size_is_rejected_and_leaves_no_volumes()
+    {
+        using var dir = new TempDir();
+        dir.Write("src/a.txt", "hello");
+        string zip = dir.File("out.zip");
+
+        Assert.Throws<ArchiveException>(() => ZipWriter.Create(
+            zip, [dir.File("src/a.txt")], new CreationOptions { SplitSizeBytes = 100 }, null, CancellationToken.None));
+        Assert.False(File.Exists(zip));
+        Assert.False(File.Exists(zip + ".001"));
+    }
+}

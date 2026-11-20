@@ -15,6 +15,12 @@ public sealed class AppSettings
     /// <summary>압축 풀기가 성공하면 폴더를 자동으로 엽니다.</summary>
     public bool AutoOpenAfterExtract { get; set; } = true;
 
+    /// <summary>압축 풀기 폴더 만들기: 0=그대로, 1=자동(최상위 폴더가 하나뿐이면 만들지 않음), 2=항상.</summary>
+    public int SubfolderMode { get; set; } = 0;
+
+    /// <summary>전체 압축 풀기에 성공하면 원본 압축 파일을 휴지통으로 보냅니다.</summary>
+    public bool DeleteSourceAfterExtract { get; set; } = false;
+
     /// <summary>"빠른 압축 풀기" 목적지. 0=자동 폴더, 1=바탕 화면, 2=다운로드, 3=문서, 4=압축 파일이 있던 폴더</summary>
     public int QuickDestination { get; set; } = 0;
 

@@ -147,6 +147,8 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog() != true) return;
 
         _settings.AutoOpenAfterExtract = dialog.AutoOpenAfterExtract;
+        _settings.SubfolderMode = (int)dialog.Subfolder;
+        _settings.DeleteSourceAfterExtract = dialog.DeleteSourceAfterExtract;
         _settings.QuickDestination = dialog.SelectedQuickDestination;
         _settings.Save();
 
@@ -168,6 +170,9 @@ public partial class MainWindow : Window
             password = passwordDialog.Password;
         }
 
+        string destination = _viewModel.ResolveExtractDestination(rows, dialog.DestinationDirectory, dialog.Subfolder);
+        string? sourcePath = _viewModel.ArchivePath;
+
         ExtractionResult? result = null;
         bool ok = await ProgressDialog.RunAsync(this, Loc.T("압축을 푸는 중입니다"), async (progress, token) =>
         {
@@ -175,7 +180,7 @@ public partial class MainWindow : Window
                 rows,
                 new ExtractionOptions
                 {
-                    DestinationDirectory = dialog.DestinationDirectory,
+                    DestinationDirectory = destination,
                     Overwrite = dialog.Overwrite,
                     Password = password,
                 },
@@ -186,11 +191,46 @@ public partial class MainWindow : Window
         if (!ok || result is null) return;
 
         string message =
-            Loc.F("압축을 풀었습니다.\n\n파일 {0:N0}개 · {1}\n폴더: {2}", result.ExtractedFiles, Format.Bytes(result.TotalBytes), dialog.DestinationDirectory);
+            Loc.F("압축을 풀었습니다.\n\n파일 {0:N0}개 · {1}\n폴더: {2}", result.ExtractedFiles, Format.Bytes(result.TotalBytes), destination);
 
         if (result.SkippedFiles > 0) message += Loc.F("\n건너뜀: {0:N0}개", result.SkippedFiles);
 
-        ShowExtractDone(message, dialog.DestinationDirectory, dialog.AutoOpenAfterExtract);
+        if (dialog.DeleteSourceAfterExtract && dialog.ExtractAll && sourcePath is not null)
+        {
+            message += TryRecycleSource(sourcePath, result);
+        }
+
+        ShowExtractDone(message, destination, dialog.AutoOpenAfterExtract);
+    }
+
+    /// <summary>전부 문제없이 풀렸을 때만 원본을 휴지통으로 보냅니다. 결과 안내 문구를 돌려줍니다.</summary>
+    private static string TryRecycleSource(string path, ExtractionResult result)
+    {
+        if (result.SkippedFiles > 0 || result.Warnings.Count > 0)
+        {
+            return "\n" + Loc.T("건너뛴 항목이나 경고가 있어 원본 압축 파일은 그대로 두었습니다.");
+        }
+
+        if (!File.Exists(path)) return "";
+
+        string extension = Path.GetExtension(path);
+        if (System.Text.RegularExpressions.Regex.IsMatch(extension, @"^\.(z\d{2,}|\d{3,})$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+        {
+            return "\n" + Loc.T("분할 압축 파일은 원본을 자동으로 삭제하지 않습니다.");
+        }
+
+        try
+        {
+            Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
+                path,
+                Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+            return "\n" + Loc.T("원본 압축 파일을 휴지통으로 보냈습니다.");
+        }
+        catch (Exception exception)
+        {
+            return "\n" + Loc.F("원본 압축 파일을 휴지통으로 보내지 못했습니다: {0}", exception.Message);
+        }
     }
 
     /// <summary>완료 안내. 자동 열기가 꺼져 있으면 '폴더 열기'를 물어봅니다.</summary>
@@ -255,6 +295,9 @@ public partial class MainWindow : Window
             password = passwordDialog.Password;
         }
 
+        string destination = _viewModel.ResolveExtractDestination(rows, dialog.DestinationDirectory, dialog.Subfolder);
+        string? sourcePath = _viewModel.ArchivePath;
+
         ExtractionResult? result = null;
         bool ok = await ProgressDialog.RunAsync(this, Loc.T("압축을 푸는 중입니다"), async (progress, token) =>
         {
@@ -262,7 +305,7 @@ public partial class MainWindow : Window
                 rows,
                 new ExtractionOptions
                 {
-                    DestinationDirectory = dialog.DestinationDirectory,
+                    DestinationDirectory = destination,
                     Overwrite = dialog.Overwrite,
                     Password = password,
                 },
@@ -273,17 +316,24 @@ public partial class MainWindow : Window
         if (ok)
         {
             _settings.AutoOpenAfterExtract = dialog.AutoOpenAfterExtract;
+            _settings.SubfolderMode = (int)dialog.Subfolder;
+            _settings.DeleteSourceAfterExtract = dialog.DeleteSourceAfterExtract;
             _settings.Save();
         }
 
         if (!ok || result is null) return;
 
         string message =
-            Loc.F("압축을 풀었습니다.\n\n파일 {0:N0}개 · {1}\n폴더: {2}", result.ExtractedFiles, Format.Bytes(result.TotalBytes), dialog.DestinationDirectory);
+            Loc.F("압축을 풀었습니다.\n\n파일 {0:N0}개 · {1}\n폴더: {2}", result.ExtractedFiles, Format.Bytes(result.TotalBytes), destination);
 
         if (result.SkippedFiles > 0) message += Loc.F("\n건너뜀: {0:N0}개", result.SkippedFiles);
 
-        ShowExtractDone(message, dialog.DestinationDirectory, dialog.AutoOpenAfterExtract);
+        if (dialog.DeleteSourceAfterExtract && dialog.ExtractAll && sourcePath is not null)
+        {
+            message += TryRecycleSource(sourcePath, result);
+        }
+
+        ShowExtractDone(message, destination, dialog.AutoOpenAfterExtract);
     }
 
     private async void Create_Click(object sender, RoutedEventArgs e)

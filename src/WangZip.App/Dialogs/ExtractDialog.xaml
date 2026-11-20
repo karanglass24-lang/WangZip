@@ -1,4 +1,5 @@
-<Window x:Class="WangZip.App.Dialogs.ExtractDialog"
+<Window Foreground="{DynamicResource TextPrimaryBrush}"
+        x:Class="WangZip.App.Dialogs.ExtractDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Icon="pack://application:,,,/Assets/app-icon.ico"
@@ -50,7 +51,10 @@
         <StackPanel Grid.Row="2" Margin="0,18,0,0">
             <TextBlock Text="같은 이름의 파일이 있을 때" Style="{StaticResource SectionTitle}" />
             <ComboBox x:Name="OverwriteCombo" Width="220" Height="32" HorizontalAlignment="Left" DisplayMemberPath="Label" />
+            <TextBlock Text="압축 파일 이름 폴더 만들기" Style="{StaticResource SectionTitle}" Margin="0,12,0,6" />
+            <ComboBox x:Name="SubfolderCombo" Width="320" Height="32" HorizontalAlignment="Left" DisplayMemberPath="Label" />
             <CheckBox x:Name="AutoOpenBox" Content="압축을 푼 뒤 그 폴더 열기" Margin="0,12,0,0" />
+            <CheckBox x:Name="DeleteSourceBox" Content="전체를 성공적으로 푼 뒤 원본 압축 파일을 휴지통으로 보내기" Margin="0,8,0,0" />
         </StackPanel>
 
         <TextBlock Grid.Row="3" Margin="0,14,0,0" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"

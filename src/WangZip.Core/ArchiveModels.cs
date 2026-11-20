@@ -109,6 +109,9 @@ public sealed class CreationOptions
     public bool IncludeEmptyDirectories { get; set; } = true;
     public string? Comment { get; set; }
 
+    /// <summary>0보다 크면 완성된 ZIP을 이 크기(바이트)의 볼륨(.zip.001 …)으로 나눕니다.</summary>
+    public long SplitSizeBytes { get; set; }
+
     /// <summary>
     /// 비어 있지 않으면 WinZip AES-256(AE-2)으로 항목을 암호화합니다.
     /// 비밀번호는 UTF-8로 기록됩니다.

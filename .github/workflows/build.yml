@@ -23,6 +23,9 @@ jobs:
       - name: Test
         run: dotnet test tests/WangZip.Core.Tests/WangZip.Core.Tests.csproj -c Release --no-restore
 
+      - name: UI smoke test
+        run: dotnet test tests/WangZip.App.Tests/WangZip.App.Tests.csproj -c Release --no-restore
+
       - name: Build app
         run: dotnet build src/WangZip.App/WangZip.App.csproj -c Release --no-restore
 

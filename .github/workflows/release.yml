@@ -1,0 +1,86 @@
+name: release
+
+# v* 태그를 푸시하면 테스트 → 게시 → 포터블 ZIP과 설치 프로그램을 만들어 GitHub 릴리스에 첨부합니다.
+# 수동 실행(workflow_dispatch)은 버전을 입력받아 산출물만 만들고 릴리스에는 올리지 않습니다.
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '버전 (예: 0.8.4)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Resolve version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = if ('${{ github.event_name }}' -eq 'workflow_dispatch') { '${{ inputs.version }}' } else { '${{ github.ref_name }}'.TrimStart('v') }
+          if ($v -notmatch '^\d+\.\d+\.\d+$') { throw "버전 형식이 올바르지 않습니다: $v" }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Test
+        run: dotnet test tests/WangZip.Core.Tests/WangZip.Core.Tests.csproj -c Release
+
+      - name: Publish app and CLI
+        shell: pwsh
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          $out = "artifacts/WangZip-$v-win-x64"
+          dotnet publish src/WangZip.App/WangZip.App.csproj -c Release -r win-x64 --self-contained true -p:DebugType=None -p:DebugSymbols=false -p:Version=$v -o $out
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Windows는 대소문자를 구분하지 않으므로 CLI는 cli 하위 폴더에 둡니다.
+          dotnet publish src/WangZip.Cli/WangZip.Cli.csproj -c Release -r win-x64 --self-contained true -p:DebugType=None -p:DebugSymbols=false -p:Version=$v -o "$out/cli"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($f in 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'README.md') { Copy-Item $f $out -Force }
+          foreach ($f in 'LICENSE', 'THIRD_PARTY_NOTICES.md') { Copy-Item $f "$out/cli" -Force }
+          Compress-Archive -Path "$out/*" -DestinationPath "artifacts/WangZip-$v-win-x64.zip" -CompressionLevel Optimal
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          choco install innosetup -y --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "$env:ProgramFiles\Inno Setup 6\ISCC.exe" }
+          & $iscc "/DMyAppVersion=$v" installer/wangzip.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path "artifacts/WangZip-$v-setup.exe")) { throw '설치 프로그램이 만들어지지 않았습니다.' }
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: WangZip-${{ steps.ver.outputs.version }}
+          path: |
+            artifacts/WangZip-${{ steps.ver.outputs.version }}-win-x64.zip
+            artifacts/WangZip-${{ steps.ver.outputs.version }}-setup.exe
+
+      - name: Attach to GitHub release
+        if: github.event_name == 'push'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          $tag = '${{ github.ref_name }}'
+          $files = "artifacts/WangZip-$v-win-x64.zip", "artifacts/WangZip-$v-setup.exe"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag @files --clobber
+          } else {
+            gh release create $tag @files --title "왕집 $tag" --generate-notes
+          }

@@ -4,7 +4,10 @@
 ; - 자체 포함 배포본(artifacts\WangZip-<버전>-win-x64)을 통째로 담아 .NET 설치가 필요 없게 합니다.
 ; - 사용자 단위 설치(권한 상승 없음, {autopf} → LocalAppData\Programs)를 씁니다.
 
-#define MyAppVersion "0.8.1"
+#ifndef MyAppVersion
+  ; 릴리스 자동화는 ISCC /DMyAppVersion=x.y.z 로 덮어씁니다.
+  #define MyAppVersion "0.8.1"
+#endif
 #define MyAppName "왕집 (WangZip)"
 #define MyAppShortName "왕집"
 #define MyAppExe "WangZip.exe"

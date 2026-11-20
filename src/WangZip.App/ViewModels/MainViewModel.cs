@@ -537,6 +537,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public int EntriesCount => Entries.Count;
     public int TotalCount => _allRows.Count;
 
+    /// <summary>"폴더 만들기" 옵션을 반영한 실제 압축 풀기 폴더.</summary>
+    public string ResolveExtractDestination(IReadOnlyList<EntryRow> rows, string destination, SubfolderMode mode) =>
+        ArchivePath is null
+            ? destination
+            : ExtractionPlanner.ResolveDestination(destination, ArchivePath, ExpandRows(rows).Select(row => row.Info.Name), mode);
+
     public async Task<ExtractionResult> ExtractAsync(
         IReadOnlyList<EntryRow> rows,
         ExtractionOptions options,

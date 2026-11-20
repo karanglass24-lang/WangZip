@@ -1,4 +1,5 @@
-<Window x:Class="WangZip.App.Dialogs.CreateDialog"
+<Window Foreground="{DynamicResource TextPrimaryBrush}"
+        x:Class="WangZip.App.Dialogs.CreateDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Icon="pack://application:,,,/Assets/app-icon.ico"
@@ -47,6 +48,10 @@
         </Grid>
 
         <Grid Grid.Row="4" Margin="0,0,0,18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="90" />
                 <ColumnDefinition Width="*" />
@@ -58,6 +63,8 @@
             <ComboBox Grid.Column="1" x:Name="LevelCombo" Height="32" DisplayMemberPath="Label" />
             <TextBlock Grid.Column="3" Text="파일명 인코딩" VerticalAlignment="Center" />
             <ComboBox Grid.Column="4" x:Name="EncodingCombo" Height="32" DisplayMemberPath="Label" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="분할 크기" VerticalAlignment="Center" Margin="0,10,0,0" />
+            <ComboBox Grid.Row="1" Grid.Column="1" x:Name="SplitCombo" Height="32" DisplayMemberPath="Label" Margin="0,10,0,0" />
         </Grid>
 
         <Border Grid.Row="5" Background="#F7F9FC" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"

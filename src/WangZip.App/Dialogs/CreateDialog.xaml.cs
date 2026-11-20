@@ -12,6 +12,7 @@ public partial class CreateDialog : Window
 {
     private sealed record LevelOption(string Label, CompressionLevel Level);
     private sealed record EncodingOption(string Label, NameEncodingMode Mode);
+    private sealed record SplitOption(string Label, long Bytes);
 
     public CreateDialog(IEnumerable<string>? initialSources = null)
     {
@@ -33,6 +34,18 @@ public partial class CreateDialog : Window
             new EncodingOption(Loc.T("CP949 (구형 Windows 호환)"), NameEncodingMode.Cp949),
         };
         EncodingCombo.SelectedIndex = 0;
+
+        SplitCombo.ItemsSource = new[]
+        {
+            new SplitOption(Loc.T("나누지 않음"), 0),
+            new SplitOption("10 MB", 10L * 1024 * 1024),
+            new SplitOption("100 MB", 100L * 1024 * 1024),
+            new SplitOption("650 MB (CD)", 650L * 1024 * 1024),
+            new SplitOption("700 MB (CD)", 700L * 1024 * 1024),
+            new SplitOption("1 GB", 1024L * 1024 * 1024),
+            new SplitOption("4 GB (FAT32)", 4000L * 1024 * 1024),
+        };
+        SplitCombo.SelectedIndex = 0;
 
         if (initialSources is not null)
         {
@@ -58,6 +71,7 @@ public partial class CreateDialog : Window
         NameEncoding = (EncodingCombo.SelectedItem as EncodingOption)?.Mode ?? NameEncodingMode.Auto,
         IncludeEmptyDirectories = true,
         Password = Password,
+        SplitSizeBytes = (SplitCombo.SelectedItem as SplitOption)?.Bytes ?? 0,
     };
 
     private void AddFiles_Click(object sender, RoutedEventArgs e)

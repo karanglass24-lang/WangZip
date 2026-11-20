@@ -20,6 +20,36 @@ public static class ZipWriter
         IProgress<ProgressReport>? progress,
         CancellationToken cancellationToken)
     {
+        if (options.SplitSizeBytes is > 0 and < ZipSplitter.MinimumVolumeSize)
+        {
+            throw new ArchiveException(Loc.F("분할 크기는 최소 {0}KB 이상이어야 합니다.", ZipSplitter.MinimumVolumeSize / 1024));
+        }
+
+        CreationResult result = CreateCore(outputPath, sources, options, progress, cancellationToken);
+        if (options.SplitSizeBytes <= 0) return result;
+
+        // 분할: 완성된 ZIP을 .zip.001, .zip.002 … 로 나눕니다. 첫 볼륨 경로를 결과로 돌려줍니다.
+        IReadOnlyList<string> volumes = ZipSplitter.Split(result.OutputPath, options.SplitSizeBytes, cancellationToken);
+        var warnings = result.Warnings.ToList();
+        warnings.Add(Loc.F("{0}개 볼륨으로 나누었습니다. 첫 볼륨(.001)을 열면 전체를 읽을 수 있습니다.", volumes.Count));
+
+        return new CreationResult
+        {
+            OutputPath = volumes[0],
+            EntryCount = result.EntryCount,
+            SourceBytes = result.SourceBytes,
+            OutputBytes = result.OutputBytes,
+            Warnings = warnings,
+        };
+    }
+
+    private static CreationResult CreateCore(
+        string outputPath,
+        IReadOnlyList<string> sources,
+        CreationOptions options,
+        IProgress<ProgressReport>? progress,
+        CancellationToken cancellationToken)
+    {
         if (sources.Count == 0)
         {
             throw new ArchiveException(Loc.T("압축할 파일이나 폴더를 선택해 주세요."));

@@ -218,6 +218,12 @@ internal static class Program
         string? password = Value(args, "--password");
         bool quiet = Has(args, "--quiet");
 
+        long splitBytes = 0;
+        if (Value(args, "--split") is { } splitText && !TryParseSize(splitText, out splitBytes))
+        {
+            return Usage(Loc.F("--split 크기를 알 수 없습니다: {0} (예: 100M, 1G)", splitText));
+        }
+
         using var cancellation = new CancellationTokenSource();
         Console.CancelKeyPress += (_, eventArgs) =>
         {
@@ -235,6 +241,7 @@ internal static class Program
                 NameEncoding = encoding,
                 Comment = comment,
                 Password = password,
+                SplitSizeBytes = splitBytes,
             },
             progress,
             cancellation.Token);
@@ -336,7 +343,7 @@ internal static class Program
                 Usage:
                   wangzip list    <archive> [--encoding auto|utf8|cp949|raw] [--json] [--password PASSWORD]
                   wangzip extract <archive> [target-folder] [--encoding ...] [--overwrite overwrite|skip|rename] [--password PASSWORD]
-                  wangzip create  <output.zip> <file|folder>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "text"] [--password PASSWORD]
+                  wangzip create  <output.zip> <file|folder>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "text"] [--password PASSWORD] [--split 100M]
                   wangzip verify  <archive> [--password PASSWORD]
 
                 Examples:
@@ -355,7 +362,7 @@ internal static class Program
             사용법:
               wangzip list    <압축파일> [--encoding auto|utf8|cp949|raw] [--json] [--password 비밀번호]
               wangzip extract <압축파일> [대상폴더] [--encoding ...] [--overwrite overwrite|skip|rename] [--password 비밀번호]
-              wangzip create  <출력.zip> <파일|폴더>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "설명"] [--password 비밀번호]
+              wangzip create  <출력.zip> <파일|폴더>... [--level none|fastest|optimal|smallest] [--encoding utf8|cp949] [--comment "설명"] [--password 비밀번호] [--split 100M]
               wangzip verify  <압축파일> [--password 비밀번호]
 
             예시:
@@ -365,6 +372,27 @@ internal static class Program
               wangzip create "백업.zip" "C:\작업" --level optimal
               wangzip create "보안.zip" "C:\작업" --password "비밀번호"
             """);
+    }
+
+    /// <summary>"100M", "1G", "512K", "65536" 형태의 크기를 바이트로 바꿉니다.</summary>
+    private static bool TryParseSize(string text, out long bytes)
+    {
+        bytes = 0;
+        text = text.Trim();
+        if (text.Length == 0) return false;
+
+        long multiplier = 1;
+        char last = char.ToUpperInvariant(text[^1]);
+        if (last is 'K' or 'M' or 'G')
+        {
+            multiplier = last switch { 'K' => 1024L, 'M' => 1024L * 1024, _ => 1024L * 1024 * 1024 };
+            text = text[..^1];
+        }
+
+        if (!long.TryParse(text, out long value) || value <= 0) return false;
+
+        bytes = value * multiplier;
+        return true;
     }
 
     private static string? Value(string[] args, string name)

@@ -82,6 +82,20 @@
         </Style.Triggers>
     </Style>
 
+    <!-- 전역 TextBlock 스타일을 쓰지 않으므로, 기본 템플릿이 시스템 글자색을 고정하는 컨트롤은 앱 테마 글자색을 지정합니다. -->
+    <Style TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style TargetType="StatusBar">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style TargetType="Label">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
     <Style x:Key="ToolButton" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />

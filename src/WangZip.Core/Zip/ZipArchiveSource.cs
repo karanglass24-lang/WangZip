@@ -161,7 +161,7 @@ public sealed class ZipArchiveSource : IArchiveSource
                 continue;
             }
 
-            if (item.RealMethod is not (0 or 8))
+            if (!IsSupportedMethod(item.RealMethod))
             {
                 warnings.Add(Loc.F("지원하지 않는 압축 방식({0})이라 건너뜁니다: {1}", item.RealMethod, item.DecodedName));
                 skippedFiles++;
@@ -232,7 +232,7 @@ public sealed class ZipArchiveSource : IArchiveSource
                 cancellationToken.ThrowIfCancellationRequested();
                 if (item.IsDirectory) continue;
 
-                if (item.RealMethod is not (0 or 8))
+                if (!IsSupportedMethod(item.RealMethod))
                 {
                     unsupported++;
                     continue;
@@ -417,7 +417,7 @@ public sealed class ZipArchiveSource : IArchiveSource
                 Loc.F("암호가 설정된 항목입니다: {0}\n압축 풀기 화면에서 비밀번호를 입력한 뒤 다시 시도해 주세요.", item.DecodedName));
         }
 
-        if (item.RealMethod is not (0 or 8))
+        if (!IsSupportedMethod(item.RealMethod))
         {
             throw new UnsupportedArchiveException(
                 Loc.F("지원하지 않는 압축 방식({0})입니다: {1}", item.RealMethod, item.DecodedName));
@@ -446,13 +446,23 @@ public sealed class ZipArchiveSource : IArchiveSource
             source = ZipCryptography.Decrypt(key, source, password!, item.CompressedSize);
         }
 
-        if (item.RealMethod == 8)
+        switch (item.RealMethod)
         {
-            return (new DeflateStream(source, CompressionMode.Decompress, leaveOpen: true), source);
+            case 8:
+                return (new DeflateStream(source, CompressionMode.Decompress, leaveOpen: true), source);
+            case 9:
+                return (new SharpCompress.Compressors.Deflate64.Deflate64Stream(
+                    source, SharpCompress.Compressors.CompressionMode.Decompress), source);
+            case 12:
+                return (SharpCompress.Compressors.BZip2.BZip2Stream.Create(
+                    source, SharpCompress.Compressors.CompressionMode.Decompress, decompressConcatenated: false), source);
         }
 
         return (source, null);
     }
+
+    /// <summary>저장(0), Deflate(8), Deflate64(9), BZip2(12)을 읽을 수 있습니다.</summary>
+    private static bool IsSupportedMethod(ushort method) => method is 0 or 8 or 9 or 12;
 
     private List<RawZipEntry> Select(IReadOnlyCollection<int> indices)
     {
