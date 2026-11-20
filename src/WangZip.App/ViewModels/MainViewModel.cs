@@ -68,15 +68,6 @@ public sealed class EntryRow
     public string IconLabel => Info.IsDirectory ? "" : Info.IsSymlink ? "LNK" : FileTypeIcons.For(Info.Name).Label;
     public string IconColor => Info.IsDirectory ? "#E9A13C" : Info.IsSymlink ? "#7B61C4" : FileTypeIcons.For(Info.Name).Color;
 
-    public System.Windows.Media.Brush IconBrush
-    {
-        get
-        {
-            var brush = (System.Windows.Media.SolidColorBrush)new System.Windows.Media.BrushConverter().ConvertFromString(IconColor)!;
-            brush.Freeze();
-            return brush;
-        }
-    }
     /// <summary>현재 폴더 기준의 표시 이름 (마지막 경로 조각).</summary>
     public string Name => FullPathMode ? Info.Name.TrimEnd('/') : Segment(Info.Name);
     /// <summary>검색 결과 보기에서는 전체 경로를 이름으로 보여 줍니다.</summary>
@@ -114,7 +105,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private string? _archivePath;
     private string _statusText = Loc.T("압축 파일을 열거나, 파일을 이 창으로 끌어다 놓으세요.");
     private string _encodingDescription = string.Empty;
-    private string _pathText = "";
     private bool _isBusy;
     private string? _currentPath = "";
     private List<EntryRow> _allRows = [];
@@ -167,6 +157,45 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public bool HasArchive => _source is not null;
 
+    /// <summary>항목 추가·삭제가 가능한 압축 파일인지 (분할이 아닌 ZIP).</summary>
+    public bool CanModify => _source is ZipArchiveSource { IsSplit: false };
+
+    /// <summary>무결성 검사가 가능한 압축 파일인지 (ZIP).</summary>
+    public bool CanVerify => _source is ZipArchiveSource;
+
+    private int _selectedCount;
+
+    /// <summary>목록에서 선택된 항목 수 (창이 알려 줍니다).</summary>
+    public int SelectedCount
+    {
+        get => _selectedCount;
+        set
+        {
+            if (!Set(ref _selectedCount, Math.Max(0, value))) return;
+            OnPropertyChanged(nameof(HasSelection));
+            OnPropertyChanged(nameof(CanDelete));
+            OnPropertyChanged(nameof(CanExtractSelected));
+        }
+    }
+
+    public bool HasSelection => _selectedCount > 0;
+
+    /// <summary>선택 항목 삭제 가능: 수정 가능한 ZIP이고 선택이 있을 때.</summary>
+    public bool CanDelete => CanModify && HasSelection;
+
+    /// <summary>선택 항목 압축 풀기 가능: 압축 파일이 열려 있고 선택이 있을 때.</summary>
+    public bool CanExtractSelected => HasArchive && HasSelection;
+
+    /// <summary>열린 압축 파일이 바뀌었을 때 관련 속성을 한꺼번에 알립니다.</summary>
+    private void NotifySourceChanged()
+    {
+        OnPropertyChanged(nameof(HasArchive));
+        OnPropertyChanged(nameof(CanModify));
+        OnPropertyChanged(nameof(CanVerify));
+        OnPropertyChanged(nameof(CanDelete));
+        OnPropertyChanged(nameof(CanExtractSelected));
+    }
+
     public string StatusText
     {
         get => _statusText;
@@ -193,13 +222,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             int slash = current.LastIndexOf('/');
             return slash <= 0 ? "" : current[..slash];
         }
-    }
-
-    /// <summary>현재 보고 있는 폴더 경로 (탐색 바).</summary>
-    public string PathText
-    {
-        get => _pathText;
-        private set => Set(ref _pathText, value);
     }
 
     public bool IsBusy
@@ -236,6 +258,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _source = loaded.Source;
             _allRows = loaded.Rows;
 
+            NotifySourceChanged();
             ArchivePath = _source.ArchivePath;
             EncodingDescription = Loc.T("파일명 인코딩: ") + _source.EncodingDescription;
 
@@ -299,7 +322,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
 
             ReplaceEntries(found);
-            PathText = Loc.F("검색: {0}", needle);
             RebuildCrumbs("");
             OnPropertyChanged(nameof(CanGoUp));
             OnPropertyChanged(nameof(EntriesCount));
@@ -358,7 +380,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ReplaceEntries(rows);
         RebuildCrumbs(current.TrimEnd('/'));
 
-        PathText = current.Length == 0 ? "/" : current;
         OnPropertyChanged(nameof(CanGoUp));
 
         OnPropertyChanged(nameof(EntriesCount));
@@ -727,6 +748,33 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         StatusText =
             Loc.F("전체 {0:N0}개 항목 · 원본 {1} · 압축 {2} · {3}", _source.Entries.Count, Format.Bytes(size), Format.Bytes(compressed), Format.CompressionRate(ratio));
+    }
+
+    /// <summary>열려 있는 압축 파일을 닫고 목록·트리·검색어를 비웁니다 (열 때 이전 파일을 놓는 것과 같은 방식).</summary>
+    public void CloseArchive()
+    {
+        if (_source is null || IsBusy) return;
+
+        _source.Dispose();
+        _source = null;
+        _allRows = [];
+        _currentPath = "";
+
+        _filterText = "";
+        OnPropertyChanged(nameof(FilterText));
+
+        Entries.Clear();
+        Crumbs.Clear();
+        TreeRoots.Clear();
+        EncodingDescription = string.Empty;
+        SelectedCount = 0;
+
+        NotifySourceChanged();
+        ArchivePath = null;
+        OnPropertyChanged(nameof(CanGoUp));
+        OnPropertyChanged(nameof(EntriesCount));
+        OnPropertyChanged(nameof(TotalCount));
+        UpdateStatus();
     }
 
     public void Dispose()

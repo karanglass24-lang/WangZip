@@ -21,8 +21,32 @@ public sealed class AppSettings
     /// <summary>전체 압축 풀기에 성공하면 원본 압축 파일을 휴지통으로 보냅니다.</summary>
     public bool DeleteSourceAfterExtract { get; set; } = false;
 
-    /// <summary>"빠른 압축 풀기" 목적지. 0=자동 폴더, 1=바탕 화면, 2=다운로드, 3=문서, 4=압축 파일이 있던 폴더</summary>
+    /// <summary>"빠른 압축 풀기" 목적지(MainViewModel.QuickDestinations 순서). 0=압축 파일 연 폴더(압축 파일 이름 폴더), 1=바탕 화면, 2=다운로드, 3=문서, 4=직접 입력</summary>
     public int QuickDestination { get; set; } = 0;
+
+    /// <summary>같은 이름의 파일이 있을 때 기본값 (압축 풀기 대화상자 순서): 0=덮어쓰기, 1=건너뛰기, 2=이름 바꾸기.</summary>
+    public int DefaultOverwrite { get; set; } = 0;
+
+    /// <summary>새 압축 파일 기본 압축 수준 (압축 만들기 대화상자 목록 순서): 0=저장, 1=빠르게, 2=보통, 3=최대.</summary>
+    public int DefaultCompressionLevel { get; set; } = 2;
+
+    /// <summary>새 압축 파일 기본 파일명 인코딩 (압축 만들기 대화상자 목록 순서): 0=UTF-8, 1=CP949.</summary>
+    public int DefaultNameEncoding { get; set; } = 0;
+
+    /// <summary>새 압축 파일 기본 분할 크기 (압축 만들기 대화상자 목록 순서, 0=나누지 않음).</summary>
+    public int DefaultSplitSizeIndex { get; set; } = 0;
+
+    /// <summary>압축 파일을 열 때 파일명 인코딩 기본값 (NameEncodingMode 값): 0=자동, 1=UTF-8, 2=CP949, 3=원본 바이트.</summary>
+    public int DefaultListEncoding { get; set; } = 0;
+
+    /// <summary>ZIP에서 항목을 삭제하기 전에 확인합니다.</summary>
+    public bool ConfirmBeforeDelete { get; set; } = true;
+
+    /// <summary>압축 풀기·항목 추가/삭제가 끝나면 완료 안내 창을 보여 줍니다 (오류 창은 항상 표시).</summary>
+    public bool ShowCompletionDialog { get; set; } = true;
+
+    /// <summary>탐색기 우클릭 "여기에 풀기/모두 풀기"에도 폴더 만들기·폴더 열기 설정을 적용합니다 (끄면 기존 동작 유지).</summary>
+    public bool ExtractShellUsesAppSettings { get; set; } = false;
 
     /// <summary>환경설정 창에서 마지막으로 저장한 우클릭 메뉴 선택(참고용). 실제 상태는 레지스트리를 기준으로 합니다.</summary>
     public bool ShellMenuEnabled { get; set; } = true;

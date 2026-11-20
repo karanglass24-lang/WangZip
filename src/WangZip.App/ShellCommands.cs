@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using WangZip.App.Dialogs;
@@ -65,6 +66,32 @@ internal static class ShellCommands
         if (ok && extraction is { } done)
         {
             Show(Loc.F("압축을 풀었습니다: 파일 {0:N0}개\n{1}", done.Result.ExtractedFiles, done.Destination));
+            OpenFoldersIfConfigured([done.Destination]);
+        }
+    }
+
+    /// <summary>"탐색기 우클릭 풀기에도 환경설정 적용"이 켜져 있을 때만 설정을 돌려줍니다. 꺼져 있으면 기존 동작을 그대로 씁니다.</summary>
+    private static AppSettings? SharedSettings()
+    {
+        AppSettings settings = AppSettings.Load();
+        return settings.ExtractShellUsesAppSettings ? settings : null;
+    }
+
+    /// <summary>설정에서 '압축을 풀면 폴더를 자동으로 엽니다'가 켜져 있으면 풀린 폴더를 엽니다 (여러 개면 최대 3개).</summary>
+    private static void OpenFoldersIfConfigured(IEnumerable<string> folders)
+    {
+        if (SharedSettings() is not { AutoOpenAfterExtract: true }) return;
+
+        foreach (string folder in folders.Distinct(StringComparer.OrdinalIgnoreCase).Where(Directory.Exists).Take(3))
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+            }
+            catch (Exception)
+            {
+                // 폴더를 못 여는 것은 압축 풀기 결과에 영향이 없습니다.
+            }
         }
     }
 
@@ -119,9 +146,24 @@ internal static class ShellCommands
             }
 
             string parent = Path.GetDirectoryName(zip)!;
-            string destination = SingleTopLevelFolder(source)
-                ? parent
-                : FreeFolder(Path.Combine(parent, FolderNameFor(zip)));
+            string destination;
+            if (SharedSettings() is { } shared)
+            {
+                // 환경설정의 '압축 파일 이름 폴더 만들기'를 따릅니다 (원본 휴지통 이동은 적용하지 않습니다).
+                destination = ExtractionPlanner.ResolveDestination(
+                    parent, zip, source.Entries.Select(entry => entry.Name),
+                    (SubfolderMode)Math.Clamp(shared.SubfolderMode, 0, 2));
+                if (!string.Equals(destination, parent, StringComparison.OrdinalIgnoreCase))
+                {
+                    destination = FreeFolder(destination);
+                }
+            }
+            else
+            {
+                destination = SingleTopLevelFolder(source)
+                    ? parent
+                    : FreeFolder(Path.Combine(parent, FolderNameFor(zip)));
+            }
 
             ExtractionResult? result = null;
             for (int attempt = 0; attempt < 5; attempt++)
@@ -284,6 +326,7 @@ internal static class ShellCommands
 
         int extractedArchives = 0;
         int extractedFiles = 0;
+        var destinations = new List<string>();
         var failures = new List<string>(missing);
 
         bool ok = await ProgressDialog.RunAsync(null!, Loc.T("여러 압축 파일 푸는 중"), async (progress, token) =>
@@ -307,6 +350,7 @@ internal static class ShellCommands
                     {
                         extractedArchives++;
                         extractedFiles += done.Result.ExtractedFiles;
+                        destinations.Add(done.Destination);
                     }
                 }
                 catch (EncryptedArchiveException)
@@ -339,6 +383,7 @@ internal static class ShellCommands
         }
 
         Show(message);
+        OpenFoldersIfConfigured(destinations);
     }
 
     /// <summary>여러 압축 파일의 진행률을 하나의 진행 창에 합칩니다.</summary>

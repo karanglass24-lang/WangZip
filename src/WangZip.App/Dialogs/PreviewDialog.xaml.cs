@@ -36,8 +36,8 @@ public partial class PreviewDialog : Window
         }
         catch (Exception ex)
         {
-            TextBox.Text = $"파일을 읽는 중 오류가 발생했습니다:\n{ex.Message}";
-            StatusText.Text = "오류";
+            TextBox.Text = Loc.F("파일을 읽는 중 오류가 발생했습니다:\n{0}", ex.Message);
+            StatusText.Text = Loc.T("오류");
         }
     }
 
@@ -194,8 +194,8 @@ public partial class PreviewDialog : Window
         }
         catch (Exception ex)
         {
-            TextBox.Text = $"인코딩 변경 중 오류:\n{ex.Message}";
-            StatusText.Text = "오류";
+            TextBox.Text = Loc.F("인코딩 변경 중 오류:\n{0}", ex.Message);
+            StatusText.Text = Loc.T("오류");
         }
     }
 
@@ -212,7 +212,7 @@ public partial class PreviewDialog : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"외부 프로그램으로 열기 실패:\n{ex.Message}", "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, Loc.F("외부 프로그램으로 열기 실패:\n{0}", ex.Message), Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 

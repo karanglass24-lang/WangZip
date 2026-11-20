@@ -10,42 +10,53 @@ namespace WangZip.App.Dialogs;
 
 public partial class CreateDialog : Window
 {
-    private sealed record LevelOption(string Label, CompressionLevel Level);
-    private sealed record EncodingOption(string Label, NameEncodingMode Mode);
-    private sealed record SplitOption(string Label, long Bytes);
+    internal sealed record LevelOption(string Label, CompressionLevel Level);
+    internal sealed record EncodingOption(string Label, NameEncodingMode Mode);
+    internal sealed record SplitOption(string Label, long Bytes);
 
-    public CreateDialog(IEnumerable<string>? initialSources = null)
+    // 환경설정 창의 기본값 선택에서도 같은 목록(같은 순서·문구)을 씁니다.
+    internal static LevelOption[] LevelOptions() =>
+    [
+        new LevelOption(Loc.T("저장 (압축 안 함)"), CompressionLevel.NoCompression),
+        new LevelOption(Loc.T("빠르게"), CompressionLevel.Fastest),
+        new LevelOption(Loc.T("보통 (권장)"), CompressionLevel.Optimal),
+        new LevelOption(Loc.T("최대 압축 (느림)"), CompressionLevel.SmallestSize),
+    ];
+
+    internal static EncodingOption[] EncodingOptions() =>
+    [
+        new EncodingOption(Loc.T("UTF-8 (권장, 현대 도구 호환)"), NameEncodingMode.Auto),
+        new EncodingOption(Loc.T("CP949 (구형 Windows 호환)"), NameEncodingMode.Cp949),
+    ];
+
+    internal static SplitOption[] SplitOptions() =>
+    [
+        new SplitOption(Loc.T("나누지 않음"), 0),
+        new SplitOption("10 MB", 10L * 1024 * 1024),
+        new SplitOption("100 MB", 100L * 1024 * 1024),
+        new SplitOption("650 MB (CD)", 650L * 1024 * 1024),
+        new SplitOption("700 MB (CD)", 700L * 1024 * 1024),
+        new SplitOption("1 GB", 1024L * 1024 * 1024),
+        new SplitOption("4 GB (FAT32)", 4000L * 1024 * 1024),
+    ];
+
+    public CreateDialog(IEnumerable<string>? initialSources = null, AppSettings? settings = null)
     {
         InitializeComponent();
         Localizer.Apply(this);
+        settings ??= AppSettings.Load();
 
-        LevelCombo.ItemsSource = new[]
-        {
-            new LevelOption(Loc.T("저장 (압축 안 함)"), CompressionLevel.NoCompression),
-            new LevelOption(Loc.T("빠르게"), CompressionLevel.Fastest),
-            new LevelOption(Loc.T("보통 (권장)"), CompressionLevel.Optimal),
-            new LevelOption(Loc.T("최대 압축 (느림)"), CompressionLevel.SmallestSize),
-        };
-        LevelCombo.SelectedIndex = 2;
+        LevelOption[] levels = LevelOptions();
+        LevelCombo.ItemsSource = levels;
+        LevelCombo.SelectedIndex = Math.Clamp(settings.DefaultCompressionLevel, 0, levels.Length - 1);
 
-        EncodingCombo.ItemsSource = new[]
-        {
-            new EncodingOption(Loc.T("UTF-8 (권장, 현대 도구 호환)"), NameEncodingMode.Auto),
-            new EncodingOption(Loc.T("CP949 (구형 Windows 호환)"), NameEncodingMode.Cp949),
-        };
-        EncodingCombo.SelectedIndex = 0;
+        EncodingOption[] encodings = EncodingOptions();
+        EncodingCombo.ItemsSource = encodings;
+        EncodingCombo.SelectedIndex = Math.Clamp(settings.DefaultNameEncoding, 0, encodings.Length - 1);
 
-        SplitCombo.ItemsSource = new[]
-        {
-            new SplitOption(Loc.T("나누지 않음"), 0),
-            new SplitOption("10 MB", 10L * 1024 * 1024),
-            new SplitOption("100 MB", 100L * 1024 * 1024),
-            new SplitOption("650 MB (CD)", 650L * 1024 * 1024),
-            new SplitOption("700 MB (CD)", 700L * 1024 * 1024),
-            new SplitOption("1 GB", 1024L * 1024 * 1024),
-            new SplitOption("4 GB (FAT32)", 4000L * 1024 * 1024),
-        };
-        SplitCombo.SelectedIndex = 0;
+        SplitOption[] splits = SplitOptions();
+        SplitCombo.ItemsSource = splits;
+        SplitCombo.SelectedIndex = Math.Clamp(settings.DefaultSplitSizeIndex, 0, splits.Length - 1);
 
         if (initialSources is not null)
         {

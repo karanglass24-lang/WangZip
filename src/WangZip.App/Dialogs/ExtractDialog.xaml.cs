@@ -27,7 +27,7 @@ public partial class ExtractDialog : Window
             new OverwriteOption(Loc.T("건너뛰기"), OverwritePolicy.Skip),
             new OverwriteOption(Loc.T("이름 바꾸기"), OverwritePolicy.Rename),
         };
-        OverwriteCombo.SelectedIndex = 0;
+        OverwriteCombo.SelectedIndex = Math.Clamp(settings.DefaultOverwrite, 0, 2);
 
         SubfolderCombo.ItemsSource = new[]
         {

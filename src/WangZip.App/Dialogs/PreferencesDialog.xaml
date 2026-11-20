@@ -4,52 +4,208 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Icon="pack://application:,,,/Assets/app-icon.ico"
         Title="환경설정"
-        Width="520"
-        SizeToContent="Height"
+        Width="580"
+        Height="640"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource SurfaceBrush}">
-    <StackPanel Margin="20">
-        <TextBlock Text="일반" FontWeight="SemiBold" />
-        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-            <TextBlock Text="언어 (다시 시작하면 적용)" VerticalAlignment="Center" Margin="0,0,10,0" />
-            <ComboBox x:Name="LanguageBox" MinWidth="170">
-                <ComboBoxItem Tag="auto" Content="자동 (Windows 언어)" />
-                <ComboBoxItem Tag="ko" Content="한국어" />
-                <ComboBoxItem Tag="en" Content="English" />
-            </ComboBox>
-        </StackPanel>
-        <CheckBox x:Name="AutoOpenBox" Content="압축을 풀면 폴더를 자동으로 엽니다" Margin="0,8,0,0" />
-        <!-- 긴 문구는 창 폭(고정)을 넘지 않도록 줄을 바꿉니다. -->
-        <CheckBox x:Name="AutoUpdateBox" Margin="0,6,0,0">
-            <TextBlock Text="실행할 때 새 버전을 확인하고 자동으로 업데이트합니다 (설치형)" TextWrapping="Wrap" />
-        </CheckBox>
+    <Grid Margin="20,16,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-        <Separator Margin="0,16" />
+        <TabControl Grid.Row="0">
+            <!-- 일반 -->
+            <TabItem Header="일반">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Grid.IsSharedSizeScope="True" Margin="2,0,12,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="언어 (다시 시작하면 적용)" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox Grid.Column="1" x:Name="LanguageBox" MinWidth="200" HorizontalAlignment="Left"
+                                      AutomationProperties.Name="언어">
+                                <ComboBoxItem Tag="auto" Content="자동 (Windows 언어)" />
+                                <ComboBoxItem Tag="ko" Content="한국어" />
+                                <ComboBoxItem Tag="en" Content="English" />
+                            </ComboBox>
+                        </Grid>
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="테마" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox Grid.Column="1" x:Name="ThemeBox" MinWidth="200" HorizontalAlignment="Left"
+                                      AutomationProperties.Name="테마">
+                                <ComboBoxItem Content="시스템 설정 따라가기" />
+                                <ComboBoxItem Content="라이트" />
+                                <ComboBoxItem Content="다크" />
+                            </ComboBox>
+                        </Grid>
+                        <!-- 긴 문구는 창 폭(고정)을 넘지 않도록 줄을 바꿉니다. -->
+                        <CheckBox x:Name="AutoUpdateBox" Margin="0,14,0,0">
+                            <TextBlock Text="실행할 때 새 버전을 확인하고 자동으로 업데이트합니다 (설치형)" TextWrapping="Wrap" />
+                        </CheckBox>
 
-        <TextBlock Text="탐색기 우클릭 메뉴" FontWeight="SemiBold" />
-        <CheckBox x:Name="ShellMenuBox" Margin="0,8,0,0">
-            <TextBlock TextWrapping="Wrap"
-                       Text="'왕집' 서브메뉴 — '여기에 풀기', '모두 풀기', 'ZIP으로 압축' (ZIP·7z·RAR·tar 등), 모든 파일·폴더에 'ZIP으로 압축' 메뉴를 추가합니다" />
-        </CheckBox>
-        <TextBlock Text="Windows 11에서는 '더 많은 옵션 표시' 아래에 나타납니다." TextWrapping="Wrap"
-                   Foreground="{DynamicResource TextSecondaryBrush}" Margin="22,2,0,0" />
+                        <Separator Margin="0,18" />
 
-        <Separator Margin="0,16" />
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="최근 목록 지우기" Style="{StaticResource SecondaryButton}" Click="ClearRecent_Click" Margin="0,0,8,0" />
+                            <Button Content="기본값으로 되돌리기" Style="{StaticResource SecondaryButton}" Click="ResetDefaults_Click" />
+                        </StackPanel>
+                        <TextBlock Text="'기본값으로 되돌리기'는 이 창의 설정 값만 바꾸며, 저장을 눌러야 적용됩니다. (탐색기 연동·창 위치·최근 목록은 그대로입니다)"
+                                   TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-        <TextBlock Text="파일 형식 연결" FontWeight="SemiBold" />
-        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,8"
-                   Text="체크한 형식은 '연결 프로그램' 목록에 왕집이 나타납니다. 더블클릭으로 바로 열리게 하려면 아래 버튼으로 Windows 설정에서 왕집을 기본 앱으로 선택하세요. (Windows가 앱이 직접 기본 앱을 바꾸는 것을 허용하지 않습니다)" />
-        <WrapPanel x:Name="ExtensionPanel" />
-        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-            <Button Content="모두 선택" Style="{StaticResource SecondaryButton}" Click="SelectAll_Click" Margin="0,0,8,0" />
-            <Button Content="모두 해제" Style="{StaticResource SecondaryButton}" Click="SelectNone_Click" Margin="0,0,8,0" />
-            <Button Content="Windows 기본 앱 설정 열기" Style="{StaticResource SecondaryButton}" Click="OpenDefaultApps_Click" />
-        </StackPanel>
+            <!-- 압축 풀기 -->
+            <TabItem Header="압축 풀기">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Grid.IsSharedSizeScope="True" Margin="2,0,12,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="기본 위치" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox Grid.Column="1" x:Name="QuickDestBox" MinWidth="260" HorizontalAlignment="Left"
+                                      AutomationProperties.Name="기본 위치" />
+                        </Grid>
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="압축 파일 이름 폴더 만들기" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox Grid.Column="1" x:Name="SubfolderBox" MinWidth="260" HorizontalAlignment="Left"
+                                      AutomationProperties.Name="폴더 만들기" />
+                        </Grid>
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="같은 이름의 파일이 있을 때" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox Grid.Column="1" x:Name="OverwriteBox" MinWidth="260" HorizontalAlignment="Left"
+                                      AutomationProperties.Name="덮어쓰기 기본값" />
+                        </Grid>
+                        <CheckBox x:Name="AutoOpenBox" Content="압축을 풀면 폴더를 자동으로 엽니다" Margin="0,14,0,0" />
+                        <CheckBox x:Name="DeleteSourceBox" Margin="0,8,0,0">
+                            <TextBlock Text="전체를 성공적으로 푼 뒤 원본 압축 파일을 휴지통으로 보내기" TextWrapping="Wrap" />
+                        </CheckBox>
+                        <CheckBox x:Name="ShowCompletionBox" Margin="0,8,0,0">
+                            <TextBlock Text="작업이 끝나면 완료 안내 창을 표시합니다 (오류 창은 항상 표시)" TextWrapping="Wrap" />
+                        </CheckBox>
 
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                        <Separator Margin="0,16" />
+
+                        <CheckBox x:Name="ShellUsesBox">
+                            <TextBlock Text="탐색기 우클릭 풀기에도 이 설정 적용" TextWrapping="Wrap" />
+                        </CheckBox>
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="22,2,0,0"
+                                   Text="'여기에 풀기'·'모두 풀기'에 '압축 파일 이름 폴더 만들기'와 '폴더 자동으로 열기' 설정을 적용합니다. 끄면 기존 동작(필요할 때 압축 파일 이름 폴더를 만들고, 같은 이름은 이름을 바꿔 저장)을 그대로 유지합니다. 원본 휴지통 이동은 적용되지 않습니다." />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 압축하기 -->
+            <TabItem Header="압축하기">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Grid.IsSharedSizeScope="True" Margin="2,0,12,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="기본 압축 수준" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox Grid.Column="1" x:Name="LevelBox" MinWidth="260" HorizontalAlignment="Left"
+                                      AutomationProperties.Name="기본 압축 수준" />
+                        </Grid>
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="기본 파일명 인코딩" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox Grid.Column="1" x:Name="NameEncodingBox" MinWidth="260" HorizontalAlignment="Left"
+                                      AutomationProperties.Name="기본 파일명 인코딩" />
+                        </Grid>
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="기본 분할 크기" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox Grid.Column="1" x:Name="SplitBox" MinWidth="260" HorizontalAlignment="Left"
+                                      AutomationProperties.Name="기본 분할 크기" />
+                        </Grid>
+                        <TextBlock Text="새 압축 파일 만들기 창을 열 때 처음 선택되는 값입니다. 그 자리에서 바꿀 수도 있습니다."
+                                   TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,14,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 목록 -->
+            <TabItem Header="목록">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Grid.IsSharedSizeScope="True" Margin="2,0,12,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="열 때 파일명 인코딩 기본값" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox Grid.Column="1" x:Name="ListEncodingBox" MinWidth="260" HorizontalAlignment="Left"
+                                      AutomationProperties.Name="열 때 파일명 인코딩">
+                                <ComboBoxItem Content="자동 감지 (권장)" />
+                                <ComboBoxItem Content="UTF-8" />
+                                <ComboBoxItem Content="CP949 / EUC-KR (구형)" />
+                                <ComboBoxItem Content="원본 바이트" />
+                            </ComboBox>
+                        </Grid>
+                        <TextBlock Text="압축 파일을 열 때 쓰는 값입니다. 메인 창의 '파일명 인코딩' 메뉴는 그 파일에만 적용되고 저장되지 않습니다."
+                                   TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0" />
+                        <CheckBox x:Name="ConfirmDeleteBox" Content="항목을 삭제하기 전에 확인합니다" Margin="0,16,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 탐색기 연동 -->
+            <TabItem Header="탐색기 연동">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="2,0,12,0">
+                        <TextBlock Text="탐색기 우클릭 메뉴" FontWeight="SemiBold" />
+                        <CheckBox x:Name="ShellMenuBox" Margin="0,8,0,0">
+                            <TextBlock TextWrapping="Wrap"
+                                       Text="'왕집' 서브메뉴 — '여기에 풀기', '모두 풀기'(압축 파일), 'ZIP으로 압축'(모든 파일), '이 폴더 압축'(폴더)을 추가합니다" />
+                        </CheckBox>
+                        <TextBlock Text="Windows 11에서는 '더 많은 옵션 표시' 아래에 나타납니다." TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Margin="22,2,0,0" />
+
+                        <Separator Margin="0,16" />
+
+                        <TextBlock Text="파일 형식 연결" FontWeight="SemiBold" />
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,8"
+                                   Text="체크한 형식은 '연결 프로그램' 목록에 왕집이 나타납니다. 더블클릭으로 바로 열리게 하려면 아래 버튼으로 Windows 설정에서 왕집을 기본 앱으로 선택하세요. (Windows가 앱이 직접 기본 앱을 바꾸는 것을 허용하지 않습니다)" />
+                        <WrapPanel x:Name="ExtensionPanel" />
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="모두 선택" Style="{StaticResource SecondaryButton}" Click="SelectAll_Click" Margin="0,0,8,0" />
+                            <Button Content="모두 해제" Style="{StaticResource SecondaryButton}" Click="SelectNone_Click" Margin="0,0,8,0" />
+                            <Button Content="Windows 기본 앱 설정 열기" Style="{StaticResource SecondaryButton}" Click="OpenDefaultApps_Click" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
             <Button Content="취소" Style="{StaticResource SecondaryButton}" Click="Cancel_Click" Margin="0,0,8,0" MinWidth="80" IsCancel="True" />
             <Button Content="저장" Style="{StaticResource PrimaryButton}" Click="Save_Click" MinWidth="100" IsDefault="True" />
         </StackPanel>
-    </StackPanel>
+    </Grid>
 </Window>

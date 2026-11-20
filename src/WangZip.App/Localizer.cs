@@ -49,6 +49,11 @@ internal static class Localizer
             case MenuItem menuItem:
                 if (menuItem.Header is string header) menuItem.Header = Loc.T(header);
                 break;
+            case HeaderedContentControl headered:
+                // 탭 항목(TabItem) 등: 머리글과 본문 문자열을 모두 번역합니다.
+                if (headered.Header is string tabHeader) headered.Header = Loc.T(tabHeader);
+                if (headered.Content is string tabText) headered.Content = Loc.T(tabText);
+                break;
             case ContentControl content:
                 if (content.Content is string text) content.Content = Loc.T(text);
                 break;

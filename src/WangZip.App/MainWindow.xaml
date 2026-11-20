@@ -16,24 +16,39 @@
         Closing="Window_Closing">
 
     <DockPanel>
-        <Menu DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}" Padding="4,1">
+        <Menu x:Name="MainMenu" DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}" Padding="4,1">
             <MenuItem Header="파일(_F)">
-                <MenuItem Header="압축 파일 열기..." InputGestureText="Ctrl+O" Click="Open_Click" />
-                <MenuItem Header="압축하기..." InputGestureText="Ctrl+N" Click="Create_Click" />
+                <MenuItem Header="압축 파일 열기(_O)..." InputGestureText="Ctrl+O" Click="Open_Click" />
+                <MenuItem Header="새 압축 파일(_N)..." InputGestureText="Ctrl+N" Click="Create_Click" />
                 <Separator />
-                <MenuItem x:Name="RecentFilesMenu" Header="최근 파일(_R)" IsEnabled="False">
+                <MenuItem x:Name="RecentFilesMenu" Header="최근 항목(_R)" IsEnabled="False">
                     <MenuItem Header="(최근 파일 없음)" IsEnabled="False" />
                 </MenuItem>
                 <Separator />
-                <MenuItem Header="끝내기" InputGestureText="Alt+F4" Click="Exit_Click" />
+                <MenuItem Header="닫기(_C)" InputGestureText="Ctrl+W" Click="CloseArchive_Click" IsEnabled="{Binding HasArchive}" />
+                <Separator />
+                <MenuItem Header="끝내기(_X)" InputGestureText="Alt+F4" Click="Exit_Click" />
+            </MenuItem>
+            <MenuItem Header="편집(_E)">
+                <MenuItem Header="파일 추가(_A)..." Click="AddFiles_Click" IsEnabled="{Binding CanModify}"
+                          ToolTipService.ShowOnDisabled="True" ToolTip="ZIP 형식에서만 사용할 수 있습니다" />
+                <MenuItem Header="폴더 추가(_D)..." Click="AddFolder_Click" IsEnabled="{Binding CanModify}"
+                          ToolTipService.ShowOnDisabled="True" ToolTip="ZIP 형식에서만 사용할 수 있습니다" />
+                <Separator />
+                <MenuItem Header="선택 항목 삭제(_L)" InputGestureText="Del" Click="Delete_Click" IsEnabled="{Binding CanDelete}"
+                          ToolTipService.ShowOnDisabled="True" ToolTip="ZIP 형식에서만 사용할 수 있습니다" />
+                <Separator />
+                <MenuItem Header="모두 선택(_S)" InputGestureText="Ctrl+A" Click="SelectAllEntries_Click" IsEnabled="{Binding HasArchive}" />
+                <MenuItem Header="찾기(_F)" InputGestureText="Ctrl+F" Click="Find_Click" IsEnabled="{Binding HasArchive}" />
             </MenuItem>
             <MenuItem Header="도구(_T)">
-                <MenuItem Header="압축 풀기 (대상 폴더 선택)..." InputGestureText="Ctrl+E" Click="QuickExtractAll_Click" />
-                <MenuItem Header="선택 항목만 압축 풀기" Click="QuickExtractSelected_Click" />
+                <MenuItem Header="압축 풀기(_E)..." InputGestureText="Ctrl+E" Click="QuickExtractAll_Click" IsEnabled="{Binding HasArchive}" />
+                <MenuItem Header="선택 항목 압축 풀기(_S)..." InputGestureText="Ctrl+Shift+E" Click="QuickExtractSelected_Click" IsEnabled="{Binding CanExtractSelected}" />
                 <Separator />
-                <MenuItem Header="무결성 검사" Click="Verify_Click" />
+                <MenuItem Header="무결성 검사(_T)" Click="Verify_Click" IsEnabled="{Binding CanVerify}"
+                          ToolTipService.ShowOnDisabled="True" ToolTip="ZIP 형식에서만 사용할 수 있습니다" />
                 <Separator />
-                <MenuItem Header="파일명 인코딩">
+                <MenuItem Header="파일명 인코딩(_C)">
                     <MenuItem x:Name="EncodingAutoMenu" Header="자동 감지 (권장)" IsCheckable="True"
                               Tag="Auto" Click="EncodingMenu_Click" />
                     <MenuItem x:Name="EncodingUtf8Menu" Header="UTF-8" IsCheckable="True"
@@ -44,29 +59,38 @@
                               Tag="Raw" Click="EncodingMenu_Click" />
                 </MenuItem>
                 <Separator />
-                <MenuItem Header="선택 항목을 ZIP에서 삭제" Click="Delete_Click" />
+                <MenuItem Header="환경설정(_P)..." InputGestureText="Ctrl+," Click="Preferences_Click" />
+            </MenuItem>
+            <MenuItem Header="보기(_V)">
+                <MenuItem Header="새로 고침(_R)" InputGestureText="F5" Click="Refresh_Click" IsEnabled="{Binding HasArchive}" />
+                <MenuItem Header="상위 폴더로(_U)" InputGestureText="Alt+↑" Click="GoUp_Click" IsEnabled="{Binding CanGoUp}" />
                 <Separator />
-                <MenuItem Header="새로 고침" InputGestureText="F5" Click="Refresh_Click" />
-                <Separator />
-                <MenuItem Header="테마">
+                <MenuItem Header="테마(_T)">
                     <MenuItem x:Name="ThemeSystemMenu" Header="시스템 설정 따라가기" IsCheckable="True" Tag="0" Click="ThemeMenu_Click" />
                     <MenuItem x:Name="ThemeLightMenu" Header="라이트" IsCheckable="True" Tag="1" Click="ThemeMenu_Click" />
                     <MenuItem x:Name="ThemeDarkMenu" Header="다크" IsCheckable="True" Tag="2" Click="ThemeMenu_Click" />
                 </MenuItem>
-                <Separator />
-                <MenuItem Header="환경설정..." Click="Preferences_Click" />
-                <Separator />
-                <MenuItem x:Name="AutoUpdateMenu" Header="자동 업데이트 사용" IsCheckable="True" Click="AutoUpdateMenu_Click" />
-                <MenuItem Header="업데이트 확인..." Click="CheckUpdates_Click" />
             </MenuItem>
             <MenuItem Header="도움말(_H)">
-                <MenuItem Header="왕집 정보" Click="About_Click" />
+                <MenuItem Header="업데이트 확인(_U)..." Click="CheckUpdates_Click" />
+                <Separator />
+                <MenuItem Header="왕집 정보(_A)" Click="About_Click" />
             </MenuItem>
         </Menu>
 
         <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10,7,10,9">
             <DockPanel>
+                <!-- 환경설정 (오른쪽 끝) -->
+                <Button DockPanel.Dock="Right" x:Name="PreferencesButton" Style="{StaticResource RibbonTool}"
+                        Click="Preferences_Click" ToolTip="환경설정 (Ctrl+,)" AutomationProperties.Name="환경설정">
+                    <StackPanel>
+                        <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="29"
+                                   HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="환경설정" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
                 <StackPanel Orientation="Horizontal">
                     <!-- 열기 -->
                     <Button Style="{StaticResource RibbonTool}" Click="Open_Click" ToolTip="압축 파일 열기 (Ctrl+O)"
@@ -78,6 +102,19 @@
                             <TextBlock Text="열기" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Button>
+
+                    <!-- 압축하기 -->
+                    <Button x:Name="CreateButton" Style="{StaticResource RibbonTool}" Click="Create_Click" ToolTip="새 압축 파일 만들기 (Ctrl+N)"
+                            AutomationProperties.Name="압축하기">
+                        <StackPanel>
+                            <Image Source="/Assets/tool-create.png" Width="43" Height="43"
+                                   HorizontalAlignment="Center"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                            <TextBlock Text="압축하기" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Rectangle Width="1" Fill="{DynamicResource BorderBrush}" Margin="6,4" />
 
                     <!-- 빠른 압축 풀기(전체) -->
                     <Button x:Name="QuickAll" Style="{StaticResource RibbonTool}" Click="QuickExtractAll_Click"
@@ -93,7 +130,7 @@
 
                     <!-- 선택 압축 풀기 -->
                     <Button x:Name="QuickSel" Style="{StaticResource RibbonTool}" Click="QuickExtractSelected_Click"
-                            IsEnabled="{Binding HasArchive}" ToolTip="목록에서 선택한 항목만 풀기"
+                            IsEnabled="{Binding CanExtractSelected}" ToolTip="선택 항목 압축 풀기 (Ctrl+Shift+E)"
                             AutomationProperties.Name="선택 풀기">
                         <StackPanel>
                             <Image Source="/Assets/tool-extract-selected.png" Width="43" Height="43"
@@ -105,20 +142,9 @@
 
                     <Rectangle Width="1" Fill="{DynamicResource BorderBrush}" Margin="6,4" />
 
-                    <!-- 압축하기 -->
-                    <Button x:Name="CreateButton" Style="{StaticResource RibbonTool}" Click="Create_Click" ToolTip="새 압축 파일 만들기 (Ctrl+N)"
-                            AutomationProperties.Name="압축하기">
-                        <StackPanel>
-                            <Image Source="/Assets/tool-create.png" Width="43" Height="43"
-                                   HorizontalAlignment="Center"
-                                   RenderOptions.BitmapScalingMode="HighQuality" />
-                            <TextBlock Text="압축하기" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-
                     <!-- 파일 추가 -->
                     <Button x:Name="AddEntryButton" Style="{StaticResource RibbonTool}" Click="AddFiles_Click"
-                            IsEnabled="{Binding HasArchive}" ToolTip="열려 있는 ZIP에 파일/폴더 추가"
+                            IsEnabled="{Binding CanModify}" ToolTipService.ShowOnDisabled="True" ToolTip="파일 추가 (ZIP 형식에서만 사용할 수 있습니다)"
                             AutomationProperties.Name="파일 추가">
                         <StackPanel>
                             <Image Source="/Assets/tool-add.png" Width="43" Height="43"
@@ -130,7 +156,7 @@
 
                     <!-- 항목 삭제 -->
                     <Button x:Name="DeleteEntryButton" Style="{StaticResource RibbonTool}" Click="Delete_Click"
-                            IsEnabled="{Binding HasArchive}" ToolTip="선택 항목을 ZIP에서 삭제"
+                            IsEnabled="{Binding CanDelete}" ToolTipService.ShowOnDisabled="True" ToolTip="항목 삭제 (Del) — ZIP 형식에서만 사용할 수 있습니다"
                             AutomationProperties.Name="항목 삭제">
                         <StackPanel>
                             <Image Source="/Assets/tool-delete.png" Width="43" Height="43"
@@ -144,22 +170,12 @@
 
                     <!-- 검사 -->
                     <Button x:Name="VerifyButton" Style="{StaticResource RibbonTool}" Click="Verify_Click"
-                            IsEnabled="{Binding HasArchive}" ToolTip="무결성 검사 (CRC)"
+                            IsEnabled="{Binding CanVerify}" ToolTipService.ShowOnDisabled="True" ToolTip="무결성 검사 (CRC) — ZIP 형식에서만 사용할 수 있습니다"
                             AutomationProperties.Name="검사">
                         <StackPanel>
                             <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="29"
                                        HorizontalAlignment="Center" Foreground="#7B61C4" />
                             <TextBlock Text="검사" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-
-                    <!-- 새로 고침 -->
-                    <Button x:Name="RefreshButton" Style="{StaticResource RibbonTool}" Click="Refresh_Click"
-                            ToolTip="새로 고침 (F5)" AutomationProperties.Name="새로 고침">
-                        <StackPanel>
-                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="29"
-                                       HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBlock Text="새로 고침" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -213,7 +229,16 @@
                                   ItemContainerStyle="{StaticResource TreeItem}"
                                   BorderThickness="0"
                                   Background="Transparent"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  PreviewMouseRightButtonDown="FolderTree_PreviewMouseRightButtonDown">
+                            <TreeView.ContextMenu>
+                                <ContextMenu Opened="TreeContextMenu_Opened">
+                                    <MenuItem x:Name="TreeExtractItem" Header="이 폴더 압축 풀기..." Click="TreeExtractFolder_Click" />
+                                    <Separator />
+                                    <MenuItem Header="모두 펼치기" Click="TreeExpandAll_Click" />
+                                    <MenuItem Header="모두 접기" Click="TreeCollapseAll_Click" />
+                                </ContextMenu>
+                            </TreeView.ContextMenu>
                             <TreeView.Resources>
                                 <HierarchicalDataTemplate DataType="{x:Type vm:FolderNode}"
                                                           ItemsSource="{Binding Children}">
@@ -317,15 +342,21 @@
                               PreviewMouseMove="EntryGrid_PreviewMouseMove"
                               LostMouseCapture="EntryGrid_LostMouseCapture"
                               PreviewMouseRightButtonDown="EntryGrid_PreviewMouseRightButtonDown"
+                              SelectionChanged="EntryGrid_SelectionChanged"
                               MouseDoubleClick="EntryGrid_MouseDoubleClick">
                         <DataGrid.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="열기 (미리보기)" Click="ContextOpen_Click" />
-                                <MenuItem Header="선택 항목 압축 풀기..." Click="QuickExtractSelected_Click" />
+                            <ContextMenu Opened="EntryContextMenu_Opened">
+                                <MenuItem x:Name="ContextOpenItem" Header="열기" InputGestureText="Enter" Click="ContextOpen_Click" />
                                 <Separator />
-                                <MenuItem Header="항목 삭제" Click="Delete_Click" />
+                                <MenuItem x:Name="ContextExtractItem" Header="선택 항목 압축 풀기..." Click="QuickExtractSelected_Click" />
                                 <Separator />
-                                <MenuItem Header="상위 폴더로" Click="GoUp_Click" />
+                                <MenuItem x:Name="ContextAddItem" Header="파일 추가..." Click="AddFiles_Click" ToolTipService.ShowOnDisabled="True" ToolTip="ZIP 형식에서만 사용할 수 있습니다" />
+                                <MenuItem x:Name="ContextDeleteItem" Header="삭제" InputGestureText="Del" Click="Delete_Click" ToolTipService.ShowOnDisabled="True" ToolTip="ZIP 형식에서만 사용할 수 있습니다" />
+                                <Separator />
+                                <MenuItem x:Name="ContextCopyNameItem" Header="이름 복사" Click="CopyNames_Click" />
+                                <MenuItem x:Name="ContextSelectAllItem" Header="모두 선택" InputGestureText="Ctrl+A" Click="SelectAllEntries_Click" />
+                                <Separator />
+                                <MenuItem x:Name="ContextUpItem" Header="상위 폴더로" Click="GoUp_Click" />
                             </ContextMenu>
                         </DataGrid.ContextMenu>
                         <DataGrid.Columns>

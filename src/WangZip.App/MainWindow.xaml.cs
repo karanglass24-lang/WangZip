@@ -21,12 +21,16 @@ public partial class MainWindow : Window
         Localizer.Apply(this);
 
         DataContext = _viewModel;
+
+        // 열 때 파일명 인코딩 기본값 (환경설정). 메뉴에서 바꾼 값은 이 창을 닫을 때까지만 유지합니다.
+        _encodingMode = Enum.IsDefined(typeof(NameEncodingMode), _settings.DefaultListEncoding)
+            ? (NameEncodingMode)_settings.DefaultListEncoding
+            : NameEncodingMode.Auto;
         _viewModel.CurrentMode = _encodingMode;
         UpdateEncodingMenuChecks();
         UpdateThemeMenuChecks();
 
         RestoreWindowState();
-        AutoUpdateMenu.IsChecked = _settings.AutoUpdate;
         Loaded += (_, _) => _ = RunUpdateCheckAsync(manual: false);
     }
 
@@ -118,7 +122,7 @@ public partial class MainWindow : Window
 
     /// <summary>압축 풀기 대화상자(대상 폴더 확인)를 띄우고 풉니다.
     /// selectionOnly=true면 선택 항목만을 대상으로 미리 지정됩니다.</summary>
-    private async Task RunExtractDialogAsync(bool selectionOnly)
+    private async Task RunExtractDialogAsync(bool selectionOnly, IReadOnlyList<EntryRow>? explicitRows = null)
     {
         if (!_viewModel.HasArchive)
         {
@@ -132,14 +136,16 @@ public partial class MainWindow : Window
             return;
         }
 
-        bool selection = EntryGrid.SelectedItems.Count > 0;
+        // explicitRows: 폴더 트리 우클릭처럼 목록 선택과 무관하게 대상을 직접 지정할 때 씁니다.
+        IReadOnlyList<EntryRow> selectedRows = explicitRows ?? EntryGrid.SelectedItems.Cast<EntryRow>().ToList();
+        bool selection = selectedRows.Count > 0;
         if (selectionOnly && !selection)
         {
             ShowInfo(Loc.T("목록에서 압축을 풀 항목을 선택해 주세요."));
             return;
         }
 
-        var dialog = new ExtractDialog(_viewModel.DefaultExtractDirectory, EntryGrid.SelectedItems.Count, selectionOnly, _settings)
+        var dialog = new ExtractDialog(_viewModel.DefaultExtractDirectory, selectedRows.Count, selectionOnly, _settings)
         {
             Owner = this,
         };
@@ -154,7 +160,7 @@ public partial class MainWindow : Window
 
         List<EntryRow> rows = dialog.ExtractAll
             ? _viewModel.AllRows.Where(row => row.Info.Index >= 0).ToList()
-            : EntryGrid.SelectedItems.Cast<EntryRow>().ToList();
+            : selectedRows.ToList();
 
         if (rows.Count == 0)
         {
@@ -200,7 +206,9 @@ public partial class MainWindow : Window
             message += TryRecycleSource(sourcePath, result);
         }
 
-        ShowExtractDone(message, destination, dialog.AutoOpenAfterExtract);
+        // 건너뜀·경고가 있으면 완료 안내를 끄더라도 알려 줍니다.
+        bool hasIssues = result.SkippedFiles > 0 || result.Warnings.Count > 0;
+        ShowExtractDone(message, destination, dialog.AutoOpenAfterExtract, hasIssues);
     }
 
     /// <summary>전부 문제없이 풀렸을 때만 원본을 휴지통으로 보냅니다. 결과 안내 문구를 돌려줍니다.</summary>
@@ -234,11 +242,16 @@ public partial class MainWindow : Window
     }
 
     /// <summary>완료 안내. 자동 열기가 꺼져 있으면 '폴더 열기'를 물어봅니다.</summary>
-    private void ShowExtractDone(string message, string folder, bool autoOpen)
+    private void ShowExtractDone(string message, string folder, bool autoOpen, bool forceShow)
     {
         bool exists = Directory.Exists(folder);
         bool open = false;
-        if (exists && !autoOpen)
+        if (!_settings.ShowCompletionDialog && !forceShow)
+        {
+            // 완료 안내를 끈 경우: 묻지 않고, 자동 열기가 켜져 있을 때만 폴더를 엽니다.
+            open = exists && autoOpen;
+        }
+        else if (exists && !autoOpen)
         {
             open = MessageBox.Show(this, message + "\n\n" + Loc.T("압축을 푼 폴더를 열까요?"), Loc.T("왕집"),
                 MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes;
@@ -255,86 +268,6 @@ public partial class MainWindow : Window
     private void QuickExtractAll_Click(object sender, RoutedEventArgs e) => _ = RunExtractDialogAsync(false);
 
     private void QuickExtractSelected_Click(object sender, RoutedEventArgs e) => _ = RunExtractDialogAsync(true);
-
-    private async void Extract_Click(object sender, RoutedEventArgs e)
-    {
-        if (!_viewModel.HasArchive)
-        {
-            ShowInfo(Loc.T("먼저 압축 파일을 열어 주세요."));
-            return;
-        }
-
-        if (_viewModel.IsBusy)
-        {
-            ShowInfo(Loc.T("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."));
-            return;
-        }
-
-        var dialog = new ExtractDialog(_viewModel.DefaultExtractDirectory, EntryGrid.SelectedItems.Count, false, _settings)
-        {
-            Owner = this,
-        };
-
-        if (dialog.ShowDialog() != true) return;
-
-        List<EntryRow> rows = dialog.ExtractAll
-            ? _viewModel.AllRows.Where(row => row.Info.Index >= 0).ToList()
-            : EntryGrid.SelectedItems.Cast<EntryRow>().ToList();
-
-        if (rows.Count == 0)
-        {
-            ShowInfo(Loc.T("압축을 풀 항목을 선택해 주세요."));
-            return;
-        }
-
-        string? password = null;
-        if (_viewModel.ExpandRows(rows).Any(row => row.Info.IsEncrypted))
-        {
-            var passwordDialog = new PasswordDialog { Owner = this };
-            if (passwordDialog.ShowDialog() != true) return;
-            password = passwordDialog.Password;
-        }
-
-        string destination = _viewModel.ResolveExtractDestination(rows, dialog.DestinationDirectory, dialog.Subfolder);
-        string? sourcePath = _viewModel.ArchivePath;
-
-        ExtractionResult? result = null;
-        bool ok = await ProgressDialog.RunAsync(this, Loc.T("압축을 푸는 중입니다"), async (progress, token) =>
-        {
-            result = await _viewModel.ExtractAsync(
-                rows,
-                new ExtractionOptions
-                {
-                    DestinationDirectory = destination,
-                    Overwrite = dialog.Overwrite,
-                    Password = password,
-                },
-                progress,
-                token);
-        });
-
-        if (ok)
-        {
-            _settings.AutoOpenAfterExtract = dialog.AutoOpenAfterExtract;
-            _settings.SubfolderMode = (int)dialog.Subfolder;
-            _settings.DeleteSourceAfterExtract = dialog.DeleteSourceAfterExtract;
-            _settings.Save();
-        }
-
-        if (!ok || result is null) return;
-
-        string message =
-            Loc.F("압축을 풀었습니다.\n\n파일 {0:N0}개 · {1}\n폴더: {2}", result.ExtractedFiles, Format.Bytes(result.TotalBytes), destination);
-
-        if (result.SkippedFiles > 0) message += Loc.F("\n건너뜀: {0:N0}개", result.SkippedFiles);
-
-        if (dialog.DeleteSourceAfterExtract && dialog.ExtractAll && sourcePath is not null)
-        {
-            message += TryRecycleSource(sourcePath, result);
-        }
-
-        ShowExtractDone(message, destination, dialog.AutoOpenAfterExtract);
-    }
 
     private async void Create_Click(object sender, RoutedEventArgs e)
     {
@@ -423,54 +356,64 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>열려 있는 ZIP에 파일/폴더 추가.</summary>
-    private async void AddFiles_Click(object sender, RoutedEventArgs e)
+    /// <summary>항목 추가가 가능한 상태인지 확인하고, 안 되면 이유를 알립니다.</summary>
+    private bool CheckCanAddItems()
     {
         if (!_viewModel.HasArchive)
         {
             ShowInfo(Loc.T("먼저 압축 파일을 열어 주세요."));
-            return;
+            return false;
         }
 
         if (_viewModel.IsBusy)
         {
             ShowInfo(Loc.T("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."));
-            return;
+            return false;
         }
 
-        if (_viewModel.Entries.Count is int count && count > 0 &&
-            ArchiveService.DetectFormat(_viewModel.ArchivePath!) != ArchiveFormat.Zip)
+        if (!_viewModel.CanModify)
         {
             ShowInfo(Loc.T("항목 추가는 ZIP 형식에서만 지원합니다."));
-            return;
+            return false;
         }
+
+        return true;
+    }
+
+    /// <summary>열려 있는 ZIP에 파일 추가.</summary>
+    private async void AddFiles_Click(object sender, RoutedEventArgs e)
+    {
+        if (!CheckCanAddItems()) return;
 
         var fileDialog = new Microsoft.Win32.OpenFileDialog
         {
             Title = Loc.T("추가할 파일 선택 (여러 개 선택 가능)"),
             Multiselect = true,
         };
+
+        if (fileDialog.ShowDialog(this) != true || fileDialog.FileNames.Length == 0) return;
+
+        await AddSourcesToArchiveAsync(fileDialog.FileNames);
+    }
+
+    /// <summary>열려 있는 ZIP에 폴더 추가.</summary>
+    private async void AddFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (!CheckCanAddItems()) return;
+
         var folderDialog = new Microsoft.Win32.OpenFolderDialog
         {
-            Title = Loc.T("추가할 폴더 선택 (선택하지 않으려면 취소)"),
+            Title = Loc.T("추가할 폴더 선택"),
             Multiselect = false,
         };
 
-        var sources = new List<string>();
-        if (fileDialog.ShowDialog(this) == true)
-        {
-            sources.AddRange(fileDialog.FileNames);
-        }
+        if (folderDialog.ShowDialog(this) != true || string.IsNullOrEmpty(folderDialog.FolderName)) return;
 
-        if (MessageBox.Show(this, Loc.T("폴더도 추가하시겠습니까?"), Loc.T("왕집"),
-                MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes &&
-            folderDialog.ShowDialog(this) == true)
-        {
-            sources.Add(folderDialog.FolderName);
-        }
+        await AddSourcesToArchiveAsync([folderDialog.FolderName]);
+    }
 
-        if (sources.Count == 0) return;
-
+    private async Task AddSourcesToArchiveAsync(IReadOnlyList<string> sources)
+    {
         bool ok = await ProgressDialog.RunAsync(this, Loc.T("압축 파일에 항목 추가"), async (progress, token) =>
         {
             var result = await _viewModel.AddToArchiveAsync(sources, progress, token);
@@ -481,7 +424,7 @@ public partial class MainWindow : Window
             }
         });
 
-        if (ok)
+        if (ok && _settings.ShowCompletionDialog)
         {
             MessageBox.Show(this, Loc.T("항목을 추가했습니다."), Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -510,25 +453,28 @@ public partial class MainWindow : Window
 
         var rows = EntryGrid.SelectedItems.Cast<EntryRow>().ToList();
 
-        if (ArchiveService.DetectFormat(_viewModel.ArchivePath!) != ArchiveFormat.Zip)
+        if (!_viewModel.CanModify)
         {
             ShowInfo(Loc.T("항목 삭제는 ZIP 형식에서만 지원합니다."));
             return;
         }
 
-        var confirm = MessageBox.Show(
-            this,
-            Loc.F("선택한 {0:N0}개 항목을 압축 파일에서 삭제할까요?\n(삭제 후에는 되돌릴 수 없습니다)", rows.Count),
-            Loc.T("왕집"), MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+        if (_settings.ConfirmBeforeDelete)
+        {
+            var confirm = MessageBox.Show(
+                this,
+                Loc.F("선택한 {0:N0}개 항목을 압축 파일에서 삭제할까요?\n(삭제 후에는 되돌릴 수 없습니다)", rows.Count),
+                Loc.T("왕집"), MessageBoxButton.OKCancel, MessageBoxImage.Warning);
 
-        if (confirm != MessageBoxResult.OK) return;
+            if (confirm != MessageBoxResult.OK) return;
+        }
 
         bool ok = await ProgressDialog.RunAsync(this, Loc.T("압축 파일에서 항목 삭제"), async (_, token) =>
         {
             await _viewModel.DeleteFromArchiveAsync(rows, token);
         });
 
-        if (ok)
+        if (ok && _settings.ShowCompletionDialog)
         {
             MessageBox.Show(this, Loc.T("항목을 삭제했습니다."), Loc.T("왕집"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -826,6 +772,11 @@ public partial class MainWindow : Window
     private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         bool control = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+        bool shift = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+        bool textInput = Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase;
+        // 목록에 포커스가 있고 글 입력 중이 아닐 때만 Del/Enter를 처리합니다.
+        bool gridFocus = EntryGrid.IsKeyboardFocusWithin && !textInput;
+        bool busy = _viewModel.IsBusy;
 
         if (control && e.Key == Key.O)
         {
@@ -835,12 +786,35 @@ public partial class MainWindow : Window
         else if (control && e.Key == Key.E)
         {
             e.Handled = true;
-            await RunExtractDialogAsync(selectionOnly: false);
+            await RunExtractDialogAsync(selectionOnly: shift);
         }
         else if (control && e.Key == Key.N)
         {
             e.Handled = true;
             Create_Click(sender, e);
+        }
+        else if (control && e.Key == Key.W && !busy)
+        {
+            if (_viewModel.HasArchive)
+            {
+                e.Handled = true;
+                CloseArchive_Click(sender, e);
+            }
+        }
+        else if (control && e.Key == Key.OemComma && !busy)
+        {
+            e.Handled = true;
+            Preferences_Click(sender, e);
+        }
+        else if (e.Key == Key.Delete && gridFocus && !busy && _viewModel.CanDelete)
+        {
+            e.Handled = true;
+            Delete_Click(sender, e);
+        }
+        else if (e.Key == Key.Enter && gridFocus && !busy && EntryGrid.SelectedItems.Count == 1)
+        {
+            e.Handled = true;
+            ContextOpen_Click(sender, e);
         }
         else if (_viewModel.HasArchive && _viewModel.CanGoUp &&
                  (e.Key == Key.Back && Keyboard.FocusedElement is not System.Windows.Controls.TextBox ||
@@ -852,8 +826,7 @@ public partial class MainWindow : Window
         else if (control && e.Key == Key.F)
         {
             e.Handled = true;
-            SearchBox.Focus();
-            SearchBox.SelectAll();
+            FocusSearchBox();
         }
         else if (e.Key == Key.Escape && _viewModel.FilterText.Length > 0)
         {
@@ -882,16 +855,11 @@ public partial class MainWindow : Window
     private void Preferences_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new PreferencesDialog(_settings) { Owner = this };
-        if (dialog.ShowDialog() == true)
-        {
-            AutoUpdateMenu.IsChecked = _settings.AutoUpdate;
-        }
-    }
+        bool saved = dialog.ShowDialog() == true;
+        if (saved) UpdateThemeMenuChecks();
 
-    private void AutoUpdateMenu_Click(object sender, RoutedEventArgs e)
-    {
-        _settings.AutoUpdate = AutoUpdateMenu.IsChecked == true;
-        _settings.Save();
+        // '최근 목록 지우기'는 저장 여부와 상관없이 바로 적용되므로 항상 갱신합니다.
+        UpdateRecentFilesMenu();
     }
 
     /// <summary>
@@ -1040,28 +1008,40 @@ public partial class MainWindow : Window
     {
         RecentFilesMenu.Items.Clear();
 
-        if (_settings.RecentPaths is { Count: > 0 })
+        // 없어진 경로는 건너뜁니다. 남은 항목이 없으면 비활성 안내 항목만 보여 줍니다.
+        foreach (string path in _settings.RecentPaths ?? [])
         {
-            RecentFilesMenu.IsEnabled = true;
-            foreach (string path in _settings.RecentPaths)
+            if (File.Exists(path) || Directory.Exists(path))
             {
-                if (File.Exists(path) || Directory.Exists(path))
+                var item = new MenuItem
                 {
-                    var item = new MenuItem
-                    {
-                        Header = TruncatePath(path, 60),
-                        ToolTip = path,
-                        Tag = path
-                    };
-                    item.Click += (_, _) => OpenRecentPath(path);
-                    RecentFilesMenu.Items.Add(item);
-                }
+                    // 메뉴 머리글에서 '_'는 단축키 표시이므로 '__'로 이스케이프합니다.
+                    Header = TruncatePath(path, 60).Replace("_", "__"),
+                    ToolTip = path,
+                    Tag = path
+                };
+                item.Click += (_, _) => OpenRecentPath(path);
+                RecentFilesMenu.Items.Add(item);
             }
+        }
+
+        if (RecentFilesMenu.Items.Count == 0)
+        {
+            RecentFilesMenu.IsEnabled = false;
+            RecentFilesMenu.Items.Add(new MenuItem { Header = Loc.T("(최근 파일 없음)"), IsEnabled = false });
         }
         else
         {
-            RecentFilesMenu.IsEnabled = false;
-            RecentFilesMenu.Items.Add(new MenuItem { Header = "(최근 파일 없음)", IsEnabled = false });
+            RecentFilesMenu.IsEnabled = true;
+            RecentFilesMenu.Items.Add(new Separator());
+            var clear = new MenuItem { Header = Loc.T("목록 지우기") };
+            clear.Click += (_, _) =>
+            {
+                _settings.RecentPaths = [];
+                _settings.Save();
+                UpdateRecentFilesMenu();
+            };
+            RecentFilesMenu.Items.Add(clear);
         }
     }
 
@@ -1152,6 +1132,124 @@ public partial class MainWindow : Window
         }
 
         return source as DataGridRow;
+    }
+
+    private void EntryGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        _viewModel.SelectedCount = EntryGrid.SelectedItems.Count;
+
+    /// <summary>우클릭 메뉴를 열 때 항목별 사용 가능 여부를 맞춥니다.</summary>
+    private void EntryContextMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        // 열기: 파일 또는 폴더 하나를 선택했을 때 (폴더는 안으로 들어갑니다).
+        ContextOpenItem.IsEnabled = EntryGrid.SelectedItems.Count == 1;
+        ContextExtractItem.IsEnabled = _viewModel.CanExtractSelected;
+        ContextAddItem.IsEnabled = _viewModel.CanModify;
+        ContextDeleteItem.IsEnabled = _viewModel.CanDelete;
+        ContextCopyNameItem.IsEnabled = _viewModel.HasSelection;
+        ContextSelectAllItem.IsEnabled = _viewModel.Entries.Count > 0;
+        ContextUpItem.IsEnabled = _viewModel.CanGoUp;
+    }
+
+    private void SelectAllEntries_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.Entries.Count == 0) return;
+        EntryGrid.Focus();
+        EntryGrid.SelectAll();
+    }
+
+    private void Find_Click(object sender, RoutedEventArgs e) => FocusSearchBox();
+
+    private void FocusSearchBox()
+    {
+        SearchBox.Focus();
+        SearchBox.SelectAll();
+    }
+
+    /// <summary>선택한 항목의 압축 파일 안 경로를 줄 단위로 클립보드에 복사합니다.</summary>
+    private void CopyNames_Click(object sender, RoutedEventArgs e)
+    {
+        string[] names = EntryGrid.SelectedItems.Cast<EntryRow>()
+            .Select(row => row.Info.Name.TrimEnd('/'))
+            .ToArray();
+        if (names.Length == 0) return;
+
+        try
+        {
+            Clipboard.SetText(string.Join(Environment.NewLine, names));
+        }
+        catch (Exception exception)
+        {
+            ShowError(exception);
+        }
+    }
+
+    private void CloseArchive_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.HasArchive) return;
+
+        if (_viewModel.IsBusy)
+        {
+            ShowInfo(Loc.T("이미 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."));
+            return;
+        }
+
+        _viewModel.CloseArchive();
+    }
+
+    // ───────── 폴더 트리 우클릭 메뉴 ─────────
+
+    private FolderNode? _treeContextNode;
+
+    private void FolderTree_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        DependencyObject? source = e.OriginalSource as DependencyObject;
+        while (source is not null && source is not TreeViewItem)
+        {
+            source = source is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D
+                ? System.Windows.Media.VisualTreeHelper.GetParent(source)
+                : LogicalTreeHelper.GetParent(source);
+        }
+
+        _treeContextNode = (source as TreeViewItem)?.DataContext as FolderNode;
+    }
+
+    private void TreeContextMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        // 루트(압축 파일 전체)는 '압축 풀기' 단추를 쓰므로 하위 폴더에서만 켭니다.
+        TreeExtractItem.IsEnabled = _viewModel.HasArchive && _treeContextNode is { IsRoot: false };
+    }
+
+    private void TreeExtractFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (_treeContextNode is not { IsRoot: false } node) return;
+
+        string name = node.FullPath.TrimEnd('/');
+        EntryRow row = _viewModel.AllRows.FirstOrDefault(r =>
+                r.IsDirectory && string.Equals(r.Info.Name.TrimEnd('/'), name, StringComparison.OrdinalIgnoreCase))
+            ?? new EntryRow(new ArchiveEntryInfo { Index = -1, Name = name + "/", IsDirectory = true });
+
+        _ = RunExtractDialogAsync(true, [row]);
+    }
+
+    private void TreeExpandAll_Click(object sender, RoutedEventArgs e) => SetTreeExpanded(FolderTree, true);
+
+    private void TreeCollapseAll_Click(object sender, RoutedEventArgs e)
+    {
+        SetTreeExpanded(FolderTree, false);
+
+        // 맨 위(압축 파일) 항목은 열어 두어 목록이 통째로 사라지지 않게 합니다.
+        if (FolderTree.ItemContainerGenerator.ContainerFromIndex(0) is TreeViewItem root) root.IsExpanded = true;
+    }
+
+    private static void SetTreeExpanded(ItemsControl parent, bool expanded)
+    {
+        foreach (object item in parent.Items)
+        {
+            if (parent.ItemContainerGenerator.ContainerFromItem(item) is not TreeViewItem container) continue;
+            container.IsExpanded = expanded;
+            if (expanded) container.UpdateLayout();
+            SetTreeExpanded(container, expanded);
+        }
     }
 
     private void EntryGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
