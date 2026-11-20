@@ -7,7 +7,7 @@
         Width="520" Height="460"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource SurfaceBrush}">
+        Background="{DynamicResource SurfaceBrush}">
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -17,17 +17,17 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Orientation="Horizontal">
-            <Border Width="48" Height="48" CornerRadius="12" Background="{StaticResource AccentBrush}" Margin="0,0,14,0">
+            <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource AccentBrush}" Margin="0,0,14,0">
                 <TextBlock Text="M" Foreground="White" FontSize="24" FontWeight="Bold"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <StackPanel VerticalAlignment="Center">
                 <TextBlock x:Name="VersionText" Text="왕집 (WangZip)" FontSize="20" FontWeight="SemiBold" />
-                <TextBlock Text="광고 없는 오픈소스 압축 프로그램" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBlock Text="광고 없는 오픈소스 압축 프로그램" Foreground="{DynamicResource TextSecondaryBrush}" />
             </StackPanel>
         </StackPanel>
 
-        <TextBlock Grid.Row="1" Margin="0,18,0,12" TextWrapping="Wrap" Foreground="{StaticResource TextSecondaryBrush}"
+        <TextBlock Grid.Row="1" Margin="0,18,0,12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"
                    Text="이 프로그램은 GPL-3.0으로 배포됩니다. 광고, 번들 소프트웨어, 사용 추적이 없습니다." />
 
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
@@ -50,7 +50,8 @@
         </ScrollViewer>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
-            <Button Content="확인" Style="{StaticResource PrimaryButton}" MinWidth="90" Click="Close_Click" IsDefault="True" />
+            <!-- IsCancel: Enter와 Esc 모두 창을 닫습니다 (모달 대화상자의 기본 취소 동작). -->
+            <Button Content="확인" Style="{StaticResource PrimaryButton}" MinWidth="100" IsDefault="True" IsCancel="True" />
         </StackPanel>
     </Grid>
 </Window>

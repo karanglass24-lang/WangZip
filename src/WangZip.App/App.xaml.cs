@@ -71,6 +71,7 @@ public partial class App : Application
         var pairs = new (string Light, string Dark)[]
         {
             ("AccentBrush", "DarkAccentBrush"),
+            ("AccentHoverBrush", "DarkAccentHoverBrush"),
             ("AccentSoftBrush", "DarkAccentSoftBrush"),
             ("AppBackground", "DarkAppBackground"),
             ("SurfaceBrush", "DarkSurfaceBrush"),

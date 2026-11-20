@@ -5,6 +5,7 @@
 
     <!-- 라이트 테마 (기본값) -->
     <SolidColorBrush x:Key="AccentBrush" Color="#2D6CDF" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#1F5BC4" />
     <SolidColorBrush x:Key="AccentSoftBrush" Color="#EAF1FF" />
     <SolidColorBrush x:Key="AppBackground" Color="#F5F7FA" />
     <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
@@ -25,6 +26,7 @@
 
     <!-- 다크 테마 리소스 (런타임에 동적으로 교체) -->
     <SolidColorBrush x:Key="DarkAccentBrush" Color="#4D8AFF" />
+    <SolidColorBrush x:Key="DarkAccentHoverBrush" Color="#3A78F0" />
     <SolidColorBrush x:Key="DarkAccentSoftBrush" Color="#1E3A5F" />
     <SolidColorBrush x:Key="DarkAppBackground" Color="#1A1A2E" />
     <SolidColorBrush x:Key="DarkSurfaceBrush" Color="#16213E" />
@@ -141,7 +143,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="#1F5BC4" />
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource AccentHoverBrush}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.4" />
@@ -165,8 +167,15 @@
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
+                        <!-- 기본 배경(BorderBrush)보다 눈에 띄게 바뀌도록 강조색 계열을 씁니다. -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource TreeHoverBrush}" />
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource TreeSelectedBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 using WangZip.Core;
 
 namespace WangZip.App.Dialogs;
@@ -7,6 +9,9 @@ namespace WangZip.App.Dialogs;
 public partial class ProgressDialog : Window
 {
     private readonly CancellationTokenSource _cancellation = new();
+    private readonly Stopwatch _elapsed = Stopwatch.StartNew();
+    private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromSeconds(1) };
+    private double _lastPercent;
 
     public ProgressDialog(string title)
     {
@@ -14,6 +19,11 @@ public partial class ProgressDialog : Window
         Localizer.Apply(this);
         TitleText.Text = title;
         Progress = new Progress<ProgressReport>(UpdateProgress);
+
+        // 진행 보고가 잠시 멈춰도 경과 시간은 계속 흐르도록 1초마다 갱신합니다.
+        _clock.Tick += (_, _) => UpdateTimeText();
+        Loaded += (_, _) => _clock.Start();
+        Closed += (_, _) => _clock.Stop();
     }
 
     public IProgress<ProgressReport> Progress { get; }
@@ -22,15 +32,46 @@ public partial class ProgressDialog : Window
     {
         Bar.Value = report.Percent;
         PercentText.Text = $"{report.Percent:0.0}%";
-        StatusText.Text = string.IsNullOrEmpty(report.CurrentName)
-            ? Loc.T("마무리하는 중...")
-            : report.CurrentName;
+        _lastPercent = report.Percent;
+
+        // 취소를 누른 뒤에는 "취소하는 중..." 안내를 덮어쓰지 않습니다.
+        if (!_cancellation.IsCancellationRequested)
+        {
+            StatusText.Text = string.IsNullOrEmpty(report.CurrentName)
+                ? Loc.T("마무리하는 중...")
+                : report.CurrentName;
+        }
+
+        UpdateTimeText();
     }
+
+    /// <summary>경과 시간과, 충분히 진행됐을 때만 대략적인 남은 시간을 보여 줍니다.</summary>
+    private void UpdateTimeText()
+    {
+        TimeSpan elapsed = _elapsed.Elapsed;
+        double percent = _lastPercent;
+        if (percent >= 1 && percent < 100 && elapsed.TotalSeconds >= 3)
+        {
+            var remaining = TimeSpan.FromSeconds(elapsed.TotalSeconds * (100 - percent) / percent);
+            TimeText.Text = Loc.F("경과 {0} · 남은 시간 약 {1}", FormatDuration(elapsed), FormatDuration(remaining));
+        }
+        else
+        {
+            TimeText.Text = Loc.F("경과 {0}", FormatDuration(elapsed));
+        }
+    }
+
+    private static string FormatDuration(TimeSpan time) =>
+        time.TotalHours >= 1
+            ? $"{(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}"
+            : $"{time.Minutes}:{time.Seconds:00}";
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
         _cancellation.Cancel();
         StatusText.Text = Loc.T("취소하는 중...");
+        // 두 번 누를 필요가 없음을 보여 줍니다.
+        CancelButton.IsEnabled = false;
     }
 
     public static async Task<bool> RunAsync(

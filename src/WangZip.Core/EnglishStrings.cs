@@ -359,5 +359,20 @@ internal static class EnglishStrings
         ["방식"] = "Method",
         ["압축 파일을 열어 주세요"] = "Open an archive",
         ["Ctrl+O 또는 파일을 이 창으로 끌어다 놓으면 열립니다."] = "Press Ctrl+O, or drag a file onto this window to open it.",
+        // -- UI 다듬기 (빈 목록 안내, 진행 시간, 끌어다 놓기 안내, 미리보기 창) --
+        ["압축할 파일이나 폴더를 추가하세요."] = "Add files or folders to compress.",
+        ["경과 {0} · 남은 시간 약 {1}"] = "Elapsed {0} · about {1} left",
+        ["경과 {0}"] = "Elapsed {0}",
+        ["진행률"] = "Progress",
+        ["압축 파일의 맨 위 폴더로 이동"] = "Go to the top folder of the archive",
+        ["일반 파일이나 폴더를 끌어다 놓으면 새 ZIP으로 압축합니다 (Ctrl+N)."] = "Drop other files or folders to compress them into a new ZIP (Ctrl+N).",
+        ["여기에 놓으면 압축 파일은 열고, 다른 파일은 새 ZIP으로 압축합니다."] = "Drop here: archives are opened, other files are compressed into a new ZIP.",
+        ["미리보기"] = "Preview",
+        ["인코딩:"] = "Encoding:",
+        ["자동 감지"] = "Auto-detect",
+        ["CP949 (한글)"] = "CP949 (Korean)",
+        ["자동 줄바꿈"] = "Word wrap",
+        ["외부 프로그램으로 열기"] = "Open in external program",
+        ["로딩 중..."] = "Loading...",
     };
 }

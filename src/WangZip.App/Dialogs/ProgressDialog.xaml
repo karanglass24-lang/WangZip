@@ -10,7 +10,7 @@
         WindowStartupLocation="CenterOwner"
         Background="Transparent"
         AllowsTransparency="True">
-    <Border Background="White" CornerRadius="12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="24">
+    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="24">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -21,11 +21,18 @@
             </Grid.RowDefinitions>
 
             <TextBlock x:Name="TitleText" Grid.Row="0" FontSize="16" FontWeight="SemiBold" Text="작업 중입니다" />
-            <ProgressBar x:Name="Bar" Grid.Row="1" Height="10" Margin="0,16,0,10" Minimum="0" Maximum="100" Foreground="{StaticResource AccentBrush}" />
-            <TextBlock x:Name="StatusText" Grid.Row="2" Foreground="{StaticResource TextSecondaryBrush}" Text="준비 중..." TextTrimming="CharacterEllipsis" />
-            <TextBlock x:Name="PercentText" Grid.Row="3" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" Text="0%" />
-            <Button Grid.Row="4" Content="취소" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right"
-                    MinWidth="80" Click="Cancel_Click" />
+            <ProgressBar x:Name="Bar" Grid.Row="1" Height="10" Margin="0,16,0,10" Minimum="0" Maximum="100"
+                         Foreground="{DynamicResource AccentBrush}" Background="{DynamicResource BorderBrush}" BorderThickness="0"
+                         AutomationProperties.Name="진행률" />
+            <!-- 지금 처리 중인 항목 (긴 경로는 말줄임표, 전체 이름은 툴팁) -->
+            <TextBlock x:Name="StatusText" Grid.Row="2" Text="준비 중..." TextTrimming="CharacterEllipsis"
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+            <DockPanel Grid.Row="3" Margin="0,4,0,0" VerticalAlignment="Top">
+                <TextBlock x:Name="PercentText" DockPanel.Dock="Left" Foreground="{DynamicResource TextSecondaryBrush}" Text="0%" />
+                <TextBlock x:Name="TimeText" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" />
+            </DockPanel>
+            <Button x:Name="CancelButton" Grid.Row="4" Content="취소" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right"
+                    MinWidth="80" Click="Cancel_Click" IsCancel="True" />
         </Grid>
     </Border>
 </Window>

@@ -6,7 +6,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WangZip.App.Dialogs"
         mc:Ignorable="d"
+        Icon="pack://application:,,,/Assets/app-icon.ico"
         Title="미리보기" Height="500" Width="700"
+        MinWidth="480" MinHeight="300"
+        Background="{DynamicResource SurfaceBrush}"
+        PreviewKeyDown="Window_PreviewKeyDown"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         ResizeMode="CanResizeWithGrip">
@@ -19,8 +23,10 @@
 
         <!-- 헤더: 파일명, 인코딩 선택 -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-            <TextBlock x:Name="FileNameText" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
-            <TextBlock Text="  인코딩:" VerticalAlignment="Center" Margin="16,0,4,0"/>
+            <TextBlock x:Name="FileNameText" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"
+                       MaxWidth="240" TextTrimming="CharacterEllipsis"
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+            <TextBlock Text="인코딩:" VerticalAlignment="Center" Margin="16,0,6,0"/>
             <ComboBox x:Name="EncodingCombo" Width="120" VerticalAlignment="Center" SelectionChanged="EncodingCombo_SelectionChanged">
                 <ComboBoxItem Content="자동 감지" Tag="auto"/>
                 <ComboBoxItem Content="UTF-8" Tag="utf-8"/>
@@ -30,7 +36,8 @@
                 <ComboBoxItem Content="ISO-8859-1" Tag="iso-8859-1"/>
             </ComboBox>
             <CheckBox x:Name="WordWrapCheck" Content="자동 줄바꿈" Margin="16,0,0,0" VerticalAlignment="Center" Checked="WordWrapCheck_Changed" Unchecked="WordWrapCheck_Changed"/>
-            <Button x:Name="OpenExternalBtn" Content="외부 프로그램으로 열기" Margin="16,0,0,0" Padding="12,4" Click="OpenExternalBtn_Click"/>
+            <Button x:Name="OpenExternalBtn" Content="외부 프로그램으로 열기" Margin="16,0,0,0" Padding="12,4"
+                    Style="{StaticResource SecondaryButton}" Click="OpenExternalBtn_Click"/>
         </StackPanel>
 
         <!-- 텍스트 영역 -->
@@ -52,7 +59,7 @@
         </Border>
 
         <!-- 하단 상태바 -->
-        <StatusBar Grid.Row="2" Margin="0,8,0,0">
+        <StatusBar Grid.Row="2" Margin="0,8,0,0" Background="{DynamicResource SurfaceBrush}">
             <StatusBarItem>
                 <TextBlock x:Name="StatusText" Text="로딩 중..."/>
             </StatusBarItem>

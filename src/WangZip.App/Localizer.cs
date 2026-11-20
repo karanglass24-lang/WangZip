@@ -65,6 +65,14 @@ internal static class Localizer
         {
             if (element.ToolTip is string tip) element.ToolTip = Loc.T(tip);
 
+            // 화면 읽기 프로그램용 이름도 번역합니다 (바인딩된 값은 건드리지 않습니다).
+            string automationName = System.Windows.Automation.AutomationProperties.GetName(element);
+            if (!string.IsNullOrEmpty(automationName) &&
+                !System.Windows.Data.BindingOperations.IsDataBound(element, System.Windows.Automation.AutomationProperties.NameProperty))
+            {
+                System.Windows.Automation.AutomationProperties.SetName(element, Loc.T(automationName));
+            }
+
             if (element.ContextMenu is { } menu)
             {
                 foreach (object item in menu.Items.Cast<object>().ToList())

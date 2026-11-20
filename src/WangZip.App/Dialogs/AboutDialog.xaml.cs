@@ -11,6 +11,4 @@ public partial class AboutDialog : Window
         Localizer.Apply(this);
         VersionText.Text = Loc.F("왕집 (WangZip) {0}", UpdateService.CurrentVersion);
     }
-
-    private void Close_Click(object sender, RoutedEventArgs e) => Close();
 }

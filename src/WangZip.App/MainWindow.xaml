@@ -10,6 +10,7 @@
         WindowStartupLocation="CenterScreen"
         AllowDrop="True"
         DragOver="Window_DragOver"
+        DragLeave="Window_DragLeave"
         Drop="Window_Drop"
         PreviewKeyDown="Window_PreviewKeyDown"
         Closing="Window_Closing">
@@ -68,7 +69,8 @@
             <DockPanel>
                 <StackPanel Orientation="Horizontal">
                     <!-- 열기 -->
-                    <Button Style="{StaticResource RibbonTool}" Click="Open_Click" ToolTip="압축 파일 열기 (Ctrl+O)">
+                    <Button Style="{StaticResource RibbonTool}" Click="Open_Click" ToolTip="압축 파일 열기 (Ctrl+O)"
+                            AutomationProperties.Name="열기">
                         <StackPanel>
                             <Image Source="/Assets/tool-open.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
@@ -79,7 +81,8 @@
 
                     <!-- 빠른 압축 풀기(전체) -->
                     <Button x:Name="QuickAll" Style="{StaticResource RibbonTool}" Click="QuickExtractAll_Click"
-                            IsEnabled="{Binding HasArchive}" ToolTip="압축 풀기(대상 폴더를 선택해 풉니다) (Ctrl+E)">
+                            IsEnabled="{Binding HasArchive}" ToolTip="압축 풀기(대상 폴더를 선택해 풉니다) (Ctrl+E)"
+                            AutomationProperties.Name="압축 풀기">
                         <StackPanel>
                             <Image Source="/Assets/tool-extract.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
@@ -90,7 +93,8 @@
 
                     <!-- 선택 압축 풀기 -->
                     <Button x:Name="QuickSel" Style="{StaticResource RibbonTool}" Click="QuickExtractSelected_Click"
-                            IsEnabled="{Binding HasArchive}" ToolTip="목록에서 선택한 항목만 풀기">
+                            IsEnabled="{Binding HasArchive}" ToolTip="목록에서 선택한 항목만 풀기"
+                            AutomationProperties.Name="선택 풀기">
                         <StackPanel>
                             <Image Source="/Assets/tool-extract-selected.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
@@ -102,7 +106,8 @@
                     <Rectangle Width="1" Fill="{DynamicResource BorderBrush}" Margin="6,4" />
 
                     <!-- 압축하기 -->
-                    <Button x:Name="CreateButton" Style="{StaticResource RibbonTool}" Click="Create_Click" ToolTip="새 압축 파일 만들기 (Ctrl+N)">
+                    <Button x:Name="CreateButton" Style="{StaticResource RibbonTool}" Click="Create_Click" ToolTip="새 압축 파일 만들기 (Ctrl+N)"
+                            AutomationProperties.Name="압축하기">
                         <StackPanel>
                             <Image Source="/Assets/tool-create.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
@@ -113,7 +118,8 @@
 
                     <!-- 파일 추가 -->
                     <Button x:Name="AddEntryButton" Style="{StaticResource RibbonTool}" Click="AddFiles_Click"
-                            IsEnabled="{Binding HasArchive}" ToolTip="열려 있는 ZIP에 파일/폴더 추가">
+                            IsEnabled="{Binding HasArchive}" ToolTip="열려 있는 ZIP에 파일/폴더 추가"
+                            AutomationProperties.Name="파일 추가">
                         <StackPanel>
                             <Image Source="/Assets/tool-add.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
@@ -124,7 +130,8 @@
 
                     <!-- 항목 삭제 -->
                     <Button x:Name="DeleteEntryButton" Style="{StaticResource RibbonTool}" Click="Delete_Click"
-                            IsEnabled="{Binding HasArchive}" ToolTip="선택 항목을 ZIP에서 삭제">
+                            IsEnabled="{Binding HasArchive}" ToolTip="선택 항목을 ZIP에서 삭제"
+                            AutomationProperties.Name="항목 삭제">
                         <StackPanel>
                             <Image Source="/Assets/tool-delete.png" Width="43" Height="43"
                                    HorizontalAlignment="Center"
@@ -137,7 +144,8 @@
 
                     <!-- 검사 -->
                     <Button x:Name="VerifyButton" Style="{StaticResource RibbonTool}" Click="Verify_Click"
-                            IsEnabled="{Binding HasArchive}" ToolTip="무결성 검사 (CRC)">
+                            IsEnabled="{Binding HasArchive}" ToolTip="무결성 검사 (CRC)"
+                            AutomationProperties.Name="검사">
                         <StackPanel>
                             <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="29"
                                        HorizontalAlignment="Center" Foreground="#7B61C4" />
@@ -147,7 +155,7 @@
 
                     <!-- 새로 고침 -->
                     <Button x:Name="RefreshButton" Style="{StaticResource RibbonTool}" Click="Refresh_Click"
-                            ToolTip="새로 고침 (F5)">
+                            ToolTip="새로 고침 (F5)" AutomationProperties.Name="새로 고침">
                         <StackPanel>
                             <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="29"
                                        HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -164,7 +172,17 @@
                 <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource TextSecondaryBrush}" />
             </StatusBarItem>
             <StatusBarItem DockPanel.Dock="Right" HorizontalAlignment="Right">
+                <!-- 압축 파일이 열려 있지 않으면 항목 수(0개)를 숨깁니다. -->
                 <TextBlock Foreground="{DynamicResource TextSecondaryBrush}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasArchive}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
                     <Run Text="{Binding TotalCount, Mode=OneWay}" /><Run Text="개 (현재 폴더 " /><Run Text="{Binding EntriesCount, Mode=OneWay}" /><Run Text="개)" />
                 </TextBlock>
             </StatusBarItem>
@@ -217,7 +235,8 @@
                             <Button DockPanel.Dock="Left" Style="{StaticResource SecondaryButton}"
                                     Padding="8,3" Margin="0,0,8,0" MinWidth="54"
                                     IsEnabled="{Binding CanGoUp}" Click="GoUp_Click"
-                                    ToolTip="상위 폴더로 이동 (Alt+↑ / Backspace)">
+                                    ToolTip="상위 폴더로 이동 (Alt+↑ / Backspace)"
+                                    AutomationProperties.Name="위로">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="&#xE74A;" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                VerticalAlignment="Center" Margin="0,0,5,0" />
@@ -226,11 +245,12 @@
                             </Button>
                             <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}"
                                     Padding="8,3" Content="전체" MinWidth="54" Margin="8,0,0,0"
-                                    Click="ShowAll_Click" />
+                                    Click="ShowAll_Click" ToolTip="압축 파일의 맨 위 폴더로 이동" />
                             <Grid DockPanel.Dock="Right" Width="190" Margin="8,0,0,0">
                                 <TextBox x:Name="SearchBox" Padding="6,3" VerticalContentAlignment="Center"
                                          Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
-                                         ToolTip="압축 파일 전체에서 이름 검색 (Ctrl+F, Esc로 지우기)" />
+                                         ToolTip="압축 파일 전체에서 이름 검색 (Ctrl+F, Esc로 지우기)"
+                                         AutomationProperties.Name="이름 검색" />
                                 <TextBlock Text="이름 검색" IsHitTestVisible="False" Margin="8,0,0,0"
                                            VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}">
                                     <TextBlock.Style>
@@ -373,8 +393,18 @@
                         </Style>
                     </TextBlock.Style>
                     <Run Text="압축 파일을 열어 주세요" FontSize="16" FontWeight="SemiBold" /><LineBreak />
-                    <Run Text="Ctrl+O 또는 파일을 이 창으로 끌어다 놓으면 열립니다." />
+                    <Run Text="Ctrl+O 또는 파일을 이 창으로 끌어다 놓으면 열립니다." /><LineBreak />
+                    <Run Text="일반 파일이나 폴더를 끌어다 놓으면 새 ZIP으로 압축합니다 (Ctrl+N)." FontSize="12" />
                 </TextBlock>
+            </Grid>
+
+            <!-- 끌어다 놓는 동안만 보이는 안내 (마우스 입력은 받지 않습니다) -->
+            <Grid x:Name="DropOverlay" Visibility="Collapsed" IsHitTestVisible="False" Margin="12">
+                <Border CornerRadius="10" Background="{DynamicResource AccentSoftBrush}" Opacity="0.9" />
+                <Border CornerRadius="10" BorderThickness="2" BorderBrush="{DynamicResource AccentBrush}" />
+                <TextBlock Text="여기에 놓으면 압축 파일은 열고, 다른 파일은 새 ZIP으로 압축합니다."
+                           HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                           Margin="24" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
         </Grid>
     </DockPanel>

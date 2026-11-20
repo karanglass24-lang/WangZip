@@ -7,7 +7,7 @@
         Width="600" SizeToContent="Height"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource SurfaceBrush}">
+        Background="{DynamicResource SurfaceBrush}">
     <Grid Margin="22,18,22,18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -27,12 +27,12 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBox Grid.Column="0" x:Name="DestinationBox" Height="32" VerticalContentAlignment="Center" Padding="8,0"
-                         BorderBrush="{StaticResource BorderBrush}" />
+                         BorderBrush="{DynamicResource BorderBrush}" AutomationProperties.Name="압축을 풀 폴더" />
                 <Button Grid.Column="1" Content="찾아보기..." Style="{StaticResource SecondaryButton}" Click="Browse_Click"
                         Margin="8,0,0,0" MinWidth="86" />
             </Grid>
             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                <TextBlock Text="빠른 위치:" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBlock Text="빠른 위치:" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <ComboBox x:Name="QuickDestCombo" Width="280" MinHeight="30" DisplayMemberPath="Label"
                           SelectionChanged="QuickDest_Changed" Margin="8,0,0,0" />
             </StackPanel>
@@ -57,13 +57,13 @@
             <CheckBox x:Name="DeleteSourceBox" Content="전체를 성공적으로 푼 뒤 원본 압축 파일을 휴지통으로 보내기" Margin="0,8,0,0" />
         </StackPanel>
 
-        <TextBlock Grid.Row="3" Margin="0,14,0,0" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"
+        <TextBlock Grid.Row="3" Margin="0,14,0,0" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
                    Text="파일명이 깨져 보이면 메인 창의 '파일명 인코딩'을 UTF-8 또는 CP949로 바꾼 뒤 다시 시도하세요." />
 
-        <Border Grid.Row="4" Height="1" Background="{StaticResource BorderBrush}" Margin="0,16,0,0" />
+        <Border Grid.Row="4" Height="1" Background="{DynamicResource BorderBrush}" Margin="0,16,0,0" />
 
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
-            <Button Content="취소" Style="{StaticResource SecondaryButton}" Click="Cancel_Click" Margin="0,0,8,0" MinWidth="80" />
+            <Button Content="취소" Style="{StaticResource SecondaryButton}" Click="Cancel_Click" Margin="0,0,8,0" MinWidth="80" IsCancel="True" />
             <Button Content="압축 풀기" Style="{StaticResource PrimaryButton}" Click="Ok_Click" MinWidth="100" IsDefault="True" />
         </StackPanel>
     </Grid>

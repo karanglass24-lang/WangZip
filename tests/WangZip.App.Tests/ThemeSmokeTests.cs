@@ -21,8 +21,26 @@ public class ThemeSmokeTests
         new PasswordDialog(),
         new PreferencesDialog(new AppSettings()),
         new ProgressDialog("test"),
+        new PreviewDialog(PreviewSampleFile(), "sample.txt"),
         new MainWindow(),
     ];
+
+    private static string PreviewSampleFile()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "wangzip-preview-smoke.txt");
+        File.WriteAllText(path, "hello, 안녕하세요");
+        return path;
+    }
+
+    private static IEnumerable<T> LogicalDescendants<T>(DependencyObject root) where T : DependencyObject
+    {
+        foreach (object child in LogicalTreeHelper.GetChildren(root))
+        {
+            if (child is not DependencyObject node) continue;
+            if (node is T match) yield return match;
+            foreach (T nested in LogicalDescendants<T>(node)) yield return nested;
+        }
+    }
 
     [Theory]
     [InlineData(1)]
@@ -42,6 +60,68 @@ public class ThemeSmokeTests
                     Assert.True(
                         expected == brush.Color,
                         $"{window.GetType().Name}: 글자색 {brush.Color} (기대 {expected}, 테마 {theme})");
+                }
+                finally
+                {
+                    window.Close();
+                }
+            }
+        });
+    }
+
+    /// <summary>모달 대화상자는 Esc로 닫을 수 있어야 합니다 (IsCancel 단추). 진행 창은 Esc가 작업 취소입니다.</summary>
+    [Fact]
+    public void Every_dialog_has_a_cancel_button_for_escape()
+    {
+        StaHost.Run(() =>
+        {
+            Window[] dialogs =
+            [
+                new ExtractDialog(Path.GetTempPath(), 0, false, new AppSettings()),
+                new CreateDialog(),
+                new AboutDialog(),
+                new PasswordDialog(),
+                new PreferencesDialog(new AppSettings()),
+                new ProgressDialog("test"),
+            ];
+
+            foreach (Window dialog in dialogs)
+            {
+                try
+                {
+                    Assert.True(
+                        LogicalDescendants<System.Windows.Controls.Button>(dialog).Any(b => b.IsCancel),
+                        $"{dialog.GetType().Name}: IsCancel 단추가 없습니다");
+                }
+                finally
+                {
+                    dialog.Close();
+                }
+            }
+        });
+    }
+
+    /// <summary>다크 테마에서 창 배경이 흰색으로 남지 않아야 합니다 (밝은 글자가 흰 배경에 묻히는 문제).</summary>
+    [Fact]
+    public void Dialog_backgrounds_follow_dark_theme()
+    {
+        StaHost.Run(() =>
+        {
+            App.ApplyTheme(2);
+            Color surface = Resource("SurfaceBrush");
+
+            foreach (Window window in CreateWindows())
+            {
+                try
+                {
+                    if (window is MainWindow) continue;   // 메인 창은 각 영역이 직접 배경을 칠합니다.
+
+                    // 진행 창은 투명 창 안의 테두리가 배경입니다.
+                    Brush? background = window is ProgressDialog
+                        ? ((System.Windows.Controls.Border)window.Content).Background
+                        : window.Background;
+                    var brush = Assert.IsType<SolidColorBrush>(background);
+                    Assert.True(surface == brush.Color, $"{window.GetType().Name}: 배경 {brush.Color} (기대 {surface})");
                 }
                 finally
                 {

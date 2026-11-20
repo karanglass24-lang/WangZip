@@ -62,6 +62,13 @@ public partial class ExtractDialog : Window
 
         AutoOpenBox.IsChecked = settings.AutoOpenAfterExtract;
         DeleteSourceBox.IsChecked = settings.DeleteSourceAfterExtract;
+
+        // 처음 포커스는 대상 폴더 입력란 (Enter = 압축 풀기, Esc = 취소).
+        Loaded += (_, _) =>
+        {
+            DestinationBox.Focus();
+            DestinationBox.CaretIndex = DestinationBox.Text.Length;
+        };
     }
 
     private int _selectedQuick;

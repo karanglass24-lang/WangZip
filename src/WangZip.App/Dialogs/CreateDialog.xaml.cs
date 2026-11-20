@@ -56,6 +56,20 @@ public partial class CreateDialog : Window
         }
 
         UpdateSuggestedOutput();
+
+        // 처음 포커스: 대상이 있으면 저장 위치, 없으면 '파일 추가' 단추.
+        Loaded += (_, _) =>
+        {
+            if (Sources.Count > 0)
+            {
+                OutputBox.Focus();
+                OutputBox.CaretIndex = OutputBox.Text.Length;
+            }
+            else
+            {
+                AddFilesButton.Focus();
+            }
+        };
     }
 
     public ObservableCollection<string> Sources { get; } = [];

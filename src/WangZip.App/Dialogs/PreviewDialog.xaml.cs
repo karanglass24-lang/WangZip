@@ -31,7 +31,7 @@ public partial class PreviewDialog : Window
     {
         try
         {
-            StatusText.Text = "로딩 중...";
+            StatusText.Text = Loc.T("로딩 중...");
             await Task.Run(() => DetectAndLoadEncoding());
         }
         catch (Exception ex)
@@ -213,6 +213,17 @@ public partial class PreviewDialog : Window
         catch (Exception ex)
         {
             MessageBox.Show(this, $"외부 프로그램으로 열기 실패:\n{ex.Message}", "왕집", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    /// <summary>Esc로 미리보기 창을 닫습니다.</summary>
+    private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        // 인코딩 목록이 펼쳐져 있으면 Esc는 목록만 닫습니다.
+        if (e.Key == System.Windows.Input.Key.Escape && !EncodingCombo.IsDropDownOpen)
+        {
+            e.Handled = true;
+            Close();
         }
     }
 

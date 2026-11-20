@@ -7,7 +7,7 @@
         Width="660" Height="700"
         MinWidth="560" MinHeight="580"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource SurfaceBrush}">
+        Background="{DynamicResource SurfaceBrush}">
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -21,16 +21,45 @@
 
         <TextBlock Grid.Row="0" Text="압축할 파일과 폴더" Style="{StaticResource SectionTitle}" />
 
-        <Border Grid.Row="1" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Background="White" Margin="0,0,0,10">
-            <ListBox x:Name="SourceList"
-                     ItemsSource="{Binding Sources, RelativeSource={RelativeSource AncestorType=Window}}"
-                     BorderThickness="0"
-                     SelectionMode="Extended"
-                     Padding="6" />
+        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8"
+                Background="{DynamicResource SurfaceBrush}" Margin="0,0,0,10">
+            <Grid>
+                <ListBox x:Name="SourceList"
+                         ItemsSource="{Binding Sources, RelativeSource={RelativeSource AncestorType=Window}}"
+                         BorderThickness="0"
+                         SelectionMode="Extended"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         Background="{DynamicResource SurfaceBrush}"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.Name="압축할 파일과 폴더"
+                         Padding="6">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <!-- 긴 경로는 말줄임표로 줄이고 전체 경로는 툴팁으로 보여 줍니다. -->
+                            <TextBlock Text="{Binding}" ToolTip="{Binding}" TextTrimming="CharacterEllipsis" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <!-- 목록이 비었을 때 안내 -->
+                <TextBlock Text="압축할 파일이나 폴더를 추가하세요."
+                           HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"
+                           Foreground="{DynamicResource TextSecondaryBrush}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Items.Count, ElementName=SourceList}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
         </Border>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,14">
-            <Button Content="파일 추가" Style="{StaticResource SecondaryButton}" Click="AddFiles_Click" Margin="0,0,8,0" />
+            <Button x:Name="AddFilesButton" Content="파일 추가" Style="{StaticResource SecondaryButton}" Click="AddFiles_Click" Margin="0,0,8,0" />
             <Button Content="폴더 추가" Style="{StaticResource SecondaryButton}" Click="AddFolder_Click" Margin="0,0,8,0" />
             <Button Content="선택 제거" Style="{StaticResource SecondaryButton}" Click="Remove_Click" />
         </StackPanel>
@@ -43,7 +72,7 @@
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="저장 위치" VerticalAlignment="Center" />
             <TextBox Grid.Column="1" x:Name="OutputBox" Height="32" VerticalContentAlignment="Center" Padding="8,0"
-                     BorderBrush="{StaticResource BorderBrush}" />
+                     BorderBrush="{DynamicResource BorderBrush}" />
             <Button Grid.Column="2" Content="찾아보기" Style="{StaticResource SecondaryButton}" Click="BrowseOutput_Click" Margin="8,0,0,0" />
         </Grid>
 
@@ -67,12 +96,22 @@
             <ComboBox Grid.Row="1" Grid.Column="1" x:Name="SplitCombo" Height="32" DisplayMemberPath="Label" Margin="0,10,0,0" />
         </Grid>
 
-        <Border Grid.Row="5" Background="#F7F9FC" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+        <Border Grid.Row="5" Background="{DynamicResource AppBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                 CornerRadius="8" Padding="12" Margin="0,0,0,16">
             <StackPanel>
                 <CheckBox x:Name="UsePasswordCheck" Content="암호 걸기 (AES-256)"
                           FontWeight="SemiBold" Checked="UsePassword_Changed" Unchecked="UsePassword_Changed" />
                 <Grid x:Name="PasswordPanel" Margin="0,10,0,0" IsEnabled="False">
+                    <!-- 꺼져 있을 때 이름표까지 흐리게 보여 비활성 상태를 분명히 합니다. -->
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.5" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="90" />
                         <ColumnDefinition Width="*" />
@@ -82,19 +121,19 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="비밀번호" VerticalAlignment="Center" />
                     <PasswordBox Grid.Column="1" x:Name="PasswordBox" Height="32" Padding="8,0"
-                                 VerticalContentAlignment="Center" BorderBrush="{StaticResource BorderBrush}" />
+                                 VerticalContentAlignment="Center" BorderBrush="{DynamicResource BorderBrush}" />
                     <TextBlock Grid.Column="3" Text="비밀번호 확인" VerticalAlignment="Center" />
                     <PasswordBox Grid.Column="4" x:Name="PasswordConfirmBox" Height="32" Padding="8,0"
-                                 VerticalContentAlignment="Center" BorderBrush="{StaticResource BorderBrush}" />
+                                 VerticalContentAlignment="Center" BorderBrush="{DynamicResource BorderBrush}" />
                 </Grid>
                 <TextBlock Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            Text="Windows 기본 압축 풀기에서는 열 수 없습니다. 왕집·7-Zip·반디집에서 열 수 있습니다." />
             </StackPanel>
         </Border>
 
         <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="취소" Style="{StaticResource SecondaryButton}" Click="Cancel_Click" Margin="0,0,8,0" MinWidth="80" />
+            <Button Content="취소" Style="{StaticResource SecondaryButton}" Click="Cancel_Click" Margin="0,0,8,0" MinWidth="80" IsCancel="True" />
             <Button Content="압축하기" Style="{StaticResource PrimaryButton}" Click="Ok_Click" MinWidth="100" IsDefault="True" />
         </StackPanel>
     </Grid>

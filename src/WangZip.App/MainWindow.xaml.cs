@@ -789,10 +789,20 @@ public partial class MainWindow : Window
             ? DragDropEffects.Copy
             : DragDropEffects.None;
         e.Handled = true;
+
+        // 놓을 수 있는 동안만 안내 오버레이를 보여 줍니다 (화면 표시만 바뀝니다).
+        DropOverlay.Visibility = e.Effects == DragDropEffects.Copy ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void Window_DragLeave(object sender, DragEventArgs e)
+    {
+        // 자식 요소 사이를 지날 때도 발생하지만, 창 안이면 곧 DragOver가 다시 보여 줍니다.
+        DropOverlay.Visibility = Visibility.Collapsed;
     }
 
     private async void Window_Drop(object sender, DragEventArgs e)
     {
+        DropOverlay.Visibility = Visibility.Collapsed;
         if (_draggingOut) return;
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length == 0) return;
 
